@@ -1,0 +1,12 @@
+{
+  "common": { "save": "सहेजें", "cancel": "रद्द करें", "next": "अगला", "back": "वापस", "done": "हो गया", "edit": "संपादित करें", "delete": "हटाएं", "loading": "लोड हो रहा है...", "error": "कुछ गलत हो गया", "yes": "हाँ", "no": "नहीं" },
+  "splash": { "tagline": "आपका उपवास साथी", "greeting": "नमस्ते, {{name}}!" },
+  "tabs": { "fasts": "उपवास", "history": "इतिहास", "tips": "सुझाव", "calories": "कैलोरी", "profile": "प्रोफ़ाइल" },
+  "fasts": { "title": "जल उपवास", "startFast": "उपवास शुरू करें", "stopFast": "उपवास रोकें", "activeFast": "सक्रिय उपवास", "elapsed": "बीता समय", "remaining": "शेष", "target": "लक्ष्य", "completed": "उपवास पूर्ण!", "stoppedEarly": "उपवास समाप्त" },
+  "history": { "title": "उपवास इतिहास", "noHistory": "अभी तक कोई उपवास नहीं। पहला शुरू करें!" },
+  "tips": { "title": "सुझाव और गाइड", "readMore": "और पढ़ें" },
+  "calories": { "title": "कैलोरी कैलकुलेटर", "maintenance": "रखरखाव कैलोरी", "tdee": "दैनिक ऊर्जा व्यय" },
+  "profile": { "title": "मेरी प्रोफ़ाइल", "editProfile": "प्रोफ़ाइल संपादित करें", "lightMode": "लाइट", "darkMode": "डार्क" },
+  "topBar": { "book": "1-on-1 बुक करें", "buyFastingSalts": "नमक खरीदें" },
+  "paywall": { "title": "पूर्ण पहुँच", "subscribe": "सदस्यता लें", "restore": "खरीदारी पुनर्स्थापित करें", "freeTrial": "3-दिन निःशुल्क परीक्षण" }
+}

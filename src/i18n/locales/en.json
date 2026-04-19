@@ -1,0 +1,152 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "next": "Next",
+    "back": "Back",
+    "done": "Done",
+    "edit": "Edit",
+    "delete": "Delete",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "splash": {
+    "tagline": "Your water fasting companion",
+    "greeting": "Hello, {{name}}!"
+  },
+  "onboarding": {
+    "slide1": {
+      "headline": "Start Your Fasting Journey",
+      "body": "WaterFastBuddy guides you through every stage of your water fast with real-time insights."
+    },
+    "slide2": {
+      "headline": "Track Your Progress",
+      "body": "Watch your body transform as you fast. Log your weight and see your journey unfold."
+    },
+    "slide3": {
+      "headline": "Stay Informed",
+      "body": "Learn what's happening inside your body at every hour of your fast."
+    },
+    "slide4": {
+      "headline": "Your Personal Coach",
+      "body": "Book 1-on-1 sessions with our fasting expert for personalised guidance."
+    },
+    "setup": {
+      "title": "Set Up Your Profile",
+      "name": "What's your name?",
+      "namePlaceholder": "Enter your name",
+      "gender": "Select your gender",
+      "male": "Male",
+      "female": "Female",
+      "height": "Your height",
+      "weight": "Your weight",
+      "age": "Your age",
+      "activityLevel": "Activity level",
+      "climateType": "Your climate",
+      "goalWeight": "Goal weight",
+      "sedentary": "Sedentary",
+      "light": "Lightly Active",
+      "moderate": "Moderately Active",
+      "active": "Active",
+      "very_active": "Very Active",
+      "hot": "Hot",
+      "temperate": "Temperate",
+      "cold": "Cold"
+    }
+  },
+  "tabs": {
+    "fasts": "Fasts",
+    "history": "History",
+    "tips": "Tips",
+    "calories": "Calories",
+    "profile": "Profile"
+  },
+  "fasts": {
+    "title": "Water Fasts",
+    "startFast": "Start Fast",
+    "stopFast": "Stop Fast",
+    "customFast": "Custom Fast",
+    "customHours": "Enter target hours",
+    "activeFast": "Active Fast",
+    "elapsed": "Elapsed",
+    "remaining": "Remaining",
+    "target": "Target",
+    "completed": "Fast Complete!",
+    "stoppedEarly": "Fast Ended",
+    "savedFasts": "Saved Fasts",
+    "saveFast": "Save This Fast",
+    "fastName": "Fast name"
+  },
+  "history": {
+    "title": "Fasting History",
+    "calendarView": "Calendar",
+    "listView": "List",
+    "longestFast": "Longest Fast",
+    "currentStreak": "Current Streak",
+    "totalFasts": "Total Fasts",
+    "totalHours": "Total Hours",
+    "days": "days",
+    "hours": "hrs",
+    "targetMet": "Target Met",
+    "targetNotMet": "Stopped Early",
+    "noHistory": "No fasts yet. Start your first fast!"
+  },
+  "tips": {
+    "title": "Tips & Guides",
+    "readMore": "Read More",
+    "categories": {
+      "beginner": "Beginner",
+      "advanced": "Advanced",
+      "science": "The Science",
+      "benefits": "Benefits",
+      "preparation": "Preparation"
+    }
+  },
+  "calories": {
+    "title": "Calorie Calculator",
+    "maintenance": "Maintenance Calories",
+    "deficit": "Weight Loss Target",
+    "tdee": "Daily Energy Expenditure",
+    "bmi": "Your BMI",
+    "adjustActivity": "Adjust Activity Level",
+    "kcalPerDay": "kcal / day"
+  },
+  "profile": {
+    "title": "My Profile",
+    "editProfile": "Edit Profile",
+    "weightLog": "Weight Log",
+    "logWeight": "Log Today's Weight",
+    "bmiGoal": "BMI Goal",
+    "currentBmi": "Current BMI",
+    "goalBmi": "Goal BMI",
+    "underweight": "Underweight",
+    "normal": "Normal",
+    "overweight": "Overweight",
+    "obese": "Obese",
+    "theme": "Appearance",
+    "language": "Language",
+    "lightMode": "Light",
+    "darkMode": "Dark",
+    "backup": "Backup to Google Drive",
+    "restore": "Restore from Google Drive",
+    "backupSuccess": "Backup complete",
+    "restoreSuccess": "Restore complete"
+  },
+  "topBar": {
+    "book": "Book 1-on-1",
+    "buyFastingSalts": "Buy Salts"
+  },
+  "paywall": {
+    "title": "Unlock Full Access",
+    "trialEnded": "Your 3-day trial has ended",
+    "subscribe": "Subscribe Now",
+    "restore": "Restore Purchase",
+    "freeTrial": "3-Day Free Trial"
+  },
+  "notifications": {
+    "fastingActive": "Fast Active",
+    "elapsed": "{{hours}}h {{minutes}}m elapsed"
+  }
+}
