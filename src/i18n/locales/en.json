@@ -110,6 +110,14 @@
     "deficit": "Weight Loss Target",
     "tdee": "Daily Energy Expenditure",
     "bmi": "Your BMI",
+    "bodyFat": "Body Fat Percentage",
+    "bodyFatCategories": {
+      "essential": "Essential",
+      "athletic": "Athletic",
+      "fit": "Fit",
+      "average": "Average",
+      "high": "High"
+    },
     "adjustActivity": "Adjust Activity Level",
     "kcalPerDay": "kcal / day"
   },

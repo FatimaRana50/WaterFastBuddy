@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../store/ThemeContext';
 import { COLORS } from '../constants/theme';
 import i18n from '../i18n';
+import TopBar from '../components/TopBar';
 
 // Screen placeholders — replace with real screens as they're built
 import FastsScreen from '../screens/Fasts/FastsScreen';
@@ -46,7 +47,8 @@ export default function BottomTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        headerShown: false,
+        headerShown: true,
+        header: () => <TopBar />,
         tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
         tabBarActiveTintColor: colors.tabBarActive,
         tabBarInactiveTintColor: colors.tabBarInactive,

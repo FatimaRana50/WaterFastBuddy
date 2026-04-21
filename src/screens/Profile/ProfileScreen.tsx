@@ -1,16 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Modal, TextInput, Switch, Alert,
+  Modal, TextInput, Switch, Alert, Dimensions, Share,
 } from 'react-native';
+import { LineChart } from 'react-native-chart-kit';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../store/ThemeContext';
 import { useUser } from '../../store/UserContext';
-import { calculateBmi, calculateTDEE } from '../../utils/bmi';
+import { useFasts } from '../../store/FastsContext';
+import { calculateBmi, calculateTDEE, goalWeightForBmi } from '../../utils/bmi';
 import { COLORS, FONT_SIZE, SPACING, BORDER_RADIUS } from '../../constants/theme';
 import WaterBodyAvatar from '../../components/Avatar/WaterBodyAvatar';
-import { ActivityLevel, Gender } from '../../types';
+import { ActivityLevel, Gender, Language, WeightEntry } from '../../types';
+import { insertWeightEntry, getAllWeightEntries } from '../../store/database';
+import i18n, { setLocale } from '../../i18n';
 
+const { width: SCREEN_W } = Dimensions.get('window');
+// Width for the LineChart — card margins (24×2) + card padding (24×2)
+const CHART_W = SCREEN_W - SPACING.lg * 4;
 
 const ACTIVITY_OPTIONS: { key: ActivityLevel; label: string; icon: string }[] = [
   { key: 'sedentary',   label: 'Sedentary',   icon: '🛋️' },
@@ -20,7 +28,16 @@ const ACTIVITY_OPTIONS: { key: ActivityLevel; label: string; icon: string }[] = 
   { key: 'very_active', label: 'Very Active',  icon: '⚡' },
 ];
 
-// ─── Info row inside cards ─────────────────────────────────────────────────────
+const LANGUAGE_OPTIONS: { key: Language; label: string; flag: string }[] = [
+  { key: 'en', label: 'English',    flag: '🇬🇧' },
+  { key: 'es', label: 'Español',    flag: '🇪🇸' },
+  { key: 'fr', label: 'Français',   flag: '🇫🇷' },
+  { key: 'hi', label: 'हिन्दी',      flag: '🇮🇳' },
+  { key: 'zh', label: '中文',        flag: '🇨🇳' },
+];
+
+// ─── Sub-components ────────────────────────────────────────────────────────────
+
 function InfoRow({ label, value, last = false }: { label: string; value: string; last?: boolean }) {
   const { colors } = useTheme();
   return (
@@ -31,20 +48,17 @@ function InfoRow({ label, value, last = false }: { label: string; value: string;
   );
 }
 
-// ─── BMI gauge bar ─────────────────────────────────────────────────────────────
 function BmiGauge({ bmi }: { bmi: number }) {
-  const pct    = Math.min(Math.max((bmi - 10) / 30, 0), 1);
-  const color  = bmi < 18.5 ? '#60A5FA' : bmi < 25 ? '#10B981' : bmi < 30 ? '#F59E0B' : '#EF4444';
-  const label  = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese';
+  const pct   = Math.min(Math.max((bmi - 10) / 30, 0), 1);
+  const color = bmi < 18.5 ? '#60A5FA' : bmi < 25 ? '#10B981' : bmi < 30 ? '#F59E0B' : '#EF4444';
+  const label = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese';
 
   return (
     <View style={styles.bmiGaugeWrap}>
       <View style={styles.bmiGaugeTrack}>
-        {/* Colour segments */}
         {[['#60A5FA', 0], ['#10B981', 25], ['#F59E0B', 50], ['#EF4444', 75]].map(([c, left]) => (
           <View key={String(left)} style={[styles.bmiSegment, { backgroundColor: String(c), left: `${left}%` as any }]} />
         ))}
-        {/* Thumb */}
         <View style={[styles.bmiThumb, { left: `${pct * 100}%` as any }]} />
       </View>
       <View style={styles.bmiLabels}>
@@ -54,14 +68,12 @@ function BmiGauge({ bmi }: { bmi: number }) {
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: SPACING.sm, gap: 8 }}>
         <View style={[styles.bmiDot, { backgroundColor: color }]} />
-        <Text style={[styles.bmiVal, { color: color }]}>BMI {bmi} — {label}</Text>
+        <Text style={[styles.bmiVal, { color }]}>BMI {bmi} — {label}</Text>
       </View>
     </View>
   );
 }
 
-// ─── Slider row ────────────────────────────────────────────────────────────────
-// Simple +/− stepper (Slider component requires extra install; this is clean & reliable)
 function Stepper({
   label, value, unit, min, max, step = 1, onChange,
 }: {
@@ -94,24 +106,51 @@ function Stepper({
   );
 }
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
+// ─── Main screen ───────────────────────────────────────────────────────────────
 export default function ProfileScreen() {
   const { colors, theme, toggleTheme } = useTheme();
-  const { profile, updateProfile } = useUser();
-  const [showEdit, setShowEdit] = useState(false);
+  const { profile, updateProfile }     = useUser();
+  const { fasts, savedFasts }          = useFasts();
 
-  // Edit form state — mirrors profile fields
-  const [editName,     setEditName]     = useState('');
-  const [editAge,      setEditAge]      = useState(0);
-  const [editWeight,   setEditWeight]   = useState(0);
-  const [editHeight,   setEditHeight]   = useState(0);
-  const [editGender,   setEditGender]   = useState<Gender>('male');
-  const [editActivity, setEditActivity] = useState<ActivityLevel>('moderate');
+  // Edit modal state
+  const [showEdit,      setShowEdit]      = useState(false);
+  const [editName,      setEditName]      = useState('');
+  const [editAge,       setEditAge]       = useState(0);
+  const [editWeight,    setEditWeight]    = useState(0);
+  const [editHeight,    setEditHeight]    = useState(0);
+  const [editGender,    setEditGender]    = useState<Gender>('male');
+  const [editActivity,  setEditActivity]  = useState<ActivityLevel>('moderate');
+  const [editGoalWeight, setEditGoalWeight] = useState(0);
+
+  // Weight tracking
+  const [weightEntries,   setWeightEntries]   = useState<WeightEntry[]>([]);
+  const [showWeightModal, setShowWeightModal] = useState(false);
+  const [weightInput,     setWeightInput]     = useState('');
+
+  // Language modal
+  const [showLangModal, setShowLangModal] = useState(false);
+  const [language,      setLanguage]      = useState<Language>('en');
+
+  useEffect(() => {
+    getAllWeightEntries().then(setWeightEntries).catch(() => {});
+    AsyncStorage.getItem('app_language').then((stored) => {
+      if (stored) setLanguage(stored as Language);
+    });
+  }, []);
 
   if (!profile) return null;
 
   const bmi  = calculateBmi(profile.weightKg, profile.heightCm);
   const tdee = calculateTDEE(profile.weightKg, profile.heightCm, profile.age, profile.gender, profile.activityLevel);
+  // Resolve goal weight — fall back to a healthy BMI if not set
+  const goalWeight = profile.goalWeightKg > 0
+    ? profile.goalWeightKg
+    : Math.round(goalWeightForBmi(22.5, profile.heightCm));
+
+  const currentLangLabel = LANGUAGE_OPTIONS.find((l) => l.key === language)?.label ?? 'English';
+  const activityLabel    = ACTIVITY_OPTIONS.find((a) => a.key === profile.activityLevel)?.label ?? '';
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
 
   const openEdit = () => {
     setEditName(profile.name);
@@ -120,6 +159,7 @@ export default function ProfileScreen() {
     setEditHeight(profile.heightCm);
     setEditGender(profile.gender);
     setEditActivity(profile.activityLevel);
+    setEditGoalWeight(goalWeight);
     setShowEdit(true);
   };
 
@@ -131,8 +171,54 @@ export default function ProfileScreen() {
       heightCm: editHeight,
       gender: editGender,
       activityLevel: editActivity,
+      goalWeightKg: editGoalWeight,
     });
     setShowEdit(false);
+  };
+
+  const handleLogWeight = async () => {
+    const kg = parseFloat(weightInput);
+    if (!kg || kg < 20 || kg > 500) {
+      Alert.alert('Invalid weight', 'Please enter a weight between 20 and 500 kg.');
+      return;
+    }
+    const entry: WeightEntry = {
+      id: String(Date.now()),
+      date: new Date().toISOString().slice(0, 10),
+      weightKg: kg,
+    };
+    await insertWeightEntry(entry);
+    setWeightEntries((prev) => [...prev, entry]);
+    // Also update current profile weight
+    await updateProfile({ weightKg: kg });
+    setWeightInput('');
+    setShowWeightModal(false);
+  };
+
+  const handleLanguageChange = async (lang: Language) => {
+    setLanguage(lang);
+    setLocale(lang);
+    await AsyncStorage.setItem('app_language', lang);
+    setShowLangModal(false);
+  };
+
+  const handleExport = async () => {
+    const backupData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      profile,
+      fasts,
+      weightEntries,
+      savedFasts,
+    };
+    try {
+      await Share.share({
+        title: 'WaterFastBuddy Backup',
+        message: JSON.stringify(backupData, null, 2),
+      });
+    } catch {
+      // user cancelled share sheet — ignore
+    }
   };
 
   const resetOnboarding = () =>
@@ -141,24 +227,41 @@ export default function ProfileScreen() {
       { text: 'Reset', style: 'destructive', onPress: () => updateProfile({ onboardingComplete: false }) },
     ]);
 
-  const activityLabel = ACTIVITY_OPTIONS.find((a) => a.key === profile.activityLevel)?.label ?? '';
+  // ── Chart data ───────────────────────────────────────────────────────────────
+  // Show last 8 entries on the chart
+  const chartEntries  = weightEntries.slice(-8);
+  const chartLabels   = chartEntries.map((e) => e.date.slice(5));  // MM-DD
+  const chartData     = chartEntries.map((e) => e.weightKg);
+  const showChart     = chartEntries.length >= 2;
 
+  const chartConfig = {
+    backgroundColor: 'transparent',
+    backgroundGradientFrom: colors.surface,
+    backgroundGradientTo: colors.surface,
+    decimalPlaces: 1,
+    color: (opacity = 1) => `rgba(25, 114, 232, ${opacity})`,
+    labelColor: () => colors.textSecondary,
+    propsForDots: { r: '5', strokeWidth: '2', stroke: COLORS.primary },
+  };
+
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <LinearGradient colors={[COLORS.mist, '#DCEEFF', '#EEF8FF']} style={StyleSheet.absoluteFillObject} />
       <View pointerEvents="none" style={styles.orbTop} />
       <View pointerEvents="none" style={styles.orbBottom} />
+
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
         {/* ── Header ── */}
         <LinearGradient colors={[COLORS.primaryDark, COLORS.gradientStart, COLORS.gradientEnd]} style={styles.header}>
           <Text style={styles.headerKicker}>Personal dashboard</Text>
           <Text style={styles.headerTitle}>Profile</Text>
-          <Text style={styles.headerSub}>Keep your body metrics, appearance, and preferences in one calm place.</Text>
+          <Text style={styles.headerSub}>Your body metrics, fasting history, and preferences in one place.</Text>
         </LinearGradient>
 
         {/* ── Avatar card ── */}
-        <View style={[styles.avatarCard, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
+        <View style={[styles.avatarCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.avatarGlow} />
           <WaterBodyAvatar profile={profile} size={90} />
           <View style={styles.avatarInfo}>
@@ -175,7 +278,7 @@ export default function ProfileScreen() {
 
         {/* ── Body stats ── */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Body Stats</Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <InfoRow label="Gender"         value={profile.gender === 'male' ? 'Male' : 'Female'} />
           <InfoRow label="Age"            value={`${profile.age} years`} />
           <InfoRow label="Weight"         value={`${profile.weightKg} kg`} />
@@ -183,25 +286,102 @@ export default function ProfileScreen() {
           <InfoRow label="Activity Level" value={activityLabel} last />
         </View>
 
-        {/* ── BMI card ── */}
+        {/* ── BMI ── */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>BMI</Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <BmiGauge bmi={bmi.value} />
         </View>
 
-        {/* ── Calorie card ── */}
+        {/* ── Goal Avatar Morph ── */}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Transformation</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.cardSubLabel, { color: colors.textSecondary }]}>
+            Current shape → Goal shape
+          </Text>
+          <View style={styles.morphRow}>
+            {/* Current avatar */}
+            <View style={styles.morphAvatarWrap}>
+              <WaterBodyAvatar profile={profile} size={80} />
+              <Text style={[styles.morphLabel, { color: COLORS.primary }]}>Now</Text>
+              <Text style={[styles.morphWeight, { color: colors.text }]}>{profile.weightKg} kg</Text>
+              <Text style={[styles.morphBmi, { color: colors.textSecondary }]}>
+                BMI {calculateBmi(profile.weightKg, profile.heightCm).value}
+              </Text>
+            </View>
+
+            {/* Arrow */}
+            <View style={styles.morphArrow}>
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.accent]}
+                start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }}
+                style={styles.morphArrowLine}
+              />
+              <Text style={[styles.morphArrowText, { color: COLORS.primary }]}>›</Text>
+            </View>
+
+            {/* Goal avatar */}
+            <View style={styles.morphAvatarWrap}>
+              <WaterBodyAvatar profile={{ ...profile, weightKg: goalWeight }} size={80} />
+              <Text style={[styles.morphLabel, { color: COLORS.success }]}>Goal</Text>
+              <Text style={[styles.morphWeight, { color: colors.text }]}>{goalWeight} kg</Text>
+              <Text style={[styles.morphBmi, { color: colors.textSecondary }]}>
+                BMI {calculateBmi(goalWeight, profile.heightCm).value}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={[styles.editGoalBtn, { backgroundColor: COLORS.primary + '12', borderColor: COLORS.primary + '30' }]}
+            onPress={openEdit}
+          >
+            <Text style={[styles.editGoalBtnText, { color: COLORS.primary }]}>Edit Goal Weight</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Weight Tracking ── */}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Weight Tracking</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {showChart ? (
+            <LineChart
+              data={{ labels: chartLabels, datasets: [{ data: chartData }] }}
+              width={CHART_W}
+              height={160}
+              chartConfig={chartConfig}
+              bezier
+              style={{ borderRadius: BORDER_RADIUS.sm, marginTop: SPACING.sm }}
+            />
+          ) : (
+            <Text style={[styles.chartPlaceholder, { color: colors.textSecondary }]}>
+              Log at least 2 weights to see your progress chart.
+            </Text>
+          )}
+          <TouchableOpacity
+            style={styles.logWeightBtnWrap}
+            onPress={() => setShowWeightModal(true)}
+          >
+            <LinearGradient
+              colors={[COLORS.primaryDark, COLORS.primary]}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={styles.logWeightBtn}
+            >
+              <Text style={styles.logWeightBtnText}>+ Log Weight</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Daily Calories ── */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Daily Calories</Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <InfoRow label="Maintenance (TDEE)" value={`${tdee} kcal/day`} />
           <InfoRow label="Weight Loss Target"  value={`${tdee - 500} kcal/day`} last />
         </View>
 
         {/* ── Settings ── */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Settings</Text>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {/* Dark mode */}
           <View style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
             <View style={styles.settingLeft}>
-              <Text style={styles.settingIcon}>◌</Text>
+              <Text style={styles.settingIcon}>🌙</Text>
               <Text style={[styles.settingLabel, { color: colors.text }]}>Dark Mode</Text>
             </View>
             <Switch
@@ -211,23 +391,31 @@ export default function ProfileScreen() {
               thumbColor="#fff"
             />
           </View>
-          <View style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+
+          {/* Language */}
+          <TouchableOpacity
+            style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+            onPress={() => setShowLangModal(true)}
+            activeOpacity={0.7}
+          >
             <View style={styles.settingLeft}>
-              <Text style={styles.settingIcon}>◌</Text>
+              <Text style={styles.settingIcon}>🌐</Text>
               <Text style={[styles.settingLabel, { color: colors.text }]}>Language</Text>
             </View>
-            <Text style={[styles.settingValue, { color: colors.textSecondary }]}>English ›</Text>
-          </View>
-          <View style={styles.settingRow}>
+            <Text style={[styles.settingValue, { color: colors.textSecondary }]}>{currentLangLabel} ›</Text>
+          </TouchableOpacity>
+
+          {/* Backup / Export */}
+          <TouchableOpacity style={styles.settingRow} onPress={handleExport} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
-              <Text style={styles.settingIcon}>◌</Text>
-              <Text style={[styles.settingLabel, { color: colors.text }]}>Google Drive Backup</Text>
+              <Text style={styles.settingIcon}>💾</Text>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>Export Data Backup</Text>
             </View>
-            <Text style={[styles.settingValue, { color: COLORS.primary }]}>Backup ›</Text>
-          </View>
+            <Text style={[styles.settingValue, { color: COLORS.primary }]}>Export ›</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* ── Dev only ── */}
+        {/* ── Dev reset (debug builds only) ── */}
         {__DEV__ && (
           <TouchableOpacity
             style={[styles.devBtn, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}
@@ -243,7 +431,6 @@ export default function ProfileScreen() {
       {/* ══ Edit Profile Modal ══ */}
       <Modal visible={showEdit} animationType="slide" presentationStyle="pageSheet">
         <View style={[styles.modalScreen, { backgroundColor: colors.background }]}>
-          {/* Modal header */}
           <View style={[styles.modalHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
             <TouchableOpacity onPress={() => setShowEdit(false)}>
               <Text style={[styles.modalBack, { color: COLORS.primary }]}>‹ Back</Text>
@@ -253,12 +440,14 @@ export default function ProfileScreen() {
           </View>
 
           <ScrollView contentContainerStyle={styles.modalScroll} showsVerticalScrollIndicator={false}>
-            {/* Avatar */}
+            {/* Live avatar preview */}
             <View style={styles.modalAvatar}>
-              <WaterBodyAvatar profile={{ ...profile, weightKg: editWeight, heightCm: editHeight, gender: editGender, activityLevel: editActivity }} size={70} />
+              <WaterBodyAvatar
+                profile={{ ...profile, weightKg: editWeight, heightCm: editHeight, gender: editGender, activityLevel: editActivity }}
+                size={70}
+              />
             </View>
 
-            {/* Name */}
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Full Name</Text>
             <TextInput
               style={[styles.fieldInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
@@ -268,7 +457,6 @@ export default function ProfileScreen() {
               placeholderTextColor={colors.textSecondary}
             />
 
-            {/* Gender */}
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Gender</Text>
             <View style={styles.genderRow}>
               {([
@@ -296,17 +484,17 @@ export default function ProfileScreen() {
               ))}
             </View>
 
-            {/* Steppers */}
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Other Info</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Body Measurements</Text>
             <View style={[styles.card, { backgroundColor: colors.surface }]}>
-              <Stepper label="Age"    value={editAge}    unit="yrs" min={10} max={100} onChange={setEditAge} />
+              <Stepper label="Age"         value={editAge}        unit="yrs" min={10}  max={100} onChange={setEditAge} />
               <View style={[styles.stepperDivider, { backgroundColor: colors.border }]} />
-              <Stepper label="Weight" value={editWeight} unit="kg"  min={30} max={250} onChange={setEditWeight} />
+              <Stepper label="Weight"      value={editWeight}     unit="kg"  min={30}  max={250} onChange={setEditWeight} />
               <View style={[styles.stepperDivider, { backgroundColor: colors.border }]} />
-              <Stepper label="Height" value={editHeight} unit="cm"  min={100} max={220} onChange={setEditHeight} />
+              <Stepper label="Height"      value={editHeight}     unit="cm"  min={100} max={220} onChange={setEditHeight} />
+              <View style={[styles.stepperDivider, { backgroundColor: colors.border }]} />
+              <Stepper label="Goal Weight" value={editGoalWeight} unit="kg"  min={30}  max={250} onChange={setEditGoalWeight} />
             </View>
 
-            {/* Activity level */}
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Activity Level</Text>
             <View style={styles.activityGrid}>
               {ACTIVITY_OPTIONS.map((a) => (
@@ -330,12 +518,8 @@ export default function ProfileScreen() {
             </View>
           </ScrollView>
 
-          {/* Discard / Save buttons */}
           <View style={[styles.modalFooter, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
-            <TouchableOpacity
-              style={[styles.discardBtn, { borderColor: colors.border }]}
-              onPress={() => setShowEdit(false)}
-            >
+            <TouchableOpacity style={[styles.discardBtn, { borderColor: colors.border }]} onPress={() => setShowEdit(false)}>
               <Text style={[styles.discardText, { color: colors.textSecondary }]}>Discard</Text>
             </TouchableOpacity>
             <TouchableOpacity style={{ flex: 1 }} onPress={saveEdit}>
@@ -350,6 +534,69 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* ══ Log Weight Modal ══ */}
+      <Modal visible={showWeightModal} transparent animationType="slide">
+        <View style={styles.overlay}>
+          <View style={[styles.sheet, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+            <View style={styles.sheetHandle} />
+            <Text style={[styles.sheetTitle, { color: colors.text }]}>Log Today's Weight</Text>
+            <Text style={[styles.sheetSub, { color: colors.textSecondary }]}>Enter your current weight in kg.</Text>
+            <TextInput
+              style={[styles.sheetInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.cardAlt }]}
+              keyboardType="numeric"
+              placeholder="e.g. 74.5"
+              placeholderTextColor={colors.textSecondary}
+              value={weightInput}
+              onChangeText={setWeightInput}
+              autoFocus
+            />
+            <View style={styles.sheetBtns}>
+              <TouchableOpacity
+                style={[styles.sheetCancel, { borderColor: colors.border, backgroundColor: colors.cardAlt }]}
+                onPress={() => { setShowWeightModal(false); setWeightInput(''); }}
+              >
+                <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.sheetConfirmWrap} onPress={handleLogWeight}>
+                <LinearGradient
+                  colors={[COLORS.primaryDark, COLORS.primary]}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                  style={styles.sheetConfirm}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: FONT_SIZE.md }}>Save</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ══ Language Picker Modal ══ */}
+      <Modal visible={showLangModal} transparent animationType="fade">
+        <TouchableOpacity style={styles.langOverlay} activeOpacity={1} onPress={() => setShowLangModal(false)}>
+          <View style={[styles.langSheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[styles.langTitle, { color: colors.text }]}>Select Language</Text>
+            {LANGUAGE_OPTIONS.map((item) => (
+              <TouchableOpacity
+                key={item.key}
+                style={[
+                  styles.langRow,
+                  { borderBottomColor: colors.border },
+                  language === item.key && { backgroundColor: COLORS.primary + '10' },
+                ]}
+                onPress={() => handleLanguageChange(item.key)}
+              >
+                <Text style={styles.langFlag}>{item.flag}</Text>
+                <Text style={[styles.langLabel, { color: language === item.key ? COLORS.primary : colors.text }]}>
+                  {item.label}
+                </Text>
+                {language === item.key && <Text style={{ color: COLORS.primary, fontWeight: '800' }}>✓</Text>}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -358,48 +605,32 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   orbTop: {
-    position: 'absolute',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: 'rgba(85,170,255,0.22)',
-    top: -120,
-    right: -100,
+    position: 'absolute', width: 280, height: 280, borderRadius: 140,
+    backgroundColor: 'rgba(85,170,255,0.22)', top: -120, right: -100,
   },
   orbBottom: {
-    position: 'absolute',
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: 'rgba(111,216,238,0.16)',
-    bottom: -170,
-    left: -120,
+    position: 'absolute', width: 320, height: 320, borderRadius: 160,
+    backgroundColor: 'rgba(111,216,238,0.16)', bottom: -170, left: -120,
   },
   scroll: { paddingBottom: 110 },
 
   header: {
-    paddingTop: 54, paddingBottom: SPACING.xl,
+    paddingTop: 8, paddingBottom: SPACING.xl,
     paddingHorizontal: SPACING.lg,
     borderBottomLeftRadius: 28, borderBottomRightRadius: 28,
     marginBottom: SPACING.lg,
-    shadowColor: '#2A84E2',
-    shadowOpacity: 0.22,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowColor: '#2A84E2', shadowOpacity: 0.22, shadowRadius: 16, elevation: 8,
   },
   headerKicker: { color: 'rgba(255,255,255,0.78)', fontSize: FONT_SIZE.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
-  headerTitle: { fontSize: FONT_SIZE.xxl, fontWeight: '800', color: '#fff', marginTop: 6 },
-  headerSub: { color: 'rgba(255,255,255,0.88)', fontSize: FONT_SIZE.sm, marginTop: 8, lineHeight: 20, maxWidth: 280 },
+  headerTitle:  { fontSize: FONT_SIZE.xxl, fontWeight: '800', color: '#fff', marginTop: 6 },
+  headerSub:    { color: 'rgba(255,255,255,0.88)', fontSize: FONT_SIZE.sm, marginTop: 8, lineHeight: 20, maxWidth: 280 },
 
-  // Avatar card
   avatarCard: {
     flexDirection: 'row', alignItems: 'center',
     marginHorizontal: SPACING.lg, borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md, marginBottom: SPACING.md,
-    borderWidth: 1,
+    padding: SPACING.md, marginBottom: SPACING.md, borderWidth: 1,
     shadowColor: '#1A4D93', shadowOpacity: 0.08, shadowRadius: 12, elevation: 3,
-    gap: SPACING.md,
-    overflow: 'hidden',
+    gap: SPACING.md, overflow: 'hidden',
   },
   avatarGlow: { position: 'absolute', right: -20, top: -20, width: 90, height: 90, borderRadius: 45, backgroundColor: COLORS.primary + '22' },
   avatarInfo: { flex: 1 },
@@ -407,8 +638,7 @@ const styles = StyleSheet.create({
   avatarSub:  { fontSize: FONT_SIZE.sm, marginTop: 3 },
   editBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: SPACING.sm, paddingVertical: 6,
-    borderRadius: BORDER_RADIUS.round,
+    paddingHorizontal: SPACING.sm, paddingVertical: 6, borderRadius: BORDER_RADIUS.round,
   },
   editBtnIcon: { fontSize: 14 },
   editBtnText: { fontSize: FONT_SIZE.sm, fontWeight: '700' },
@@ -420,124 +650,111 @@ const styles = StyleSheet.create({
 
   card: {
     marginHorizontal: SPACING.lg, borderRadius: BORDER_RADIUS.lg,
-    marginBottom: SPACING.md, overflow: 'hidden',
-    borderWidth: 1,
+    marginBottom: SPACING.md, overflow: 'hidden', borderWidth: 1,
     shadowColor: '#1A4D93', shadowOpacity: 0.07, shadowRadius: 10, elevation: 2,
+    padding: SPACING.lg,
   },
+  cardSubLabel: { fontSize: FONT_SIZE.sm, marginBottom: SPACING.md },
 
-  // Info rows
   infoRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: SPACING.md, paddingVertical: 14,
+    paddingVertical: 14,
   },
   infoLabel: { fontSize: FONT_SIZE.sm },
   infoValue: { fontSize: FONT_SIZE.sm, fontWeight: '700' },
 
   // BMI gauge
-  bmiGaugeWrap: { padding: SPACING.md },
-  bmiGaugeTrack: {
-    height: 10, borderRadius: 5, backgroundColor: '#E2E8F0',
-    overflow: 'hidden', position: 'relative', marginBottom: 4,
-  },
-  bmiSegment: { position: 'absolute', top: 0, bottom: 0, width: '25%' },
-  bmiThumb: {
-    position: 'absolute', top: -3, width: 16, height: 16,
-    borderRadius: 8, backgroundColor: '#fff',
-    borderWidth: 2, borderColor: '#3B82F6',
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, elevation: 2,
-    marginLeft: -8,
-  },
-  bmiLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-  bmiTick:   { fontSize: 10, color: '#94A3B8' },
-  bmiDot:    { width: 10, height: 10, borderRadius: 5 },
-  bmiVal:    { fontSize: FONT_SIZE.md, fontWeight: '700' },
+  bmiGaugeWrap:  { },
+  bmiGaugeTrack: { height: 10, borderRadius: 5, backgroundColor: '#E2E8F0', overflow: 'hidden', position: 'relative', marginBottom: 4 },
+  bmiSegment:    { position: 'absolute', top: 0, bottom: 0, width: '25%' },
+  bmiThumb:      { position: 'absolute', top: -3, width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff', borderWidth: 2, borderColor: '#3B82F6', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 3, elevation: 2, marginLeft: -8 },
+  bmiLabels:     { flexDirection: 'row', justifyContent: 'space-between' },
+  bmiTick:       { fontSize: 10, color: '#94A3B8' },
+  bmiDot:        { width: 10, height: 10, borderRadius: 5 },
+  bmiVal:        { fontSize: FONT_SIZE.md, fontWeight: '700' },
 
-  // Settings
+  // Goal avatar morph section
+  morphRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', marginBottom: SPACING.md },
+  morphAvatarWrap: { alignItems: 'center', gap: 4 },
+  morphLabel:  { fontSize: FONT_SIZE.sm, fontWeight: '800', marginTop: 6 },
+  morphWeight: { fontSize: FONT_SIZE.md, fontWeight: '700' },
+  morphBmi:    { fontSize: FONT_SIZE.xs, marginTop: 2 },
+  morphArrow:  { alignItems: 'center', gap: 4, flex: 1 },
+  morphArrowLine: { height: 2, width: '80%', borderRadius: 1 },
+  morphArrowText: { fontSize: 28, fontWeight: '700' },
+  editGoalBtn: { borderRadius: BORDER_RADIUS.round, borderWidth: 1, paddingVertical: 10, alignItems: 'center', marginTop: SPACING.sm },
+  editGoalBtnText: { fontSize: FONT_SIZE.sm, fontWeight: '700' },
+
+  // Weight chart
+  chartPlaceholder: { textAlign: 'center', fontSize: FONT_SIZE.sm, lineHeight: 22, paddingVertical: SPACING.lg },
+  logWeightBtnWrap: { marginTop: SPACING.md },
+  logWeightBtn:     { borderRadius: BORDER_RADIUS.round, paddingVertical: 12, alignItems: 'center' },
+  logWeightBtnText: { color: '#fff', fontWeight: '800', fontSize: FONT_SIZE.md },
+
+  // Settings rows
   settingRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: SPACING.md, paddingVertical: 14,
+    paddingVertical: 14,
   },
   settingLeft:  { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   settingIcon:  { fontSize: 20 },
   settingLabel: { fontSize: FONT_SIZE.md, fontWeight: '500' },
   settingValue: { fontSize: FONT_SIZE.sm, fontWeight: '600' },
 
-  devBtn: {
-    marginHorizontal: SPACING.lg, borderRadius: BORDER_RADIUS.lg,
-    borderWidth: 1, padding: SPACING.md, alignItems: 'center',
-    marginTop: SPACING.sm,
-  },
+  devBtn: { marginHorizontal: SPACING.lg, borderRadius: BORDER_RADIUS.lg, borderWidth: 1, padding: SPACING.md, alignItems: 'center', marginTop: SPACING.sm },
 
   // ── Edit modal ──
   modalScreen: { flex: 1 },
-  modalHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: SPACING.lg, paddingTop: 54, paddingBottom: SPACING.md,
-    borderBottomWidth: 1,
-  },
-  modalBack:  { fontSize: FONT_SIZE.md, fontWeight: '600' },
-  modalTitle: { fontSize: FONT_SIZE.lg, fontWeight: '800' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SPACING.lg, paddingTop: 8, paddingBottom: SPACING.md, borderBottomWidth: 1 },
+  modalBack:   { fontSize: FONT_SIZE.md, fontWeight: '600' },
+  modalTitle:  { fontSize: FONT_SIZE.lg, fontWeight: '800' },
   modalAvatar: { alignItems: 'center', paddingVertical: SPACING.lg },
   modalScroll: { padding: SPACING.lg, paddingBottom: 20 },
 
   fieldLabel: { fontSize: FONT_SIZE.sm, fontWeight: '600', marginBottom: SPACING.sm, marginTop: SPACING.md },
-  fieldInput: {
-    borderWidth: 1.5, borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md, fontSize: FONT_SIZE.md, marginBottom: SPACING.sm,
-  },
+  fieldInput: { borderWidth: 1.5, borderRadius: BORDER_RADIUS.md, padding: SPACING.md, fontSize: FONT_SIZE.md, marginBottom: SPACING.sm },
 
-  // Gender selector
-  genderRow: { flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.sm },
-  genderCard: {
-    flex: 1, alignItems: 'center', justifyContent: 'center',
-    paddingVertical: SPACING.lg, borderRadius: BORDER_RADIUS.lg,
-    borderWidth: 2, position: 'relative',
-    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 1,
-  },
+  genderRow:  { flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.sm },
+  genderCard: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: SPACING.lg, borderRadius: BORDER_RADIUS.lg, borderWidth: 2, position: 'relative', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
   genderLabel: { fontSize: FONT_SIZE.sm, fontWeight: '700', marginTop: 6 },
-  genderCheck: {
-    position: 'absolute', bottom: 8, right: 8,
-    width: 18, height: 18, borderRadius: 9,
-    backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center',
-  },
+  genderCheck: { position: 'absolute', bottom: 8, right: 8, width: 18, height: 18, borderRadius: 9, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center' },
 
-  // Steppers
-  stepperRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: SPACING.md, paddingVertical: 14,
-  },
+  stepperRow:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SPACING.md, paddingVertical: 14 },
   stepperLabel:    { fontSize: FONT_SIZE.sm, fontWeight: '600' },
   stepperControls: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  stepperBtn: {
-    width: 34, height: 34, borderRadius: 10,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  stepperBtnText: { fontSize: 22, fontWeight: '300', lineHeight: 26 },
-  stepperValue:   { fontSize: FONT_SIZE.md, fontWeight: '700', minWidth: 70, textAlign: 'center' },
-  stepperUnit:    { fontSize: FONT_SIZE.sm, fontWeight: '400' },
-  stepperDivider: { height: 1, marginHorizontal: SPACING.md },
+  stepperBtn:      { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  stepperBtnText:  { fontSize: 22, fontWeight: '300', lineHeight: 26 },
+  stepperValue:    { fontSize: FONT_SIZE.md, fontWeight: '700', minWidth: 70, textAlign: 'center' },
+  stepperUnit:     { fontSize: FONT_SIZE.sm, fontWeight: '400' },
+  stepperDivider:  { height: 1, marginHorizontal: SPACING.md },
 
-  // Activity
   activityGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
-  activityChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.round, borderWidth: 1.5,
-  },
+  activityChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: BORDER_RADIUS.round, borderWidth: 1.5 },
   activityLabel: { fontSize: FONT_SIZE.sm, fontWeight: '600' },
 
-  // Footer buttons
-  modalFooter: {
-    flexDirection: 'row', gap: SPACING.md,
-    padding: SPACING.lg, borderTopWidth: 1,
-  },
-  discardBtn: {
-    flex: 1, borderRadius: BORDER_RADIUS.round, borderWidth: 1.5,
-    padding: SPACING.md, alignItems: 'center',
-  },
+  modalFooter: { flexDirection: 'row', gap: SPACING.md, padding: SPACING.lg, borderTopWidth: 1 },
+  discardBtn:  { flex: 1, borderRadius: BORDER_RADIUS.round, borderWidth: 1.5, padding: SPACING.md, alignItems: 'center' },
   discardText: { fontWeight: '600', fontSize: FONT_SIZE.md },
-  saveBtn: {
-    borderRadius: BORDER_RADIUS.round, padding: SPACING.md, alignItems: 'center',
-  },
+  saveBtn:     { borderRadius: BORDER_RADIUS.round, padding: SPACING.md, alignItems: 'center' },
   saveBtnText: { color: '#fff', fontWeight: '800', fontSize: FONT_SIZE.md },
+
+  // ── Log weight modal ──
+  overlay:          { flex: 1, backgroundColor: 'rgba(8,15,28,0.42)', justifyContent: 'flex-end' },
+  sheet:            { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: SPACING.xl, paddingTop: SPACING.md, borderTopWidth: 1 },
+  sheetHandle:      { width: 40, height: 4, borderRadius: 2, backgroundColor: '#E2E8F0', alignSelf: 'center', marginBottom: SPACING.lg },
+  sheetTitle:       { fontSize: FONT_SIZE.xl, fontWeight: '800', marginBottom: SPACING.xs },
+  sheetSub:         { fontSize: FONT_SIZE.md, marginBottom: SPACING.lg },
+  sheetInput:       { borderWidth: 1.5, borderRadius: BORDER_RADIUS.md, padding: SPACING.md, fontSize: FONT_SIZE.xl, textAlign: 'center', marginBottom: SPACING.lg },
+  sheetBtns:        { flexDirection: 'row', gap: SPACING.md },
+  sheetCancel:      { flex: 1, borderRadius: BORDER_RADIUS.round, borderWidth: 1.5, padding: SPACING.md, alignItems: 'center' },
+  sheetConfirmWrap: { flex: 1 },
+  sheetConfirm:     { flex: 1, borderRadius: BORDER_RADIUS.round, padding: SPACING.md, alignItems: 'center' },
+
+  // ── Language modal ──
+  langOverlay: { flex: 1, backgroundColor: 'rgba(8,15,28,0.42)', justifyContent: 'center', alignItems: 'center', padding: SPACING.lg },
+  langSheet:   { width: '100%', borderRadius: BORDER_RADIUS.xl, borderWidth: 1, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
+  langTitle:   { fontSize: FONT_SIZE.lg, fontWeight: '800', padding: SPACING.lg, paddingBottom: SPACING.md },
+  langRow:     { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingHorizontal: SPACING.lg, paddingVertical: 14, borderBottomWidth: 1 },
+  langFlag:    { fontSize: 22 },
+  langLabel:   { flex: 1, fontSize: FONT_SIZE.md, fontWeight: '600' },
 });

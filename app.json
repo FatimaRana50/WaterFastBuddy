@@ -16,7 +16,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.waterfastbuddy.app",
       "infoPlist": {
-        "UIBackgroundModes": ["fetch", "remote-notification"]
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -48,12 +51,11 @@
       "expo-secure-store",
       "expo-sqlite"
     ],
-    "locales": {
-      "en": "./src/i18n/locales/en.json",
-      "es": "./src/i18n/locales/es.json",
-      "fr": "./src/i18n/locales/fr.json",
-      "hi": "./src/i18n/locales/hi.json",
-      "zh": "./src/i18n/locales/zh.json"
-    }
+    "extra": {
+      "eas": {
+        "projectId": "3d86fbc7-3dd2-4b7d-a356-f446845a2e99"
+      }
+    },
+    "owner": "fatima_farrukh_rana"
   }
 }

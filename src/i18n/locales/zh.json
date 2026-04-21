@@ -5,7 +5,7 @@
   "fasts": { "title": "水断食", "startFast": "开始断食", "stopFast": "停止断食", "activeFast": "断食进行中", "elapsed": "已用时间", "remaining": "剩余", "target": "目标", "completed": "断食完成！", "stoppedEarly": "断食结束" },
   "history": { "title": "断食历史", "noHistory": "还没有断食记录，开始第一次吧！" },
   "tips": { "title": "技巧与指南", "readMore": "阅读更多" },
-  "calories": { "title": "卡路里计算器", "maintenance": "维持卡路里", "tdee": "每日能量消耗" },
+  "calories": { "title": "卡路里计算器", "maintenance": "维持卡路里", "tdee": "每日能量消耗", "bmi": "你的 BMI", "bodyFat": "体脂百分比", "bodyFatCategories": { "essential": "基本", "athletic": "运动型", "fit": "健康", "average": "平均", "high": "偏高" } },
   "profile": { "title": "我的资料", "editProfile": "编辑资料", "lightMode": "浅色", "darkMode": "深色" },
   "topBar": { "book": "预约1对1", "buyFastingSalts": "购买盐" },
   "paywall": { "title": "完整访问", "subscribe": "立即订阅", "restore": "恢复购买", "freeTrial": "3天免费试用" }

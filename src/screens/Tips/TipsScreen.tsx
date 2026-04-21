@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     bottom: -140,
     left: -100,
   },
-  content: { padding: SPACING.lg, paddingTop: 60, paddingBottom: 90 },
+  content: { padding: SPACING.lg, paddingTop: 8, paddingBottom: 90 },
   hero: { borderRadius: BORDER_RADIUS.xl, padding: SPACING.lg, marginBottom: SPACING.lg, shadowColor: '#2A84E2', shadowOpacity: 0.22, shadowRadius: 15, elevation: 7 },
   heroKicker: { color: 'rgba(255,255,255,0.8)', fontSize: FONT_SIZE.xs, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
   title: { fontSize: FONT_SIZE.xxl, fontWeight: '900', color: '#fff', marginTop: 6 },

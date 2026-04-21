@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../store/ThemeContext';
 import { useUser } from '../../store/UserContext';
-import { calculateTDEE, calculateBmi } from '../../utils/bmi';
+import { calculateTDEE, calculateBmi, calculateBodyFatPercentage } from '../../utils/bmi';
 import { FONT_SIZE, SPACING, COLORS, BORDER_RADIUS } from '../../constants/theme';
 import i18n from '../../i18n';
 import type { ActivityLevel } from '../../types';
@@ -25,6 +25,7 @@ export default function CaloriesScreen() {
 
   const tdee = calculateTDEE(profile.weightKg, profile.heightCm, profile.age, profile.gender, activity);
   const bmi = calculateBmi(profile.weightKg, profile.heightCm);
+  const bodyFat = calculateBodyFatPercentage(bmi.value, profile.age, profile.gender);
   const deficit = Math.max(tdee - 500, 1200);
 
   return (
@@ -32,7 +33,7 @@ export default function CaloriesScreen() {
       <LinearGradient colors={[COLORS.primaryDark, COLORS.primary, COLORS.accent]} style={styles.hero}>
         <Text style={styles.heroKicker}>Body energy</Text>
         <Text style={styles.title}>{i18n.t('calories.title')}</Text>
-        <Text style={styles.heroBody}>A visual calorie planner with BMI and activity-aware estimates.</Text>
+        <Text style={styles.heroBody}>A visual calorie planner with BMI, body fat %, and activity-aware estimates.</Text>
       </LinearGradient>
       <View style={[styles.card, { backgroundColor: colors.surface }]}> 
         <Text style={[styles.label, { color: colors.textSecondary }]}>{i18n.t('calories.maintenance')}</Text>
@@ -42,6 +43,13 @@ export default function CaloriesScreen() {
         <Text style={[styles.label, { color: colors.textSecondary }]}>{i18n.t('calories.bmi')}</Text>
         <Text style={styles.value}>{bmi.value}</Text>
         <Text style={{ color: COLORS[bmi.category], fontWeight: '600' }}>{bmi.category}</Text>
+      </View>
+      <View style={[styles.card, { backgroundColor: colors.surface }]}> 
+        <Text style={[styles.label, { color: colors.textSecondary }]}>{i18n.t('calories.bodyFat')}</Text>
+        <Text style={styles.value}>{bodyFat.value}%</Text>
+        <Text style={{ color: colors.textSecondary, fontWeight: '600', textTransform: 'capitalize' }}>
+          {i18n.t(`calories.bodyFatCategories.${bodyFat.category}`)}
+        </Text>
       </View>
       <View style={[styles.card, { backgroundColor: colors.surface }]}> 
         <Text style={[styles.label, { color: colors.textSecondary }]}>Activity Level</Text>
@@ -63,7 +71,7 @@ export default function CaloriesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: SPACING.lg, paddingTop: 60, paddingBottom: 90 },
+  content: { padding: SPACING.lg, paddingTop: 8, paddingBottom: 90 },
   hero: { borderRadius: BORDER_RADIUS.xl, padding: SPACING.lg, marginBottom: SPACING.lg },
   heroKicker: { color: 'rgba(255,255,255,0.8)', fontSize: FONT_SIZE.xs, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
   title: { fontSize: FONT_SIZE.xxl, fontWeight: '800', color: '#fff', marginTop: 6 },

@@ -1,5 +1,5 @@
 // BMI and TDEE (Mifflin-St Jeor) calculation utilities
-import { BmiCategory, BmiResult, ActivityLevel, Gender } from '../types';
+import { BmiCategory, BmiResult, BodyFatResult, ActivityLevel, Gender } from '../types';
 
 export function calculateBmi(weightKg: number, heightCm: number): BmiResult {
   const heightM = heightCm / 100;
@@ -38,4 +38,28 @@ export function calculateTDEE(
 export function goalWeightForBmi(bmiTarget: number, heightCm: number): number {
   const heightM = heightCm / 100;
   return parseFloat((bmiTarget * heightM * heightM).toFixed(1));
+}
+
+// Deurenberg estimate using BMI, age, and biological sex.
+export function calculateBodyFatPercentage(bmi: number, age: number, gender: Gender): BodyFatResult {
+  const sex = gender === 'male' ? 1 : 0;
+  const raw = 1.2 * bmi + 0.23 * age - 10.8 * sex - 5.4;
+  const value = parseFloat(Math.max(2, Math.min(65, raw)).toFixed(1));
+
+  let category: BodyFatResult['category'];
+  if (gender === 'male') {
+    if (value < 6) category = 'essential';
+    else if (value < 14) category = 'athletic';
+    else if (value < 18) category = 'fit';
+    else if (value < 25) category = 'average';
+    else category = 'high';
+  } else {
+    if (value < 14) category = 'essential';
+    else if (value < 21) category = 'athletic';
+    else if (value < 25) category = 'fit';
+    else if (value < 32) category = 'average';
+    else category = 'high';
+  }
+
+  return { value, category };
 }

@@ -5,7 +5,7 @@
   "fasts": { "title": "Ayunos de Agua", "startFast": "Iniciar Ayuno", "stopFast": "Detener Ayuno", "activeFast": "Ayuno Activo", "elapsed": "Tiempo transcurrido", "remaining": "Restante", "target": "Objetivo", "completed": "¡Ayuno Completado!", "stoppedEarly": "Ayuno Terminado" },
   "history": { "title": "Historial de Ayunos", "noHistory": "Aún no hay ayunos. ¡Empieza el primero!" },
   "tips": { "title": "Consejos y Guías", "readMore": "Leer más" },
-  "calories": { "title": "Calculadora de Calorías", "maintenance": "Calorías de Mantenimiento", "tdee": "Gasto Energético Diario" },
+  "calories": { "title": "Calculadora de Calorías", "maintenance": "Calorías de Mantenimiento", "tdee": "Gasto Energético Diario", "bmi": "Tu IMC", "bodyFat": "Porcentaje de Grasa Corporal", "bodyFatCategories": { "essential": "Esencial", "athletic": "Atlético", "fit": "En forma", "average": "Promedio", "high": "Alto" } },
   "profile": { "title": "Mi Perfil", "editProfile": "Editar Perfil", "lightMode": "Claro", "darkMode": "Oscuro" },
   "topBar": { "book": "Reservar 1-a-1", "buyFastingSalts": "Comprar Sales" },
   "paywall": { "title": "Acceso Completo", "subscribe": "Suscribirse", "restore": "Restaurar Compra", "freeTrial": "Prueba de 3 Días" }

@@ -27,6 +27,7 @@ export interface FastRecord {
   actualHours: number;
   completed: boolean;       // true = reached target
   notes?: string;
+  name?: string;            // plan label e.g. "16:8 Fast", "72 Hour Fast"
 }
 
 export interface WeightEntry {
@@ -58,8 +59,14 @@ export interface ActiveFast {
 
 // BMI helpers
 export type BmiCategory = 'underweight' | 'normal' | 'overweight' | 'obese';
+export type BodyFatCategory = 'essential' | 'athletic' | 'fit' | 'average' | 'high';
 
 export interface BmiResult {
   value: number;
   category: BmiCategory;
+}
+
+export interface BodyFatResult {
+  value: number;
+  category: BodyFatCategory;
 }

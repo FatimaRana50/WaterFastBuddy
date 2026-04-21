@@ -5,7 +5,7 @@
   "fasts": { "title": "Jeûnes à l'Eau", "startFast": "Démarrer", "stopFast": "Arrêter", "activeFast": "Jeûne Actif", "elapsed": "Temps écoulé", "remaining": "Restant", "target": "Objectif", "completed": "Jeûne Terminé !", "stoppedEarly": "Jeûne Arrêté" },
   "history": { "title": "Historique des Jeûnes", "noHistory": "Pas encore de jeûnes. Commencez le premier !" },
   "tips": { "title": "Conseils et Guides", "readMore": "Lire la suite" },
-  "calories": { "title": "Calculateur de Calories", "maintenance": "Calories d'Entretien", "tdee": "Dépense Énergétique Quotidienne" },
+  "calories": { "title": "Calculateur de Calories", "maintenance": "Calories d'Entretien", "tdee": "Dépense Énergétique Quotidienne", "bmi": "Votre IMC", "bodyFat": "Pourcentage de Graisse Corporelle", "bodyFatCategories": { "essential": "Essentiel", "athletic": "Athlétique", "fit": "En forme", "average": "Moyen", "high": "Élevé" } },
   "profile": { "title": "Mon Profil", "editProfile": "Modifier le Profil", "lightMode": "Clair", "darkMode": "Sombre" },
   "topBar": { "book": "Réserver 1-à-1", "buyFastingSalts": "Acheter des Sels" },
   "paywall": { "title": "Accès Complet", "subscribe": "S'abonner", "restore": "Restaurer l'achat", "freeTrial": "Essai de 3 Jours" }
