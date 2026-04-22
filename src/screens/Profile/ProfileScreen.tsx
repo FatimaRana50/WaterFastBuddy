@@ -3,10 +3,10 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, TextInput, Switch, Alert, Dimensions, Share,
 } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
 import { LinearGradient } from 'expo-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import WeightChart from '../../components/WeightChart';
 import { useTheme } from '../../store/ThemeContext';
+import { useLanguage } from '../../store/LanguageContext';
 import { useUser } from '../../store/UserContext';
 import { useFasts } from '../../store/FastsContext';
 import { calculateBmi, calculateTDEE, goalWeightForBmi } from '../../utils/bmi';
@@ -14,18 +14,18 @@ import { COLORS, FONT_SIZE, SPACING, BORDER_RADIUS } from '../../constants/theme
 import WaterBodyAvatar from '../../components/Avatar/WaterBodyAvatar';
 import { ActivityLevel, Gender, Language, WeightEntry } from '../../types';
 import { insertWeightEntry, getAllWeightEntries } from '../../store/database';
-import i18n, { setLocale } from '../../i18n';
+import i18n from '../../i18n';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 // Width for the LineChart — card margins (24×2) + card padding (24×2)
 const CHART_W = SCREEN_W - SPACING.lg * 4;
 
-const ACTIVITY_OPTIONS: { key: ActivityLevel; label: string; icon: string }[] = [
-  { key: 'sedentary',   label: 'Sedentary',   icon: '🛋️' },
-  { key: 'light',       label: 'Light',        icon: '🚶' },
-  { key: 'moderate',    label: 'Moderate',     icon: '🏃' },
-  { key: 'active',      label: 'Active',       icon: '🏋️' },
-  { key: 'very_active', label: 'Very Active',  icon: '⚡' },
+const ACTIVITY_OPTIONS: { key: ActivityLevel; labelKey: string; icon: string }[] = [
+  { key: 'sedentary',   labelKey: 'profile.activitySedentary',   icon: '🛋️' },
+  { key: 'light',       labelKey: 'profile.activityLight',        icon: '🚶' },
+  { key: 'moderate',    labelKey: 'profile.activityModerate',     icon: '🏃' },
+  { key: 'active',      labelKey: 'profile.activityActive',       icon: '🏋️' },
+  { key: 'very_active', labelKey: 'profile.activityVeryActive',   icon: '⚡' },
 ];
 
 const LANGUAGE_OPTIONS: { key: Language; label: string; flag: string }[] = [
@@ -51,7 +51,7 @@ function InfoRow({ label, value, last = false }: { label: string; value: string;
 function BmiGauge({ bmi }: { bmi: number }) {
   const pct   = Math.min(Math.max((bmi - 10) / 30, 0), 1);
   const color = bmi < 18.5 ? '#60A5FA' : bmi < 25 ? '#10B981' : bmi < 30 ? '#F59E0B' : '#EF4444';
-  const label = bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal' : bmi < 30 ? 'Overweight' : 'Obese';
+  const label = bmi < 18.5 ? i18n.t('profile.underweight') : bmi < 25 ? i18n.t('profile.normal') : bmi < 30 ? i18n.t('profile.overweight') : i18n.t('profile.obese');
 
   return (
     <View style={styles.bmiGaugeWrap}>
@@ -109,6 +109,7 @@ function Stepper({
 // ─── Main screen ───────────────────────────────────────────────────────────────
 export default function ProfileScreen() {
   const { colors, theme, toggleTheme } = useTheme();
+  const { language: appLanguage, setLanguage: updateAppLanguage } = useLanguage();
   const { profile, updateProfile }     = useUser();
   const { fasts, savedFasts }          = useFasts();
 
@@ -129,14 +130,10 @@ export default function ProfileScreen() {
 
   // Language modal
   const [showLangModal, setShowLangModal] = useState(false);
-  const [language,      setLanguage]      = useState<Language>('en');
 
   useEffect(() => {
     getAllWeightEntries().then(setWeightEntries).catch(() => {});
-    AsyncStorage.getItem('app_language').then((stored) => {
-      if (stored) setLanguage(stored as Language);
-    });
-  }, []);
+  }, [appLanguage]);
 
   if (!profile) return null;
 
@@ -147,8 +144,8 @@ export default function ProfileScreen() {
     ? profile.goalWeightKg
     : Math.round(goalWeightForBmi(22.5, profile.heightCm));
 
-  const currentLangLabel = LANGUAGE_OPTIONS.find((l) => l.key === language)?.label ?? 'English';
-  const activityLabel    = ACTIVITY_OPTIONS.find((a) => a.key === profile.activityLevel)?.label ?? '';
+  const currentLangLabel = LANGUAGE_OPTIONS.find((l) => l.key === appLanguage)?.label ?? 'English';
+  const activityLabel    = i18n.t(ACTIVITY_OPTIONS.find((a) => a.key === profile.activityLevel)?.labelKey ?? 'profile.activityModerate') as string;
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -179,7 +176,7 @@ export default function ProfileScreen() {
   const handleLogWeight = async () => {
     const kg = parseFloat(weightInput);
     if (!kg || kg < 20 || kg > 500) {
-      Alert.alert('Invalid weight', 'Please enter a weight between 20 and 500 kg.');
+      Alert.alert(i18n.t('ui.invalidWeightTitle'), i18n.t('ui.invalidWeightBody'));
       return;
     }
     const entry: WeightEntry = {
@@ -196,9 +193,7 @@ export default function ProfileScreen() {
   };
 
   const handleLanguageChange = async (lang: Language) => {
-    setLanguage(lang);
-    setLocale(lang);
-    await AsyncStorage.setItem('app_language', lang);
+    await updateAppLanguage(lang);
     setShowLangModal(false);
   };
 
@@ -222,9 +217,9 @@ export default function ProfileScreen() {
   };
 
   const resetOnboarding = () =>
-    Alert.alert('Reset Onboarding', 'Dev only — see welcome screens again?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Reset', style: 'destructive', onPress: () => updateProfile({ onboardingComplete: false }) },
+    Alert.alert(i18n.t('ui.resetOnboarding'), i18n.t('profile.resetOnboardingPrompt'), [
+      { text: i18n.t('common.cancel'), style: 'cancel' },
+      { text: i18n.t('profile.reset'), style: 'destructive', onPress: () => updateProfile({ onboardingComplete: false }) },
     ]);
 
   // ── Chart data ───────────────────────────────────────────────────────────────
@@ -233,16 +228,6 @@ export default function ProfileScreen() {
   const chartLabels   = chartEntries.map((e) => e.date.slice(5));  // MM-DD
   const chartData     = chartEntries.map((e) => e.weightKg);
   const showChart     = chartEntries.length >= 2;
-
-  const chartConfig = {
-    backgroundColor: 'transparent',
-    backgroundGradientFrom: colors.surface,
-    backgroundGradientTo: colors.surface,
-    decimalPlaces: 1,
-    color: (opacity = 1) => `rgba(25, 114, 232, ${opacity})`,
-    labelColor: () => colors.textSecondary,
-    propsForDots: { r: '5', strokeWidth: '2', stroke: COLORS.primary },
-  };
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -255,9 +240,9 @@ export default function ProfileScreen() {
 
         {/* ── Header ── */}
         <LinearGradient colors={[COLORS.primaryDark, COLORS.gradientStart, COLORS.gradientEnd]} style={styles.header}>
-          <Text style={styles.headerKicker}>Personal dashboard</Text>
-          <Text style={styles.headerTitle}>Profile</Text>
-          <Text style={styles.headerSub}>Your body metrics, fasting history, and preferences in one place.</Text>
+          <Text style={styles.headerKicker}>{i18n.t('profile.personalDashboard')}</Text>
+          <Text style={styles.headerTitle}>{i18n.t('profile.title')}</Text>
+          <Text style={styles.headerSub}>{i18n.t('profile.headerSubtitle')}</Text>
         </LinearGradient>
 
         {/* ── Avatar card ── */}
@@ -267,43 +252,43 @@ export default function ProfileScreen() {
           <View style={styles.avatarInfo}>
             <Text style={[styles.avatarName, { color: colors.text }]}>{profile.name}</Text>
             <Text style={[styles.avatarSub, { color: colors.textSecondary }]}>
-              {profile.gender === 'male' ? 'Male' : 'Female'} · {profile.age} yrs
+              {profile.gender === 'male' ? i18n.t('profile.male') : i18n.t('profile.female')} · {profile.age} {i18n.t('ui.years')}
             </Text>
           </View>
           <TouchableOpacity style={[styles.editBtn, { backgroundColor: COLORS.primary + '18' }]} onPress={openEdit}>
             <Text style={styles.editBtnIcon}>⌁</Text>
-            <Text style={[styles.editBtnText, { color: COLORS.primary }]}>Edit</Text>
+            <Text style={[styles.editBtnText, { color: COLORS.primary }]}>{i18n.t('common.edit')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* ── Body stats ── */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Body Stats</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('ui.bodyStats')}</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <InfoRow label="Gender"         value={profile.gender === 'male' ? 'Male' : 'Female'} />
-          <InfoRow label="Age"            value={`${profile.age} years`} />
-          <InfoRow label="Weight"         value={`${profile.weightKg} kg`} />
-          <InfoRow label="Height"         value={`${profile.heightCm} cm`} />
-          <InfoRow label="Activity Level" value={activityLabel} last />
+          <InfoRow label={i18n.t('ui.gender')}         value={profile.gender === 'male' ? i18n.t('profile.male') : i18n.t('profile.female')} />
+          <InfoRow label={i18n.t('ui.age')}            value={`${profile.age} ${i18n.t('ui.years')}`} />
+          <InfoRow label={i18n.t('ui.weight')}         value={`${profile.weightKg} ${i18n.t('ui.kg')}`} />
+          <InfoRow label={i18n.t('ui.height')}         value={`${profile.heightCm} cm`} />
+          <InfoRow label={i18n.t('ui.activityLevel')}   value={activityLabel} last />
         </View>
 
         {/* ── BMI ── */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>BMI</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('ui.bmi')}</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <BmiGauge bmi={bmi.value} />
         </View>
 
         {/* ── Goal Avatar Morph ── */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Transformation</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('profile.transformation')}</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.cardSubLabel, { color: colors.textSecondary }]}>
-            Current shape → Goal shape
+            {i18n.t('profile.currentShapeGoalShape')}
           </Text>
           <View style={styles.morphRow}>
             {/* Current avatar */}
             <View style={styles.morphAvatarWrap}>
               <WaterBodyAvatar profile={profile} size={80} />
-              <Text style={[styles.morphLabel, { color: COLORS.primary }]}>Now</Text>
-              <Text style={[styles.morphWeight, { color: colors.text }]}>{profile.weightKg} kg</Text>
+              <Text style={[styles.morphLabel, { color: COLORS.primary }]}>{i18n.t('ui.now')}</Text>
+              <Text style={[styles.morphWeight, { color: colors.text }]}>{profile.weightKg} {i18n.t('ui.kg')}</Text>
               <Text style={[styles.morphBmi, { color: colors.textSecondary }]}>
                 BMI {calculateBmi(profile.weightKg, profile.heightCm).value}
               </Text>
@@ -322,8 +307,8 @@ export default function ProfileScreen() {
             {/* Goal avatar */}
             <View style={styles.morphAvatarWrap}>
               <WaterBodyAvatar profile={{ ...profile, weightKg: goalWeight }} size={80} />
-              <Text style={[styles.morphLabel, { color: COLORS.success }]}>Goal</Text>
-              <Text style={[styles.morphWeight, { color: colors.text }]}>{goalWeight} kg</Text>
+              <Text style={[styles.morphLabel, { color: COLORS.success }]}>{i18n.t('ui.goal')}</Text>
+              <Text style={[styles.morphWeight, { color: colors.text }]}>{goalWeight} {i18n.t('ui.kg')}</Text>
               <Text style={[styles.morphBmi, { color: colors.textSecondary }]}>
                 BMI {calculateBmi(goalWeight, profile.heightCm).value}
               </Text>
@@ -333,25 +318,23 @@ export default function ProfileScreen() {
             style={[styles.editGoalBtn, { backgroundColor: COLORS.primary + '12', borderColor: COLORS.primary + '30' }]}
             onPress={openEdit}
           >
-            <Text style={[styles.editGoalBtnText, { color: COLORS.primary }]}>Edit Goal Weight</Text>
+            <Text style={[styles.editGoalBtnText, { color: COLORS.primary }]}>{i18n.t('profile.editGoalWeight')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* ── Weight Tracking ── */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Weight Tracking</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('ui.weightTracking')}</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {showChart ? (
-            <LineChart
-              data={{ labels: chartLabels, datasets: [{ data: chartData }] }}
+            <WeightChart
+              data={chartData}
+              labels={chartLabels}
               width={CHART_W}
-              height={160}
-              chartConfig={chartConfig}
-              bezier
-              style={{ borderRadius: BORDER_RADIUS.sm, marginTop: SPACING.sm }}
+              height={200}
             />
           ) : (
             <Text style={[styles.chartPlaceholder, { color: colors.textSecondary }]}>
-              Log at least 2 weights to see your progress chart.
+              {i18n.t('profile.logAtLeastTwoWeights')}
             </Text>
           )}
           <TouchableOpacity
@@ -363,26 +346,26 @@ export default function ProfileScreen() {
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
               style={styles.logWeightBtn}
             >
-              <Text style={styles.logWeightBtnText}>+ Log Weight</Text>
+              <Text style={styles.logWeightBtnText}>+ {i18n.t('profile.logWeight')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
 
         {/* ── Daily Calories ── */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Daily Calories</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('ui.dailyCalories')}</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <InfoRow label="Maintenance (TDEE)" value={`${tdee} kcal/day`} />
-          <InfoRow label="Weight Loss Target"  value={`${tdee - 500} kcal/day`} last />
+          <InfoRow label={i18n.t('ui.maintenanceTDEE')} value={`${tdee} ${i18n.t('calories.kcalPerDay')}`} />
+          <InfoRow label={i18n.t('ui.weightLossTarget')}  value={`${tdee - 500} ${i18n.t('calories.kcalPerDay')}`} last />
         </View>
 
         {/* ── Settings ── */}
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Settings</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('ui.settings')}</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {/* Dark mode */}
           <View style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
             <View style={styles.settingLeft}>
               <Text style={styles.settingIcon}>🌙</Text>
-              <Text style={[styles.settingLabel, { color: colors.text }]}>Dark Mode</Text>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>{i18n.t('profile.darkMode')}</Text>
             </View>
             <Switch
               value={theme === 'dark'}
@@ -400,7 +383,7 @@ export default function ProfileScreen() {
           >
             <View style={styles.settingLeft}>
               <Text style={styles.settingIcon}>🌐</Text>
-              <Text style={[styles.settingLabel, { color: colors.text }]}>Language</Text>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>{i18n.t('profile.language')}</Text>
             </View>
             <Text style={[styles.settingValue, { color: colors.textSecondary }]}>{currentLangLabel} ›</Text>
           </TouchableOpacity>
@@ -409,9 +392,9 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.settingRow} onPress={handleExport} activeOpacity={0.7}>
             <View style={styles.settingLeft}>
               <Text style={styles.settingIcon}>💾</Text>
-              <Text style={[styles.settingLabel, { color: colors.text }]}>Export Data Backup</Text>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>{i18n.t('profile.backup')}</Text>
             </View>
-            <Text style={[styles.settingValue, { color: COLORS.primary }]}>Export ›</Text>
+            <Text style={[styles.settingValue, { color: COLORS.primary }]}>{i18n.t('common.save')} ›</Text>
           </TouchableOpacity>
         </View>
 
@@ -421,7 +404,7 @@ export default function ProfileScreen() {
             style={[styles.devBtn, { backgroundColor: '#FFF7ED', borderColor: '#FED7AA' }]}
             onPress={resetOnboarding}
           >
-            <Text style={{ color: '#C2410C', fontWeight: '700' }}>🛠  Reset Onboarding (Dev)</Text>
+            <Text style={{ color: '#C2410C', fontWeight: '700' }}>🛠  {i18n.t('ui.resetOnboarding')}</Text>
           </TouchableOpacity>
         )}
 
@@ -433,9 +416,9 @@ export default function ProfileScreen() {
         <View style={[styles.modalScreen, { backgroundColor: colors.background }]}>
           <View style={[styles.modalHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
             <TouchableOpacity onPress={() => setShowEdit(false)}>
-              <Text style={[styles.modalBack, { color: COLORS.primary }]}>‹ Back</Text>
+              <Text style={[styles.modalBack, { color: COLORS.primary }]}>‹ {i18n.t('common.back')}</Text>
             </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Edit Profile</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{i18n.t('profile.editProfile')}</Text>
             <View style={{ width: 50 }} />
           </View>
 
@@ -448,20 +431,20 @@ export default function ProfileScreen() {
               />
             </View>
 
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Full Name</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{i18n.t('ui.fullName')}</Text>
             <TextInput
               style={[styles.fieldInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
               value={editName}
               onChangeText={setEditName}
-              placeholder="Your name"
+              placeholder={i18n.t('ui.yourName')}
               placeholderTextColor={colors.textSecondary}
             />
 
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Gender</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{i18n.t('ui.gender')}</Text>
             <View style={styles.genderRow}>
               {([
-                { key: 'male',   icon: '👨', label: 'Male'   },
-                { key: 'female', icon: '👩', label: 'Female' },
+                { key: 'male',   icon: '👨', label: i18n.t('profile.male')   },
+                { key: 'female', icon: '👩', label: i18n.t('profile.female') },
               ] as { key: Gender; icon: string; label: string }[]).map((g) => (
                 <TouchableOpacity
                   key={g.key}
@@ -484,18 +467,18 @@ export default function ProfileScreen() {
               ))}
             </View>
 
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Body Measurements</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{i18n.t('ui.bodyMeasurements')}</Text>
             <View style={[styles.card, { backgroundColor: colors.surface }]}>
-              <Stepper label="Age"         value={editAge}        unit="yrs" min={10}  max={100} onChange={setEditAge} />
+              <Stepper label={i18n.t('ui.age')}         value={editAge}        unit={i18n.t('ui.years')} min={10}  max={100} onChange={setEditAge} />
               <View style={[styles.stepperDivider, { backgroundColor: colors.border }]} />
-              <Stepper label="Weight"      value={editWeight}     unit="kg"  min={30}  max={250} onChange={setEditWeight} />
+              <Stepper label={i18n.t('ui.weight')}      value={editWeight}     unit={i18n.t('ui.kg')}  min={30}  max={250} onChange={setEditWeight} />
               <View style={[styles.stepperDivider, { backgroundColor: colors.border }]} />
-              <Stepper label="Height"      value={editHeight}     unit="cm"  min={100} max={220} onChange={setEditHeight} />
+              <Stepper label={i18n.t('ui.height')}      value={editHeight}     unit="cm"  min={100} max={220} onChange={setEditHeight} />
               <View style={[styles.stepperDivider, { backgroundColor: colors.border }]} />
-              <Stepper label="Goal Weight" value={editGoalWeight} unit="kg"  min={30}  max={250} onChange={setEditGoalWeight} />
+              <Stepper label={i18n.t('profile.goalBmi')} value={editGoalWeight} unit={i18n.t('ui.kg')}  min={30}  max={250} onChange={setEditGoalWeight} />
             </View>
 
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Activity Level</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>{i18n.t('ui.activityLevel')}</Text>
             <View style={styles.activityGrid}>
               {ACTIVITY_OPTIONS.map((a) => (
                 <TouchableOpacity
@@ -511,7 +494,7 @@ export default function ProfileScreen() {
                 >
                   <Text style={{ fontSize: 16 }}>{a.icon}</Text>
                   <Text style={[styles.activityLabel, { color: editActivity === a.key ? '#fff' : colors.text }]}>
-                    {a.label}
+                    {i18n.t(a.labelKey)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -520,7 +503,7 @@ export default function ProfileScreen() {
 
           <View style={[styles.modalFooter, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
             <TouchableOpacity style={[styles.discardBtn, { borderColor: colors.border }]} onPress={() => setShowEdit(false)}>
-              <Text style={[styles.discardText, { color: colors.textSecondary }]}>Discard</Text>
+              <Text style={[styles.discardText, { color: colors.textSecondary }]}>{i18n.t('common.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={{ flex: 1 }} onPress={saveEdit}>
               <LinearGradient
@@ -528,7 +511,7 @@ export default function ProfileScreen() {
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                 style={styles.saveBtn}
               >
-                <Text style={styles.saveBtnText}>Save</Text>
+                <Text style={styles.saveBtnText}>{i18n.t('common.save')}</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -540,12 +523,12 @@ export default function ProfileScreen() {
         <View style={styles.overlay}>
           <View style={[styles.sheet, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
             <View style={styles.sheetHandle} />
-            <Text style={[styles.sheetTitle, { color: colors.text }]}>Log Today's Weight</Text>
-            <Text style={[styles.sheetSub, { color: colors.textSecondary }]}>Enter your current weight in kg.</Text>
+            <Text style={[styles.sheetTitle, { color: colors.text }]}>{i18n.t('profile.logWeight')}</Text>
+            <Text style={[styles.sheetSub, { color: colors.textSecondary }]}>{i18n.t('ui.enterWeightKg')}</Text>
             <TextInput
               style={[styles.sheetInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.cardAlt }]}
               keyboardType="numeric"
-              placeholder="e.g. 74.5"
+              placeholder={i18n.t('profile.weightExample')}
               placeholderTextColor={colors.textSecondary}
               value={weightInput}
               onChangeText={setWeightInput}
@@ -556,7 +539,7 @@ export default function ProfileScreen() {
                 style={[styles.sheetCancel, { borderColor: colors.border, backgroundColor: colors.cardAlt }]}
                 onPress={() => { setShowWeightModal(false); setWeightInput(''); }}
               >
-                <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Cancel</Text>
+                  <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{i18n.t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.sheetConfirmWrap} onPress={handleLogWeight}>
                 <LinearGradient
@@ -564,7 +547,7 @@ export default function ProfileScreen() {
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                   style={styles.sheetConfirm}
                 >
-                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: FONT_SIZE.md }}>Save</Text>
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: FONT_SIZE.md }}>{i18n.t('common.save')}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -576,22 +559,22 @@ export default function ProfileScreen() {
       <Modal visible={showLangModal} transparent animationType="fade">
         <TouchableOpacity style={styles.langOverlay} activeOpacity={1} onPress={() => setShowLangModal(false)}>
           <View style={[styles.langSheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.langTitle, { color: colors.text }]}>Select Language</Text>
+            <Text style={[styles.langTitle, { color: colors.text }]}>{i18n.t('profile.language')}</Text>
             {LANGUAGE_OPTIONS.map((item) => (
               <TouchableOpacity
                 key={item.key}
                 style={[
                   styles.langRow,
                   { borderBottomColor: colors.border },
-                  language === item.key && { backgroundColor: COLORS.primary + '10' },
+                  appLanguage === item.key && { backgroundColor: COLORS.primary + '10' },
                 ]}
                 onPress={() => handleLanguageChange(item.key)}
               >
                 <Text style={styles.langFlag}>{item.flag}</Text>
-                <Text style={[styles.langLabel, { color: language === item.key ? COLORS.primary : colors.text }]}>
+                <Text style={[styles.langLabel, { color: appLanguage === item.key ? COLORS.primary : colors.text }]}>
                   {item.label}
                 </Text>
-                {language === item.key && <Text style={{ color: COLORS.primary, fontWeight: '800' }}>✓</Text>}
+                {appLanguage === item.key && <Text style={{ color: COLORS.primary, fontWeight: '800' }}>✓</Text>}
               </TouchableOpacity>
             ))}
           </View>

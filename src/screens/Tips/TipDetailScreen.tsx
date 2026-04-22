@@ -1,15 +1,18 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useTheme } from '../../store/ThemeContext';
+import { useLanguage } from '../../store/LanguageContext';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
+import i18n from '../../i18n';
 
 export default function TipDetailScreen({ route }: any) {
   const { colors } = useTheme();
+  useLanguage();
   const tip = route?.params?.tip ?? {
-    title: 'Hydration timing matters',
-    category: 'Basics',
+    title: i18n.t('tips.fallbackTitle'),
+    category: i18n.t('tips.fallbackCategory'),
     readTime: '4 min',
-    body: 'This is a sample article body. Replace it with the client’s fasting education content when ready.',
+    body: i18n.t('tips.fallbackBody'),
   };
 
   return (
@@ -17,7 +20,7 @@ export default function TipDetailScreen({ route }: any) {
       <View style={[styles.hero, { backgroundColor: COLORS.primary }]}> 
         <Text style={styles.category}>{tip.category}</Text>
         <Text style={styles.title}>{tip.title}</Text>
-        <Text style={styles.meta}>{tip.readTime} read</Text>
+        <Text style={styles.meta}>{tip.readTime}</Text>
       </View>
       <View style={[styles.card, { backgroundColor: colors.surface }]}> 
         <Text style={[styles.body, { color: colors.text }]}>{tip.body}</Text>

@@ -4,20 +4,22 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
 import { useUser } from '../../store/UserContext';
+import { useLanguage } from '../../store/LanguageContext';
 import { ActivityLevel, ClimateType } from '../../types';
+import i18n from '../../i18n';
 
-const ACTIVITY_OPTIONS: { key: ActivityLevel; icon: string; label: string; desc: string }[] = [
-  { key: 'sedentary',   icon: '🛋️', label: 'Sedentary',    desc: 'Little or no exercise' },
-  { key: 'light',       icon: '🚶', label: 'Lightly Active',desc: '1–3 days/week' },
-  { key: 'moderate',    icon: '🏃', label: 'Moderate',      desc: '3–5 days/week' },
-  { key: 'active',      icon: '🏋️', label: 'Very Active',   desc: '6–7 days/week' },
-  { key: 'very_active', icon: '⚡', label: 'Athlete',        desc: 'Twice daily training' },
+const ACTIVITY_OPTIONS: { key: ActivityLevel; icon: string }[] = [
+  { key: 'sedentary',   icon: '🛋️' },
+  { key: 'light',       icon: '🚶' },
+  { key: 'moderate',    icon: '🏃' },
+  { key: 'active',      icon: '🏋️' },
+  { key: 'very_active', icon: '⚡' },
 ];
 
-const CLIMATE_OPTIONS: { key: ClimateType; icon: string; label: string }[] = [
-  { key: 'cold',      icon: '❄️', label: 'Cold' },
-  { key: 'temperate', icon: '🌤', label: 'Temperate' },
-  { key: 'hot',       icon: '☀️', label: 'Hot' },
+const CLIMATE_OPTIONS: { key: ClimateType; icon: string }[] = [
+  { key: 'cold',      icon: '❄️' },
+  { key: 'temperate', icon: '🌤' },
+  { key: 'hot',       icon: '☀️' },
 ];
 
 export default function ProfileSetupLifestyle() {
@@ -27,6 +29,7 @@ export default function ProfileSetupLifestyle() {
   const navigation = useNavigation<any>();
   const route      = useRoute<any>();
   const { saveProfile } = useUser();
+  useLanguage();
 
   const fadeIn = useRef(new Animated.Value(0)).current;
   const slideY = useRef(new Animated.Value(30)).current;
@@ -63,12 +66,12 @@ export default function ProfileSetupLifestyle() {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Animated.View style={{ opacity: fadeIn, transform: [{ translateY: slideY }] }}>
-          <Text style={styles.stepLabel}>Step 3 of 3</Text>
-          <Text style={styles.title}>Your lifestyle{'\n'}&amp; habits</Text>
-          <Text style={styles.subtitle}>Helps us calculate your exact caloric needs and fasting tips.</Text>
+          <Text style={styles.stepLabel}>{i18n.t('onboarding.step3')}</Text>
+          <Text style={styles.title}>{i18n.t('onboarding.setup.lifestyleTitle')}</Text>
+          <Text style={styles.subtitle}>{i18n.t('onboarding.setup.lifestyleSubtitle')}</Text>
 
           {/* Age */}
-          <Text style={styles.sectionLabel}>Age</Text>
+          <Text style={styles.sectionLabel}>{i18n.t('onboarding.setup.age')}</Text>
           <View style={styles.ageCard}>
             <TouchableOpacity
               style={styles.ageBtn}
@@ -78,7 +81,7 @@ export default function ProfileSetupLifestyle() {
             </TouchableOpacity>
             <View style={styles.ageDisplay}>
               <Text style={styles.ageNum}>{age}</Text>
-              <Text style={styles.ageUnit}>years old</Text>
+              <Text style={styles.ageUnit}>{i18n.t('onboarding.setup.yearsOld')}</Text>
             </View>
             <TouchableOpacity
               style={[styles.ageBtn, { backgroundColor: COLORS.primary }]}
@@ -89,7 +92,7 @@ export default function ProfileSetupLifestyle() {
           </View>
 
           {/* Activity */}
-          <Text style={styles.sectionLabel}>Activity Level</Text>
+          <Text style={styles.sectionLabel}>{i18n.t('onboarding.setup.activityLevel')}</Text>
           <View style={styles.activityList}>
             {ACTIVITY_OPTIONS.map((opt) => (
               <TouchableOpacity
@@ -100,8 +103,8 @@ export default function ProfileSetupLifestyle() {
               >
                 <Text style={styles.activityIcon}>{opt.icon}</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.activityLabel, activity === opt.key && { color: '#fff' }]}>{opt.label}</Text>
-                  <Text style={[styles.activityDesc, activity === opt.key && { color: 'rgba(255,255,255,0.7)' }]}>{opt.desc}</Text>
+                  <Text style={[styles.activityLabel, activity === opt.key && { color: '#fff' }]}>{i18n.t(`onboarding.setup.${opt.key}`)}</Text>
+                  <Text style={[styles.activityDesc, activity === opt.key && { color: 'rgba(255,255,255,0.7)' }]}>{i18n.t(`onboarding.setup.${opt.key}Desc`)}</Text>
                 </View>
                 {activity === opt.key && <Text style={{ color: '#fff', fontSize: 18 }}>✓</Text>}
               </TouchableOpacity>
@@ -109,7 +112,7 @@ export default function ProfileSetupLifestyle() {
           </View>
 
           {/* Climate */}
-          <Text style={styles.sectionLabel}>Your Climate</Text>
+          <Text style={styles.sectionLabel}>{i18n.t('onboarding.setup.climateType')}</Text>
           <View style={styles.climateRow}>
             {CLIMATE_OPTIONS.map((c) => (
               <TouchableOpacity
@@ -119,7 +122,7 @@ export default function ProfileSetupLifestyle() {
                 activeOpacity={0.8}
               >
                 <Text style={styles.climateIcon}>{c.icon}</Text>
-                <Text style={[styles.climateLabel, climate === c.key && { color: '#fff' }]}>{c.label}</Text>
+                <Text style={[styles.climateLabel, climate === c.key && { color: '#fff' }]}>{i18n.t(`onboarding.setup.${c.key}`)}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -135,7 +138,7 @@ export default function ProfileSetupLifestyle() {
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
             style={styles.finishBtn}
           >
-            <Text style={styles.finishBtnText}>🚀  Start My Journey</Text>
+            <Text style={styles.finishBtnText}>🚀  {i18n.t('onboarding.startJourney')}</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Switch, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../store/ThemeContext';
+import { useLanguage } from '../../store/LanguageContext';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
-import i18n, { setLocale } from '../../i18n';
+import i18n from '../../i18n';
 import { Language } from '../../types';
 
 const LANGUAGE_OPTIONS: { key: Language; label: string }[] = [
@@ -17,20 +17,16 @@ const LANGUAGE_OPTIONS: { key: Language; label: string }[] = [
 
 export default function SettingsScreen() {
   const { colors, theme, toggleTheme } = useTheme();
-  const [language, setLanguage] = useState<Language>('en');
+  const { language: appLanguage, setLanguage: updateAppLanguage } = useLanguage();
+  const [selectedLanguage, setSelectedLanguage] = useState<Language>(appLanguage);
 
   useEffect(() => {
-    AsyncStorage.getItem('app_language').then((stored) => {
-      if (stored === 'en' || stored === 'es' || stored === 'fr' || stored === 'hi' || stored === 'zh') {
-        setLanguage(stored);
-      }
-    });
-  }, []);
+    setSelectedLanguage(appLanguage);
+  }, [appLanguage]);
 
   const updateLanguage = async (next: Language) => {
-    setLanguage(next);
-    setLocale(next);
-    await AsyncStorage.setItem('app_language', next);
+    setSelectedLanguage(next);
+    await updateAppLanguage(next);
   };
 
   const openBooking = () => Linking.openURL('https://bookings.waterfastbuddy.com');
@@ -42,24 +38,24 @@ export default function SettingsScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <LinearGradient colors={[COLORS.primaryDark, COLORS.gradientStart, COLORS.gradientEnd]} style={styles.hero}>
-          <Text style={styles.heroKicker}>Preferences</Text>
-          <Text style={styles.title}>Settings</Text>
-          <Text style={styles.heroBody}>Appearance, language, and key actions in one focused panel.</Text>
+          <Text style={styles.heroKicker}>{i18n.t('settingsScreen.preferences')}</Text>
+          <Text style={styles.title}>{i18n.t('ui.settings')}</Text>
+          <Text style={styles.heroBody}>{i18n.t('settingsScreen.heroBody')}</Text>
         </LinearGradient>
 
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Appearance</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('ui.appearance')}</Text>
           <View style={styles.row}>
             <View>
-              <Text style={[styles.rowTitle, { color: colors.text }]}>Dark mode</Text>
-              <Text style={[styles.rowSub, { color: colors.textSecondary }]}>Switch between light and dark themes.</Text>
+              <Text style={[styles.rowTitle, { color: colors.text }]}>{i18n.t('ui.darkMode')}</Text>
+              <Text style={[styles.rowSub, { color: colors.textSecondary }]}>{i18n.t('settingsScreen.darkModeHelp')}</Text>
             </View>
             <Switch value={theme === 'dark'} onValueChange={toggleTheme} trackColor={{ true: COLORS.primary, false: colors.border }} thumbColor="#fff" />
           </View>
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Language</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('profile.language')}</Text>
           <View style={styles.languageWrap}>
             {LANGUAGE_OPTIONS.map((item) => (
               <TouchableOpacity
@@ -67,24 +63,24 @@ export default function SettingsScreen() {
                 style={[
                   styles.languageChip,
                   { borderColor: colors.border, backgroundColor: colors.cardAlt },
-                  language === item.key && { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '14' },
+                  selectedLanguage === item.key && { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '14' },
                 ]}
                 onPress={() => updateLanguage(item.key)}
               >
-                <Text style={[styles.languageLabel, { color: language === item.key ? COLORS.primary : colors.text }]}>{item.label}</Text>
+                  <Text style={[styles.languageLabel, { color: selectedLanguage === item.key ? COLORS.primary : colors.text }]}>{item.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
-          <Text style={[styles.helper, { color: colors.textSecondary }]}>Current app locale: {i18n.locale}</Text>
+          <Text style={[styles.helper, { color: colors.textSecondary }]}>{i18n.t('settingsScreen.currentLocale')}: {i18n.locale}</Text>
         </View>
 
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}> 
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Business</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('ui.business')}</Text>
           <TouchableOpacity style={styles.actionBtn} onPress={openBooking}>
-            <Text style={styles.actionText}>Book 1-on-1 Session</Text>
+            <Text style={styles.actionText}>{i18n.t('ui.bookOneOnOneSession')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: COLORS.primary + '14' }]} onPress={() => Alert.alert('Backup', 'Google Drive backup will be added in a later pass.') }>
-            <Text style={[styles.actionText, { color: COLORS.primary }]}>Backup / Restore</Text>
+          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: COLORS.primary + '14' }]} onPress={() => Alert.alert(i18n.t('settingsScreen.backupTitle'), i18n.t('settingsScreen.backupBody')) }>
+            <Text style={[styles.actionText, { color: COLORS.primary }]}>{i18n.t('settingsScreen.backupRestore')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

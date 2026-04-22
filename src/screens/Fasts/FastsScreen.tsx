@@ -13,12 +13,14 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../store/ThemeContext';
+import { useLanguage } from '../../store/LanguageContext';
 import { useUser } from '../../store/UserContext';
 import { useFasts } from '../../store/FastsContext';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
 import WaterBodyAvatar from '../../components/Avatar/WaterBodyAvatar';
 import FastCompleteScreen from './FastCompleteScreen';
 import { FastRecord, SavedFast } from '../../types';
+import i18n from '../../i18n';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const PRESETS = [
@@ -31,17 +33,18 @@ const PRESETS = [
 ];
 
 const STAGES = [
-  { minHour: 0,  text: 'Your body is burning stored glucose for energy.' },
-  { minHour: 8,  text: 'Insulin dropping. Fat burning has started.' },
-  { minHour: 12, text: 'Ketosis beginning — your body burns fat for fuel.' },
-  { minHour: 16, text: 'Autophagy kicks in. Your cells are self-cleaning.' },
-  { minHour: 24, text: 'Deep cellular renewal. Growth hormone surging.' },
-  { minHour: 48, text: 'Immune regeneration. Stem cell production rising.' },
-  { minHour: 72, text: 'Profound autophagy. Full metabolic reset underway.' },
+  { minHour: 0,  key: 'fasts.stage0' },
+  { minHour: 8,  key: 'fasts.stage8' },
+  { minHour: 12, key: 'fasts.stage12' },
+  { minHour: 16, key: 'fasts.stage16' },
+  { minHour: 24, key: 'fasts.stage24' },
+  { minHour: 48, key: 'fasts.stage48' },
+  { minHour: 72, key: 'fasts.stage72' },
 ];
 
 function getStage(h: number) {
-  return [...STAGES].reverse().find((s) => h >= s.minHour)?.text ?? STAGES[0].text;
+  const key = [...STAGES].reverse().find((s) => h >= s.minHour)?.key ?? STAGES[0].key;
+  return i18n.t(key);
 }
 
 function formatTime(sec: number) {
@@ -57,7 +60,7 @@ function getWeekDays() {
     const d = new Date(today);
     d.setDate(today.getDate() + offset);
     return {
-      day:     d.toLocaleDateString('en-GB', { weekday: 'short' }),
+      day:     d.toLocaleDateString(i18n.locale as string, { weekday: 'short' }),
       date:    d.getDate(),
       isToday: offset === 0,
     };
@@ -121,7 +124,7 @@ function SavedFastRow({ fast, onPress, onDelete }: { fast: SavedFast; onPress: (
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.savedName}>{fast.name}</Text>
-          <Text style={styles.savedSub}>{fast.targetHours} hours · tap to start</Text>
+          <Text style={styles.savedSub}>{`${fast.targetHours} ${i18n.t('history.hours')} · ${i18n.t('fasts.tapToStart')}`}</Text>
         </View>
       </TouchableOpacity>
       <TouchableOpacity onPress={onDelete} style={styles.savedDelete} activeOpacity={0.7}>
@@ -134,6 +137,7 @@ function SavedFastRow({ fast, onPress, onDelete }: { fast: SavedFast; onPress: (
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function FastsScreen() {
   const { colors } = useTheme();
+  useLanguage();
   const { profile } = useUser();
   const { activeFast, startFast, endFast, saveFastRecord, removeFast, savedFasts, saveCustomFast, removeSavedFast } = useFasts();
 
@@ -238,12 +242,12 @@ export default function FastsScreen() {
             >
               <View style={styles.heroHeaderRow}>
                 <View>
-                  <Text style={styles.activeKicker}>Current fast</Text>
-                  <Text style={styles.activeTitle}>You're in the flow</Text>
+                  <Text style={styles.activeKicker}>{i18n.t('fasts.activeFast')}</Text>
+                  <Text style={styles.activeTitle}>{i18n.t('fasts.activeFast')}</Text>
                   <Text style={styles.activeSub}>{activeFast.name}</Text>
                 </View>
                 <View style={styles.goalPill}>
-                  <Text style={styles.goalPillLabel}>Goal</Text>
+                  <Text style={styles.goalPillLabel}>{i18n.t('ui.goal')}</Text>
                   <Text style={styles.goalPillValue}>{activeFast.targetHours}h</Text>
                 </View>
               </View>
@@ -252,7 +256,7 @@ export default function FastsScreen() {
                 {profile && <WaterBodyAvatar profile={profile} size={140} fastingHours={elapsed / 3600} />}
                 <View style={styles.progressBadge}>
                   <Text style={styles.progressBadgeValue}>{progressPct}%</Text>
-                  <Text style={styles.progressBadgeLabel}>complete</Text>
+                  <Text style={styles.progressBadgeLabel}>{i18n.t('ui.complete')}</Text>
                 </View>
               </View>
             </LinearGradient>
@@ -260,24 +264,24 @@ export default function FastsScreen() {
 
           <View style={[styles.timeCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.cardHeaderRow}>
-              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>Elapsed time</Text>
-              <Text style={[styles.cardMini, { color: activeFast.color }]}>{formatTime(Math.max(targetSec - elapsed, 0))} left</Text>
+              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{i18n.t('ui.elapsed')}</Text>
+              <Text style={[styles.cardMini, { color: activeFast.color }]}>{formatTime(Math.max(targetSec - elapsed, 0))} {i18n.t('ui.remaining')}</Text>
             </View>
             <Text style={[styles.timeCardVal, { color: colors.text }]}>{formatTime(elapsed)}</Text>
             <View style={styles.timeCardBar}>
               <View style={[styles.timeCardBarFill, { width: `${progressPct}%` as any, backgroundColor: activeFast.color }]} />
             </View>
             <View style={styles.timeCardBarLabels}>
-              <Text style={[styles.barLabel, { color: colors.textSecondary }]}>Start</Text>
-              <Text style={[styles.barLabel, { color: colors.textSecondary }]}>{activeFast.targetHours}h goal</Text>
+              <Text style={[styles.barLabel, { color: colors.textSecondary }]}>{i18n.t('ui.start')}</Text>
+              <Text style={[styles.barLabel, { color: colors.textSecondary }]}>{activeFast.targetHours}h {i18n.t('ui.goal')}</Text>
             </View>
           </View>
 
           <View style={styles.statsGrid}>
             {[
-              { label: 'Started',   value: new Date(activeFast.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
-              { label: 'Goal',      value: `${activeFast.targetHours}h` },
-              { label: 'Remaining', value: formatTime(Math.max(targetSec - elapsed, 0)) },
+              { label: i18n.t('ui.start'),   value: new Date(activeFast.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+              { label: i18n.t('ui.goal'),      value: `${activeFast.targetHours}h` },
+              { label: i18n.t('ui.remaining'), value: formatTime(Math.max(targetSec - elapsed, 0)) },
             ].map((item, index) => (
               <View key={item.label} style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Text style={[styles.statLbl, { color: colors.textSecondary }]}>{item.label}</Text>
@@ -291,14 +295,14 @@ export default function FastsScreen() {
               <View style={[styles.stageDot, { backgroundColor: activeFast.color }]} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.stageHour, { color: activeFast.color }]}>Hour {Math.floor(elapsedH)}</Text>
+              <Text style={[styles.stageHour, { color: activeFast.color }]}>{i18n.t('fasts.hourLabel')} {Math.floor(elapsedH)}</Text>
               <Text style={[styles.stageText, { color: colors.textSecondary }]}>{getStage(elapsedH)}</Text>
             </View>
           </View>
 
           <TouchableOpacity activeOpacity={0.9} onPress={handleEndFast} style={styles.endBtnWrap}>
             <LinearGradient colors={[COLORS.primaryDark, COLORS.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.endBtn}>
-              <Text style={styles.endBtnText}>End Fast</Text>
+              <Text style={styles.endBtnText}>{i18n.t('fasts.stopFast')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </ScrollView>
@@ -323,23 +327,23 @@ export default function FastsScreen() {
           >
             <View style={styles.heroTopRow}>
               <View>
-                <Text style={styles.heroKicker}>Water fasting</Text>
-                <Text style={styles.heroTitle}>Choose a steady pace</Text>
-                <Text style={styles.heroBodyText}>Tap a plan and the session tracker takes over with a calm, blue interface.</Text>
+                <Text style={styles.heroKicker}>{i18n.t('fasts.title')}</Text>
+                <Text style={styles.heroTitle}>{i18n.t('fasts.title')}</Text>
+                <Text style={styles.heroBodyText}>{i18n.t('fasts.customFast')}</Text>
               </View>
               <View style={styles.heroBadge}>
-                <Text style={styles.heroBadgeLabel}>Today</Text>
+                <Text style={styles.heroBadgeLabel}>{i18n.t('ui.today')}</Text>
                 <Text style={styles.heroBadgeValue}>{weekDays.find((d) => d.isToday)?.date ?? ''}</Text>
               </View>
             </View>
             <View style={styles.heroFooterRow}>
               <View style={styles.heroChip}>
-                <Text style={styles.heroChipLabel}>Profile</Text>
-                <Text style={styles.heroChipValue}>{profile ? profile.name : 'Guest'}</Text>
+                <Text style={styles.heroChipLabel}>{i18n.t('ui.profile')}</Text>
+                <Text style={styles.heroChipValue}>{profile ? profile.name : i18n.t('ui.guest')}</Text>
               </View>
               <View style={styles.heroChip}>
-                <Text style={styles.heroChipLabel}>Theme</Text>
-                <Text style={styles.heroChipValue}>Blue water</Text>
+                <Text style={styles.heroChipLabel}>{i18n.t('ui.appearance')}</Text>
+                <Text style={styles.heroChipValue}>{i18n.t('ui.blueWater')}</Text>
               </View>
             </View>
           </LinearGradient>
@@ -360,22 +364,22 @@ export default function FastsScreen() {
             {profile && <WaterBodyAvatar profile={profile} size={104} fastingHours={0} />}
           </View>
           <View style={styles.heroBubble}>
-            <Text style={[styles.heroEyebrow, { color: COLORS.primary }]}>Daily focus</Text>
+            <Text style={[styles.heroEyebrow, { color: COLORS.primary }]}>{i18n.t('fasts.dailyFocus')}</Text>
             <Text style={[styles.heroBubbleText, { color: colors.text }]}>
-              {profile ? `Ready to fast,\n${profile.name}?` : 'Ready to fast?'}
+              {profile ? `${i18n.t('fasts.readyToFast')},\n${profile.name}?` : `${i18n.t('fasts.readyToFast')}?`}
             </Text>
-            <Text style={[styles.heroSubtle, { color: colors.textSecondary }]}>A small, consistent plan usually feels better than a dramatic start.</Text>
+            <Text style={[styles.heroSubtle, { color: colors.textSecondary }]}>{i18n.t('fasts.consistentPlanHint')}</Text>
           </View>
         </View>
 
         <View style={[styles.plansSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.sectionHeader}>
             <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Fasting plans</Text>
-              <Text style={[styles.sectionSubTitle, { color: colors.textSecondary }]}>Pick the pace that matches today.</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('fasts.title')}</Text>
+              <Text style={[styles.sectionSubTitle, { color: colors.textSecondary }]}>{i18n.t('ui.start')}</Text>
             </View>
             <TouchableOpacity onPress={() => setShowModal(true)} style={[styles.customBtn, { backgroundColor: colors.cardAlt }]}>
-              <Text style={[styles.customBtnText, { color: COLORS.primary }]}>Custom</Text>
+              <Text style={[styles.customBtnText, { color: COLORS.primary }]}>{i18n.t('fasts.customFast')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -394,8 +398,8 @@ export default function FastsScreen() {
           <View style={[styles.plansSection, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: 0 }]}>
             <View style={styles.sectionHeader}>
               <View>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Saved Plans</Text>
-                <Text style={[styles.sectionSubTitle, { color: colors.textSecondary }]}>Your favourite custom durations.</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('fasts.savedFasts')}</Text>
+                <Text style={[styles.sectionSubTitle, { color: colors.textSecondary }]}>{i18n.t('fasts.saveFast')}</Text>
               </View>
             </View>
             <View style={[styles.plansList, { borderColor: colors.border }]}>
@@ -415,7 +419,7 @@ export default function FastsScreen() {
 
         <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={[styles.infoDot, { backgroundColor: COLORS.primary }]} />
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>Start a plan, keep the pace calm, and the app will track the session without noise.</Text>
+          <Text style={[styles.infoText, { color: colors.textSecondary }]}>{i18n.t('fasts.activeFast')}</Text>
         </View>
       </ScrollView>
 
@@ -424,12 +428,12 @@ export default function FastsScreen() {
         <View style={styles.overlay}>
           <View style={[styles.sheet, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
             <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Custom Fast</Text>
-            <Text style={styles.sheetSub}>How many hours would you like to fast?</Text>
+            <Text style={styles.sheetTitle}>{i18n.t('fasts.customFast')}</Text>
+            <Text style={styles.sheetSub}>{i18n.t('fasts.customHours')}</Text>
             <TextInput
               style={styles.sheetInput}
               keyboardType="numeric"
-              placeholder="e.g. 20"
+              placeholder={i18n.t('fasts.exampleHours')}
               placeholderTextColor="#94A3B8"
               value={customHours}
               onChangeText={setCustomHours}
@@ -438,8 +442,8 @@ export default function FastsScreen() {
             {/* Save-to-favourites toggle */}
             <View style={[styles.saveRow, { borderColor: colors.border }]}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.saveRowLabel, { color: colors.text }]}>Save to Saved Plans</Text>
-                <Text style={[styles.saveRowSub, { color: colors.textSecondary }]}>Reuse this duration with one tap</Text>
+                <Text style={[styles.saveRowLabel, { color: colors.text }]}>{i18n.t('fasts.saveFast')}</Text>
+                <Text style={[styles.saveRowSub, { color: colors.textSecondary }]}>{i18n.t('fasts.savedFasts')}</Text>
               </View>
               <Switch
                 value={shouldSave}
@@ -451,7 +455,7 @@ export default function FastsScreen() {
             {shouldSave && (
               <TextInput
                 style={[styles.sheetInput, { marginBottom: SPACING.sm, fontSize: FONT_SIZE.md }]}
-                placeholder="Plan name (optional)"
+                placeholder={i18n.t('fasts.planNameOptional')}
                 placeholderTextColor="#94A3B8"
                 value={customName}
                 onChangeText={setCustomName}
@@ -462,14 +466,14 @@ export default function FastsScreen() {
                 style={[styles.sheetCancel, { borderColor: colors.border, backgroundColor: colors.cardAlt }]}
                 onPress={() => { setShowModal(false); setCustomHours(''); setCustomName(''); setShouldSave(false); }}
               >
-                <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Cancel</Text>
+                  <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{i18n.t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.sheetStartWrap}
                 onPress={async () => {
                   const h = parseFloat(customHours);
                   if (h > 0) {
-                    const label = customName.trim() || `${h}h Custom Fast`;
+                    const label = customName.trim() || `${h}h ${i18n.t('fasts.customFast')}`;
                     setShowModal(false);
                     setCustomHours('');
                     setCustomName('');
@@ -480,7 +484,7 @@ export default function FastsScreen() {
                 }}
               >
                 <LinearGradient colors={[COLORS.primaryDark, COLORS.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.sheetStart}>
-                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: FONT_SIZE.md }}>Start Fast</Text>
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: FONT_SIZE.md }}>{i18n.t('fasts.startFast')}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>

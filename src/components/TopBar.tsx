@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
+import i18n from '../i18n';
 import { COLORS, FONT_SIZE, BORDER_RADIUS, SPACING } from '../constants/theme';
 
 // ── Placeholder URLs — client will supply final values ────────────────────────
@@ -44,7 +45,7 @@ export default function TopBar() {
           onPress={() => navigation.navigate('Booking')}
           activeOpacity={0.85}
         >
-          <Text style={styles.ctaText}>Book 1-on-1</Text>
+            <Text style={styles.ctaText}>{i18n.t('topBar.book')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -52,7 +53,7 @@ export default function TopBar() {
           onPress={() => openUrl(URL_BUY_SALTS)}
           activeOpacity={0.85}
         >
-          <Text style={styles.ctaText}>Buy Salts</Text>
+            <Text style={styles.ctaText}>{i18n.t('topBar.buyFastingSalts')}</Text>
         </TouchableOpacity>
       </View>
 

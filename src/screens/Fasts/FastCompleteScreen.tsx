@@ -5,8 +5,10 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../store/ThemeContext';
+import { useLanguage } from '../../store/LanguageContext';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
 import { FastRecord } from '../../types';
+import i18n from '../../i18n';
 
 const MOODS = ['😩', '😕', '😐', '😊', '😄'];
 
@@ -18,18 +20,19 @@ interface Props {
 
 export default function FastCompleteScreen({ record, onSave, onDiscard }: Props) {
   const { colors } = useTheme();
+  useLanguage();
   const [selectedMood, setSelectedMood] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
 
   const startDate = new Date(record.startTime);
   const endDate = new Date(record.endTime);
-  const dateRange = `${startDate.toLocaleDateString('en-GB', { month: 'long', day: 'numeric' })} – ${endDate.toLocaleDateString('en-GB', { month: 'long', day: 'numeric' })}`;
+  const dateRange = `${startDate.toLocaleDateString(i18n.locale as string, { month: 'long', day: 'numeric' })} – ${endDate.toLocaleDateString(i18n.locale as string, { month: 'long', day: 'numeric' })}`;
 
   const formatHours = (h: number) => {
-    if (h < 24) return `${h.toFixed(1)} hours`;
+    if (h < 24) return `${h.toFixed(1)} ${i18n.t('history.hours')}`;
     const days = Math.floor(h / 24);
     const rem = h % 24;
-    return rem > 0 ? `${days}d ${rem.toFixed(0)}h` : `${days} days`;
+    return rem > 0 ? `${days}d ${rem.toFixed(0)}h` : `${days} ${i18n.t('history.days')}`;
   };
 
   return (
@@ -41,7 +44,7 @@ export default function FastCompleteScreen({ record, onSave, onDiscard }: Props)
       <LinearGradient colors={[COLORS.primary, COLORS.accent]} style={styles.hero}>
         <Text style={styles.heroEmoji}>🎉</Text>
         <Text style={styles.heroTitle}>
-          {record.completed ? 'Congratulations!\nYou\'re amazing!' : 'Fast Ended!\nYou did great!'}
+          {record.completed ? i18n.t('fastComplete.completedTitle') : i18n.t('fastComplete.endedTitle')}
         </Text>
       </LinearGradient>
 
@@ -57,13 +60,13 @@ export default function FastCompleteScreen({ record, onSave, onDiscard }: Props)
         {/* Stats */}
         <View style={[styles.statsCard, { backgroundColor: colors.surface }]}>
           <View style={styles.statRow}>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Duration of your fast</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{i18n.t('fastComplete.durationOfFast')}</Text>
             <Text style={[styles.statValue, { color: colors.text }]}>{formatHours(record.actualHours)}</Text>
           </View>
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <View style={styles.statRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Started fasting</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{i18n.t('fastComplete.startedFasting')}</Text>
               <Text style={{ fontSize: 14 }}>✏️</Text>
             </View>
             <Text style={[styles.statValue, { color: colors.text }]}>
@@ -72,7 +75,7 @@ export default function FastCompleteScreen({ record, onSave, onDiscard }: Props)
           </View>
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <View style={styles.statRow}>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Ended fasting</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{i18n.t('fastComplete.endedFasting')}</Text>
             <Text style={[styles.statValue, { color: colors.text }]}>
               {endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
@@ -81,15 +84,15 @@ export default function FastCompleteScreen({ record, onSave, onDiscard }: Props)
             <>
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
               <View style={styles.statRow}>
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Target reached</Text>
-                <Text style={{ color: COLORS.success, fontWeight: '700', fontSize: FONT_SIZE.md }}>✓ Yes!</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{i18n.t('fastComplete.targetReached')}</Text>
+                <Text style={{ color: COLORS.success, fontWeight: '700', fontSize: FONT_SIZE.md }}>✓ {i18n.t('common.yes')}!</Text>
               </View>
             </>
           )}
         </View>
 
         {/* Mood selector */}
-        <Text style={[styles.moodTitle, { color: colors.text }]}>How are you feeling?</Text>
+        <Text style={[styles.moodTitle, { color: colors.text }]}>{i18n.t('fastComplete.howFeeling')}</Text>
         <View style={styles.moodRow}>
           {MOODS.map((emoji, i) => (
             <TouchableOpacity
@@ -109,7 +112,7 @@ export default function FastCompleteScreen({ record, onSave, onDiscard }: Props)
         {/* Notes */}
         <TextInput
           style={[styles.notesInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-          placeholder="Type something..."
+          placeholder={i18n.t('fastComplete.notesPlaceholder')}
           placeholderTextColor={colors.textSecondary}
           multiline
           value={notes}
@@ -122,7 +125,7 @@ export default function FastCompleteScreen({ record, onSave, onDiscard }: Props)
             style={[styles.discardBtn, { borderColor: colors.border }]}
             onPress={onDiscard}
           >
-            <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Remove</Text>
+            <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{i18n.t('common.delete')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => onSave(record, MOODS[selectedMood ?? 2], notes)}
@@ -133,7 +136,7 @@ export default function FastCompleteScreen({ record, onSave, onDiscard }: Props)
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
               style={styles.saveBtn}
             >
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: FONT_SIZE.md }}>Save</Text>
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: FONT_SIZE.md }}>{i18n.t('common.save')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>

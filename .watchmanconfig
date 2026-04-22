@@ -1,0 +1,15 @@
+{
+  "ignore_dirs": [
+    ".git",
+    ".hg",
+    ".svn",
+    "node_modules",
+    "bower_components",
+    ".metro-cache",
+    ".expo",
+    "dist",
+    "build",
+    "coverage",
+    ".env"
+  ]
+}

@@ -3,18 +3,24 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../store/ThemeContext';
+import { useLanguage } from '../../store/LanguageContext';
 import { COLORS, FONT_SIZE, SPACING, BORDER_RADIUS } from '../../constants/theme';
 import i18n from '../../i18n';
 
-const TIPS = [
-  { id: '1', title: 'Hydration basics', category: 'Getting Started', readTime: '4 min', body: 'A simple introduction to water fasting and what to expect.', accent: '#3B82F6' },
-  { id: '2', title: 'Electrolytes and timing', category: 'Safety', readTime: '3 min', body: 'How to think about salts, hydration, and fast timing.', accent: '#10B981' },
-  { id: '3', title: 'Breaking a fast safely', category: 'Recovery', readTime: '5 min', body: 'A gentle approach to eating again after a longer fast.', accent: '#F59E0B' },
-];
+// Get tips from i18n translation files — supports all 5 languages automatically
+function getTips() {
+  try {
+    return (i18n.t('tips.articles') as any) || [];
+  } catch {
+    return [];
+  }
+}
 
 export default function TipsScreen() {
   const { colors } = useTheme();
+  useLanguage();
   const navigation = useNavigation<any>();
+  const tips = getTips();
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <LinearGradient colors={[COLORS.mist, '#DCEEFF', '#ECF8FF']} style={StyleSheet.absoluteFillObject} />
@@ -23,18 +29,18 @@ export default function TipsScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <LinearGradient colors={[COLORS.primaryDark, COLORS.gradientStart, COLORS.gradientEnd]} style={styles.hero}>
-          <Text style={styles.heroKicker}>Guides</Text>
+          <Text style={styles.heroKicker}>{i18n.t('tips.guidesKicker')}</Text>
           <Text style={styles.title}>{i18n.t('tips.title')}</Text>
-          <Text style={styles.subtitle}>Editorial-style reading designed for clarity and confidence.</Text>
+          <Text style={styles.subtitle}>{i18n.t('tips.editorialSubtitle')}</Text>
         </LinearGradient>
 
-        {TIPS.map((tip) => (
+        {tips.map((tip) => (
           <TouchableOpacity key={tip.id} style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => navigation.navigate('TipDetail', { tip })}>
             <View style={styles.cardTopRow}>
               <View style={[styles.badge, { backgroundColor: tip.accent + '18' }]}>
                 <Text style={{ color: tip.accent, fontWeight: '800' }}>{tip.category}</Text>
               </View>
-              <Text style={[styles.cardMeta, { color: colors.textSecondary }]}>{tip.readTime} read</Text>
+              <Text style={[styles.cardMeta, { color: colors.textSecondary }]}>{tip.readTime}</Text>
             </View>
             <Text style={[styles.cardTitle, { color: colors.text }]}>{tip.title}</Text>
             <Text style={[styles.cardBody, { color: colors.textSecondary }]}>{tip.body}</Text>

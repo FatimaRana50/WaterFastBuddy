@@ -4,8 +4,10 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
+import { useLanguage } from '../../store/LanguageContext';
 import { useUser } from '../../store/UserContext';
 import { COLORS, FONT_SIZE, SPACING, BORDER_RADIUS } from '../../constants/theme';
+import i18n from '../../i18n';
 
 const { width, height } = Dimensions.get('window');
 
@@ -70,6 +72,7 @@ function WaterAvatar({ gender }: { gender?: 'male' | 'female' }) {
 export default function SplashScreen() {
   const navigation = useNavigation<any>();
   const { profile } = useUser();
+  useLanguage();
 
   // Animation values
   const logoScale   = useRef(new Animated.Value(0.3)).current;
@@ -135,17 +138,17 @@ export default function SplashScreen() {
 
         <Animated.View style={{ opacity: textOpacity, alignItems: 'center', marginTop: SPACING.md }}>
           {onboardingDone ? (
-            <Text style={styles.greeting}>Welcome back, {profile!.name}</Text>
+            <Text style={styles.greeting}>{i18n.t('splash.greeting', { name: profile!.name })}</Text>
           ) : (
-            <Text style={styles.tagline}>A calmer way to track your fast</Text>
+            <Text style={styles.tagline}>{i18n.t('splash.tagline')}</Text>
           )}
-          <Text style={styles.subline}>Blue water visuals, clean tracking, and a quieter app feel.</Text>
+          <Text style={styles.subline}>{i18n.t('splash.subline')}</Text>
         </Animated.View>
 
         <View style={styles.statusRow}>
-          <View style={styles.statusPill}><Text style={styles.statusText}>Hydration</Text></View>
-          <View style={styles.statusPill}><Text style={styles.statusText}>Streaks</Text></View>
-          <View style={styles.statusPill}><Text style={styles.statusText}>Progress</Text></View>
+          <View style={styles.statusPill}><Text style={styles.statusText}>{i18n.t('splash.statusHydration')}</Text></View>
+          <View style={styles.statusPill}><Text style={styles.statusText}>{i18n.t('splash.statusStreaks')}</Text></View>
+          <View style={styles.statusPill}><Text style={styles.statusText}>{i18n.t('splash.statusProgress')}</Text></View>
         </View>
 
         {onboardingDone && (

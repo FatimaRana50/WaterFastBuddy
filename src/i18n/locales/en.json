@@ -14,7 +14,11 @@
   },
   "splash": {
     "tagline": "Your water fasting companion",
-    "greeting": "Hello, {{name}}!"
+    "greeting": "Hello, {{name}}!",
+    "subline": "Blue water visuals, clean tracking, and a quieter app feel.",
+    "statusHydration": "Hydration",
+    "statusStreaks": "Streaks",
+    "statusProgress": "Progress"
   },
   "onboarding": {
     "slide1": {
@@ -53,8 +57,46 @@
       "very_active": "Very Active",
       "hot": "Hot",
       "temperate": "Temperate",
-      "cold": "Cold"
-    }
+      "cold": "Cold",
+      "nameSubtitle": "We'll personalise your experience just for you.",
+      "maleJourney": "His journey",
+      "femaleJourney": "Her journey",
+      "bodyTitle": "Your body\nmeasurements",
+      "bodySubtitle": "This shapes your avatar and personalises your fasting plan.",
+      "heightHint": "Used to calculate your BMI",
+      "weightHint": "Your avatar adjusts to this",
+      "goalWeightHint": "What you're aiming for",
+      "lifestyleTitle": "Your lifestyle\n& habits",
+      "lifestyleSubtitle": "Helps us calculate your exact caloric needs and fasting tips.",
+      "yearsOld": "years old",
+      "sedentaryDesc": "Little or no exercise",
+      "lightDesc": "1-3 days/week",
+      "moderateDesc": "3-5 days/week",
+      "activeDesc": "6-7 days/week",
+      "very_activeDesc": "Twice daily training"
+    },
+    "step1": "Step 1 of 3",
+    "step2": "Step 2 of 3",
+    "step3": "Step 3 of 3",
+    "skipForNow": "Skip for now",
+    "startJourney": "Start My Journey",
+    "fatBurning": "Fat burning",
+    "autophagy": "Autophagy",
+    "cellRenewal": "Cell renewal",
+    "hour0to8": "Hour 0-8",
+    "hour8to16": "Hour 8-16",
+    "hour16plus": "Hour 16+",
+    "bloodSugarDrops": "Blood sugar drops",
+    "fatBurningBegins": "Fat burning begins",
+    "autophagyKicksIn": "Autophagy kicks in",
+    "weightLost": "Weight lost",
+    "energyGained": "Energy gained",
+    "mentalClarity": "Mental clarity",
+    "fastingCoach": "Fasting coach",
+    "oneOnOneSessions": "1-on-1 sessions",
+    "freeToBook": "Free to book",
+    "personalisedPlan": "Personalised plan",
+    "directSupport": "Direct support"
   },
   "tabs": {
     "fasts": "Fasts",
@@ -77,7 +119,21 @@
     "stoppedEarly": "Fast Ended",
     "savedFasts": "Saved Fasts",
     "saveFast": "Save This Fast",
-    "fastName": "Fast name"
+    "fastName": "Fast name",
+    "tapToStart": "tap to start",
+    "hourLabel": "Hour",
+    "dailyFocus": "Daily focus",
+    "readyToFast": "Ready to fast",
+    "consistentPlanHint": "A small, consistent plan usually feels better than a dramatic start.",
+    "exampleHours": "e.g. 20",
+    "planNameOptional": "Plan name (optional)",
+    "stage0": "Your body is burning stored glucose for energy.",
+    "stage8": "Insulin dropping. Fat burning has started.",
+    "stage12": "Ketosis beginning - your body burns fat for fuel.",
+    "stage16": "Autophagy kicks in. Your cells are self-cleaning.",
+    "stage24": "Deep cellular renewal. Growth hormone surging.",
+    "stage48": "Immune regeneration. Stem cell production rising.",
+    "stage72": "Profound autophagy. Full metabolic reset underway."
   },
   "history": {
     "title": "Fasting History",
@@ -91,7 +147,12 @@
     "hours": "hrs",
     "targetMet": "Target Met",
     "targetNotMet": "Stopped Early",
-    "noHistory": "No fasts yet. Start your first fast!"
+    "noHistory": "No fasts yet. Start your first fast!",
+    "fastDetails": "Fast Details",
+    "status": "Status",
+    "duration": "Duration",
+    "notes": "Notes",
+    "noNotes": "No notes saved for this fast."
   },
   "tips": {
     "title": "Tips & Guides",
@@ -102,7 +163,54 @@
       "science": "The Science",
       "benefits": "Benefits",
       "preparation": "Preparation"
-    }
+    },
+    "articles": [
+      {
+        "id": "1",
+        "title": "Hydration Basics for Water Fasting",
+        "category": "Getting Started",
+        "readTime": "4 min",
+        "accent": "#3B82F6",
+        "body": "Water fasting is not just about abstaining from food—it's about understanding how to stay hydrated. During a water fast, your body relies entirely on water and electrolytes to maintain optimal function. Drink water consistently throughout the day, aiming for at least 2-3 liters. Pure water is fine, but adding mineral salts or electrolyte supplements can help prevent dehydration and maintain energy levels. Listen to your body's signals: thirst, dry mouth, and fatigue may indicate you need to adjust your hydration strategy. Remember, quality of water matters too—filtered water is ideal to avoid unnecessary minerals or contaminants."
+      },
+      {
+        "id": "2",
+        "title": "Electrolytes and Timing",
+        "category": "Safety",
+        "readTime": "3 min",
+        "accent": "#10B981",
+        "body": "Electrolytes—sodium, potassium, and magnesium—are crucial during extended water fasts. When you stop eating, your body excretes more electrolytes, which can lead to imbalances if not replenished. Common symptoms of electrolyte deficiency include muscle cramps, dizziness, and headaches. Consider taking a quality electrolyte supplement or consuming salt water (a pinch of sea salt in water) to maintain balance. The timing matters: spread electrolyte intake evenly throughout the day rather than taking it all at once. Most people benefit from 1,000-2,000mg of sodium daily during a fast. Always consult your doctor if you have cardiovascular concerns or take medications that affect electrolyte levels."
+      },
+      {
+        "id": "3",
+        "title": "Breaking a Fast Safely",
+        "category": "Recovery",
+        "readTime": "5 min",
+        "accent": "#F59E0B",
+        "body": "Breaking your fast correctly is just as important as the fast itself. Your digestive system needs time to reactivate after an extended period without food. Start with easily digestible foods: bone broth, vegetable soups, smoothies, or light salads. Avoid heavy, greasy, or sugary foods immediately after fasting—they can cause digestive distress and rapid blood sugar spikes. Eat slowly and chew thoroughly to aid digestion. For fasts longer than 24 hours, introduce solid foods gradually over 2-3 meals. Stay hydrated and monitor how your body responds to different foods. Many people find that eating nutrient-dense, whole foods helps them feel better and sustains the benefits of their fast."
+      },
+      {
+        "id": "4",
+        "title": "The Science Behind Ketosis",
+        "category": "The Science",
+        "readTime": "4 min",
+        "accent": "#8B5CF6",
+        "body": "Ketosis is a metabolic state your body enters during extended fasting, typically after 12-16 hours without food. In this state, your liver converts fat into ketones, which become your primary fuel source instead of glucose. This shift has profound effects: increased mental clarity, reduced inflammation, and accelerated fat loss. Your body doesn't just use stored fat from fasting—ketosis also activates autophagy, a cellular cleaning process that removes damaged components. Most people can gauge they're in ketosis by sensing increased energy, reduced hunger, and a slightly metallic taste in their mouth. Drinking water and maintaining electrolytes helps optimize ketosis. Different people enter ketosis at different rates, depending on activity level, diet quality, and metabolic factors."
+      },
+      {
+        "id": "5",
+        "title": "Common Fasting Mistakes to Avoid",
+        "category": "Beginner",
+        "readTime": "3 min",
+        "accent": "#EC4899",
+        "body": "Many people make common mistakes on their first fasts that undermine their results or make them uncomfortable. The biggest mistake: not consuming enough electrolytes, leading to headaches and fatigue. Second: breaking a fast too aggressively with heavy foods, causing digestive issues. Third: skipping meals leading up to a fast without proper preparation—easing into a fast with lighter meals beforehand helps tremendously. Fourth: ignoring hunger signals entirely—some hunger is normal, but extreme hunger may mean you need electrolytes or should shorten your next fast. Fifth: fasting too frequently without recovery days. Your body needs time to adapt. Start with 16-hour fasts and gradually work toward longer durations. Track how you feel and adjust your approach based on your unique response."
+      }
+    ],
+    "fallbackTitle": "Hydration timing matters",
+    "fallbackCategory": "Basics",
+    "fallbackBody": "This is a sample article body. Replace it with the client's fasting education content when ready.",
+    "guidesKicker": "Guides",
+    "editorialSubtitle": "Editorial-style reading designed for clarity and confidence."
   },
   "calories": {
     "title": "Calorie Calculator",
@@ -119,7 +227,9 @@
       "high": "High"
     },
     "adjustActivity": "Adjust Activity Level",
-    "kcalPerDay": "kcal / day"
+    "kcalPerDay": "kcal / day",
+    "heroKicker": "Body energy",
+    "heroBody": "A visual calorie planner with BMI, body fat %, and activity-aware estimates."
   },
   "profile": {
     "title": "My Profile",
@@ -129,6 +239,17 @@
     "bmiGoal": "BMI Goal",
     "currentBmi": "Current BMI",
     "goalBmi": "Goal BMI",
+    "transformation": "Your Transformation",
+    "currentShapeGoalShape": "Current shape → Goal shape",
+    "editGoalWeight": "Edit Goal Weight",
+    "logAtLeastTwoWeights": "Log at least 2 weights to see your progress chart.",
+    "male": "Male",
+    "female": "Female",
+    "activitySedentary": "Sedentary",
+    "activityLight": "Light",
+    "activityModerate": "Moderate",
+    "activityActive": "Active",
+    "activityVeryActive": "Very Active",
     "underweight": "Underweight",
     "normal": "Normal",
     "overweight": "Overweight",
@@ -140,7 +261,62 @@
     "backup": "Backup to Google Drive",
     "restore": "Restore from Google Drive",
     "backupSuccess": "Backup complete",
-    "restoreSuccess": "Restore complete"
+    "restoreSuccess": "Restore complete",
+    "resetOnboardingPrompt": "Dev only - see welcome screens again?",
+    "reset": "Reset",
+    "personalDashboard": "Personal dashboard",
+    "headerSubtitle": "Your body metrics, fasting history, and preferences in one place.",
+    "weightExample": "e.g. 74.5"
+  },
+  "ui": {
+    "bodyStats": "Body Stats",
+    "gender": "Gender",
+    "age": "Age",
+    "years": "years",
+    "weight": "Weight",
+    "height": "Height",
+    "activityLevel": "Activity Level",
+    "bmi": "BMI",
+    "now": "Now",
+    "goal": "Goal",
+    "weightTracking": "Weight Tracking",
+    "dailyCalories": "Daily Calories",
+    "maintenanceTDEE": "Maintenance (TDEE)",
+    "weightLossTarget": "Weight Loss Target",
+    "settings": "Settings",
+    "fullName": "Full Name",
+    "yourName": "Your name",
+    "bodyMeasurements": "Body Measurements",
+    "enterWeightKg": "Enter your current weight in kg.",
+    "resetOnboarding": "Reset Onboarding",
+    "bookOneOnOne": "Book 1-on-1",
+    "openBookingPage": "Open Booking Page",
+    "profile": "Profile",
+    "today": "Today",
+    "guest": "Guest",
+    "start": "Start",
+    "remaining": "Remaining",
+    "elapsed": "Elapsed",
+    "partial": "Partial",
+    "complete": "Complete",
+    "invalidWeightTitle": "Invalid weight",
+    "invalidWeightBody": "Please enter a weight between 20 and 500 kg.",
+    "appearance": "Appearance",
+    "darkMode": "Dark mode",
+    "lightMode": "Light mode",
+    "business": "Business",
+    "bookOneOnOneSession": "Book 1-on-1 Session",
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "edit": "Edit",
+    "discard": "Discard",
+    "logWeight": "Log Weight",
+    "buySalts": "Buy Salts",
+    "exportBackup": "Export Data Backup",
+    "completeOnboardingFirst": "Complete onboarding first",
+    "kg": "kg",
+    "blueWater": "Blue water"
   },
   "topBar": {
     "book": "Book 1-on-1",
@@ -151,10 +327,33 @@
     "trialEnded": "Your 3-day trial has ended",
     "subscribe": "Subscribe Now",
     "restore": "Restore Purchase",
-    "freeTrial": "3-Day Free Trial"
+    "freeTrial": "3-Day Free Trial",
+    "monthly": "Monthly",
+    "monthlyNote": "Best for trying it out",
+    "yearly": "Yearly",
+    "yearlyNote": "Best value"
   },
   "notifications": {
     "fastingActive": "Fast Active",
     "elapsed": "{{hours}}h {{minutes}}m elapsed"
+  },
+  "settingsScreen": {
+    "preferences": "Preferences",
+    "heroBody": "Appearance, language, and key actions in one focused panel.",
+    "darkModeHelp": "Switch between light and dark themes.",
+    "currentLocale": "Current app locale",
+    "backupTitle": "Backup",
+    "backupBody": "Google Drive backup will be added in a later pass.",
+    "backupRestore": "Backup / Restore"
+  },
+  "fastComplete": {
+    "completedTitle": "Congratulations!\\nYou're amazing!",
+    "endedTitle": "Fast Ended!\\nYou did great!",
+    "durationOfFast": "Duration of your fast",
+    "startedFasting": "Started fasting",
+    "endedFasting": "Ended fasting",
+    "targetReached": "Target reached",
+    "howFeeling": "How are you feeling?",
+    "notesPlaceholder": "Type something..."
   }
 }

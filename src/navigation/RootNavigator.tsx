@@ -14,7 +14,7 @@ import TipDetailScreen from '../screens/Tips/TipDetailScreen';
 const Stack = createStackNavigator();
 
 export default function RootNavigator() {
-  const { profile } = useUser();
+  const { profile, isTrialExpired } = useUser();
   const navRef = useRef<NavigationContainerRef<any>>(null);
 
   // When onboardingComplete flips to false (e.g. dev reset), go back to Splash
@@ -24,12 +24,24 @@ export default function RootNavigator() {
     }
   }, [profile?.onboardingComplete]);
 
+  // When trial expires, redirect to Paywall
+  useEffect(() => {
+    if (profile && profile.onboardingComplete && isTrialExpired && navRef.current?.isReady()) {
+      navRef.current.reset({ index: 0, routes: [{ name: 'Paywall' }] });
+    }
+  }, [profile?.onboardingComplete, isTrialExpired]);
+
   return (
     <NavigationContainer ref={navRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Splash"     component={SplashScreen} />
         <Stack.Screen name="Onboarding" component={OnboardingNavigator} />
-        <Stack.Screen name="Main"       component={BottomTabs} />
+        {/* Trial gate: Show paywall if trial expired, otherwise show main app */}
+        {isTrialExpired ? (
+          <Stack.Screen name="Paywall" component={PaywallScreen} />
+        ) : (
+          <Stack.Screen name="Main"       component={BottomTabs} />
+        )}
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="Booking" component={BookingScreen} />
         <Stack.Screen name="Paywall" component={PaywallScreen} />

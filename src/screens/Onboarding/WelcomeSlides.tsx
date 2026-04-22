@@ -7,6 +7,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
 import WaterDrop from '../../components/Avatar/WaterDrop';
+import { useLanguage } from '../../store/LanguageContext';
+import i18n from '../../i18n';
 
 const { width, height } = Dimensions.get('window');
 
@@ -82,6 +84,7 @@ function RippleRing({ delay, size }: { delay: number; size: number }) {
 
 // ─── Slide 1: Hero drop ───────────────────────────────────────────────────────
 function Slide1Illustration() {
+  useLanguage();
   const float = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.loop(
@@ -107,15 +110,15 @@ function Slide1Illustration() {
       {/* Floating stat badges */}
       <Animated.View style={[styles.badge, styles.badge1]}>
         <Text style={styles.badgeEmoji}>•</Text>
-        <Text style={styles.badgeText}>Fat burning</Text>
+        <Text style={styles.badgeText}>{i18n.t('onboarding.fatBurning')}</Text>
       </Animated.View>
       <Animated.View style={[styles.badge, styles.badge2]}>
         <Text style={styles.badgeEmoji}>•</Text>
-        <Text style={styles.badgeText}>Autophagy</Text>
+        <Text style={styles.badgeText}>{i18n.t('onboarding.autophagy')}</Text>
       </Animated.View>
       <Animated.View style={[styles.badge, styles.badge3]}>
         <Text style={styles.badgeEmoji}>•</Text>
-        <Text style={styles.badgeText}>Cell renewal</Text>
+        <Text style={styles.badgeText}>{i18n.t('onboarding.cellRenewal')}</Text>
       </Animated.View>
     </View>
   );
@@ -123,6 +126,7 @@ function Slide1Illustration() {
 
 // ─── Slide 2: Timer visualization ─────────────────────────────────────────────
 function Slide2Illustration() {
+  useLanguage();
   const progress = useRef(new Animated.Value(0)).current;
   const spin     = useRef(new Animated.Value(0)).current;
 
@@ -151,15 +155,15 @@ function Slide2Illustration() {
       <View style={styles.timerCircle}>
         <View style={[styles.timerCircleInner, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
           <Text style={styles.timerDisplay}>16:00:00</Text>
-          <Text style={styles.timerSub}>Time Elapsed</Text>
+          <Text style={styles.timerSub}>{i18n.t('ui.elapsed')}</Text>
         </View>
       </View>
 
       {/* Stage pills */}
       {[
-        { label: 'Hour 0–8',  desc: 'Blood sugar drops', color: '#60A5FA' },
-        { label: 'Hour 8–16', desc: 'Fat burning begins', color: '#34D399' },
-        { label: 'Hour 16+',  desc: 'Autophagy kicks in', color: '#F472B6' },
+        { label: i18n.t('onboarding.hour0to8'),  desc: i18n.t('onboarding.bloodSugarDrops'), color: '#60A5FA' },
+        { label: i18n.t('onboarding.hour8to16'), desc: i18n.t('onboarding.fatBurningBegins'), color: '#34D399' },
+        { label: i18n.t('onboarding.hour16plus'),  desc: i18n.t('onboarding.autophagyKicksIn'), color: '#F472B6' },
       ].map((s, i) => (
         <View key={i} style={[styles.stagePill, { top: 40 + i * 52, backgroundColor: s.color + '30', borderColor: s.color + '60' }]}>
           <View style={[styles.stageDot, { backgroundColor: s.color }]} />
@@ -175,6 +179,7 @@ function Slide2Illustration() {
 
 // ─── Slide 3: Transformation ──────────────────────────────────────────────────
 function Slide3Illustration() {
+  useLanguage();
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -198,7 +203,7 @@ function Slide3Illustration() {
         <View style={{ alignItems: 'center' }}>
           <WaterDrop size={100} fillPct={0.85} happy={false} />
           <View style={styles.beforeAfterLabel}>
-            <Text style={styles.beforeAfterText}>Before</Text>
+            <Text style={styles.beforeAfterText}>{i18n.t('ui.now')}</Text>
           </View>
         </View>
 
@@ -211,16 +216,16 @@ function Slide3Illustration() {
         <View style={{ alignItems: 'center' }}>
           <WaterDrop size={100} fillPct={0.35} happy />
           <View style={[styles.beforeAfterLabel, { backgroundColor: '#10B981' }]}>
-            <Text style={styles.beforeAfterText}>After</Text>
+            <Text style={styles.beforeAfterText}>{i18n.t('ui.goal')}</Text>
           </View>
         </View>
       </View>
 
       {/* Progress bars */}
       {[
-        { label: 'Weight lost',    pct: 0.72, color: '#3B82F6' },
-        { label: 'Energy gained',  pct: 0.88, color: '#10B981' },
-        { label: 'Mental clarity', pct: 0.65, color: '#0F7AB8' },
+        { label: i18n.t('onboarding.weightLost'),    pct: 0.72, color: '#3B82F6' },
+        { label: i18n.t('onboarding.energyGained'),  pct: 0.88, color: '#10B981' },
+        { label: i18n.t('onboarding.mentalClarity'), pct: 0.65, color: '#0F7AB8' },
       ].map((b) => (
         <View key={b.label} style={styles.progressRow}>
           <Text style={styles.progressLabel}>{b.label}</Text>
@@ -236,6 +241,7 @@ function Slide3Illustration() {
 
 // ─── Slide 4: Coach ───────────────────────────────────────────────────────────
 function Slide4Illustration() {
+  useLanguage();
   const pulse = useRef(new Animated.Value(1)).current;
   useEffect(() => {
     Animated.loop(
@@ -257,11 +263,11 @@ function Slide4Illustration() {
       <View style={styles.starsRow}>
         {[1,2,3,4,5].map(i => <Text key={i} style={styles.star}>•</Text>)}
       </View>
-      <Text style={styles.coachTagline}>Fasting coach</Text>
+      <Text style={styles.coachTagline}>{i18n.t('onboarding.fastingCoach')}</Text>
 
       {/* Feature chips */}
       <View style={styles.chipsRow}>
-        {['1-on-1 sessions', 'Free to book', 'Personalised plan', 'Direct support'].map((c) => (
+        {[i18n.t('onboarding.oneOnOneSessions'), i18n.t('onboarding.freeToBook'), i18n.t('onboarding.personalisedPlan'), i18n.t('onboarding.directSupport')].map((c) => (
           <View key={c} style={styles.featureChip}>
             <Text style={styles.featureChipText}>{c}</Text>
           </View>
@@ -272,43 +278,45 @@ function Slide4Illustration() {
 }
 
 // ─── Slide data ───────────────────────────────────────────────────────────────
-const SLIDES = [
-  {
-    key: '1',
-    gradient: [COLORS.primaryDark, COLORS.primary, COLORS.gradientEnd] as [string, string, string],
-    headline: 'Your fasting\njourney,\nkept simple.',
-    body: 'Track each hour with a cleaner interface that feels calm, focused, and easy to trust.',
-    Illustration: Slide1Illustration,
-    btnLabel: 'Next',
-  },
-  {
-    key: '2',
-    gradient: [COLORS.primaryDark, '#1646AF', COLORS.primary] as [string, string, string],
-    headline: 'See what\'s\nhappening\ninside.',
-    body: 'Clear stage updates help the app feel grounded instead of noisy or gamified.',
-    Illustration: Slide2Illustration,
-    btnLabel: 'Next',
-  },
-  {
-    key: '3',
-    gradient: [COLORS.primaryDark, '#0F5B8D', COLORS.gradientEnd] as [string, string, string],
-    headline: 'See progress\nwithout the\nnoise.',
-    body: 'A more restrained avatar, clearer milestones, and less app-as-a-game energy.',
-    Illustration: Slide3Illustration,
-    btnLabel: 'Next',
-  },
-  {
-    key: '4',
-    gradient: [COLORS.primaryDark, COLORS.primary, '#0D9488'] as [string, string, string],
-    headline: 'Personal help\nwhen you need\nit.',
-    body: 'Book a session with an expert when you want guidance that feels human, not automated.',
-    Illustration: Slide4Illustration,
-    btnLabel: 'Get Started',
-  },
-];
-
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function WelcomeSlides() {
+  useLanguage();
+
+  const slides = [
+    {
+      key: '1',
+      gradient: [COLORS.primaryDark, COLORS.primary, COLORS.gradientEnd] as [string, string, string],
+      headline: i18n.t('onboarding.slide1.headline') as string,
+      body: i18n.t('onboarding.slide1.body') as string,
+      Illustration: Slide1Illustration,
+      btnLabel: i18n.t('common.next') as string,
+    },
+    {
+      key: '2',
+      gradient: [COLORS.primaryDark, '#1646AF', COLORS.primary] as [string, string, string],
+      headline: i18n.t('onboarding.slide2.headline') as string,
+      body: i18n.t('onboarding.slide2.body') as string,
+      Illustration: Slide2Illustration,
+      btnLabel: i18n.t('common.next') as string,
+    },
+    {
+      key: '3',
+      gradient: [COLORS.primaryDark, '#0F5B8D', COLORS.gradientEnd] as [string, string, string],
+      headline: i18n.t('onboarding.slide3.headline') as string,
+      body: i18n.t('onboarding.slide3.body') as string,
+      Illustration: Slide3Illustration,
+      btnLabel: i18n.t('common.next') as string,
+    },
+    {
+      key: '4',
+      gradient: [COLORS.primaryDark, COLORS.primary, '#0D9488'] as [string, string, string],
+      headline: i18n.t('onboarding.slide4.headline') as string,
+      body: i18n.t('onboarding.slide4.body') as string,
+      Illustration: Slide4Illustration,
+      btnLabel: i18n.t('common.done') as string,
+    },
+  ];
+
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef  = useRef<FlatList>(null);
   const navigation   = useNavigation<any>();
@@ -331,14 +339,14 @@ export default function WelcomeSlides() {
   };
 
   const handleNext = () => {
-    if (activeIndex === SLIDES.length - 1) {
+    if (activeIndex === slides.length - 1) {
       navigation.navigate('ProfileSetupName');
     } else {
       goTo(activeIndex + 1);
     }
   };
 
-  const slide = SLIDES[activeIndex];
+  const slide = slides[activeIndex];
   const { Illustration } = slide;
 
   return (
@@ -360,7 +368,7 @@ export default function WelcomeSlides() {
       {/* Hidden FlatList — used only for index tracking, not rendering */}
       <FlatList
         ref={flatListRef}
-        data={SLIDES}
+        data={slides}
         keyExtractor={(s) => s.key}
         horizontal pagingEnabled
         scrollEnabled={false}
@@ -383,7 +391,7 @@ export default function WelcomeSlides() {
 
         {/* Dot indicators */}
         <View style={styles.dotsRow}>
-          {SLIDES.map((_, i) => (
+          {slides.map((_, i) => (
             <TouchableOpacity key={i} onPress={() => goTo(i)}>
               <Animated.View style={[styles.dot, i === activeIndex && styles.dotActive]} />
             </TouchableOpacity>
@@ -403,9 +411,9 @@ export default function WelcomeSlides() {
         </TouchableOpacity>
 
         {/* Skip */}
-        {activeIndex < SLIDES.length - 1 && (
+        {activeIndex < slides.length - 1 && (
           <TouchableOpacity onPress={() => navigation.navigate('ProfileSetupName')} style={styles.skipBtn}>
-            <Text style={styles.skipText}>Skip for now</Text>
+            <Text style={styles.skipText}>{i18n.t('onboarding.skipForNow')}</Text>
           </TouchableOpacity>
         )}
       </View>

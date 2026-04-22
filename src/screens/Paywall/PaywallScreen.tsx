@@ -2,43 +2,46 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../store/ThemeContext';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
+import { useLanguage } from '../../store/LanguageContext';
+import i18n from '../../i18n';
 
 const PLANS = [
-  { name: 'Monthly', price: '£7.99', note: 'Best for trying it out' },
-  { name: 'Yearly', price: '£39.99', note: 'Best value' },
+  { nameKey: 'paywall.monthly', price: '£7.99', noteKey: 'paywall.monthlyNote' },
+  { nameKey: 'paywall.yearly', price: '£39.99', noteKey: 'paywall.yearlyNote' },
 ];
 
 export default function PaywallScreen() {
   const { colors } = useTheme();
+  useLanguage();
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       <View style={[styles.hero, { backgroundColor: COLORS.primary }]}> 
-        <Text style={styles.heroTag}>Trial ended</Text>
-        <Text style={styles.heroTitle}>Unlock WaterFastBuddy Pro</Text>
-        <Text style={styles.heroBody}>This is the placeholder paywall screen. RevenueCat / App Store billing can be wired here later.</Text>
+        <Text style={styles.heroTag}>{i18n.t('paywall.trialEnded')}</Text>
+        <Text style={styles.heroTitle}>{i18n.t('paywall.title')}</Text>
+        <Text style={styles.heroBody}>{i18n.t('paywall.freeTrial')}</Text>
       </View>
 
       <View style={[styles.card, { backgroundColor: colors.surface }]}> 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Included in trial</Text>
-        <Text style={[styles.body, { color: colors.textSecondary }]}>Full access for the first 3 days after install.</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('ui.complete')}</Text>
+        <Text style={[styles.body, { color: colors.textSecondary }]}>{i18n.t('paywall.freeTrial')}</Text>
       </View>
 
       {PLANS.map((plan) => (
-        <View key={plan.name} style={[styles.planCard, { backgroundColor: colors.surface }]}> 
+        <View key={plan.nameKey} style={[styles.planCard, { backgroundColor: colors.surface }]}> 
           <View>
-            <Text style={[styles.planName, { color: colors.text }]}>{plan.name}</Text>
-            <Text style={[styles.planNote, { color: colors.textSecondary }]}>{plan.note}</Text>
+            <Text style={[styles.planName, { color: colors.text }]}>{i18n.t(plan.nameKey)}</Text>
+            <Text style={[styles.planNote, { color: colors.textSecondary }]}>{i18n.t(plan.noteKey)}</Text>
           </View>
           <Text style={[styles.planPrice, { color: COLORS.primary }]}>{plan.price}</Text>
         </View>
       ))}
 
       <TouchableOpacity style={styles.primaryBtn}>
-        <Text style={styles.primaryBtnText}>Start Subscription</Text>
+        <Text style={styles.primaryBtnText}>{i18n.t('paywall.subscribe')}</Text>
       </TouchableOpacity>
       <TouchableOpacity style={[styles.secondaryBtn, { borderColor: colors.border, backgroundColor: colors.surface }]}> 
-        <Text style={[styles.secondaryBtnText, { color: colors.text }]}>Restore Purchases</Text>
+        <Text style={[styles.secondaryBtnText, { color: colors.text }]}>{i18n.t('paywall.restore')}</Text>
       </TouchableOpacity>
     </ScrollView>
   );

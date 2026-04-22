@@ -3,6 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Dimensio
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
+import { useLanguage } from '../../store/LanguageContext';
+import i18n from '../../i18n';
 
 const { width } = Dimensions.get('window');
 
@@ -10,6 +12,7 @@ export default function ProfileSetupName() {
   const [name,   setName]   = useState('');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
   const navigation = useNavigation<any>();
+  useLanguage();
 
   const fadeIn = useRef(new Animated.Value(0)).current;
   const slideY = useRef(new Animated.Value(30)).current;
@@ -35,16 +38,16 @@ export default function ProfileSetupName() {
       </View>
 
       <Animated.View style={[styles.content, { opacity: fadeIn, transform: [{ translateY: slideY }] }]}>
-        <Text style={styles.stepLabel}>Step 1 of 3</Text>
-        <Text style={styles.title}>What's your{'\n'}name?</Text>
-        <Text style={styles.subtitle}>We'll personalise your experience just for you.</Text>
+        <Text style={styles.stepLabel}>{i18n.t('onboarding.step1')}</Text>
+        <Text style={styles.title}>{i18n.t('onboarding.setup.name')}</Text>
+        <Text style={styles.subtitle}>{i18n.t('onboarding.setup.nameSubtitle')}</Text>
 
         {/* Name input */}
         <View style={styles.inputWrapper}>
-          <Text style={styles.inputLabel}>Full Name</Text>
+          <Text style={styles.inputLabel}>{i18n.t('ui.fullName')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. Alex Johnson"
+            placeholder={i18n.t('onboarding.setup.namePlaceholder')}
             placeholderTextColor="rgba(255,255,255,0.35)"
             value={name}
             onChangeText={setName}
@@ -59,11 +62,11 @@ export default function ProfileSetupName() {
         </View>
 
         {/* Gender */}
-        <Text style={styles.inputLabel}>I am a...</Text>
+        <Text style={styles.inputLabel}>{i18n.t('onboarding.setup.gender')}</Text>
         <View style={styles.genderRow}>
           {([
-            { key: 'male',   emoji: '🧑', label: 'Male',   desc: 'His journey' },
-            { key: 'female', emoji: '👩', label: 'Female', desc: 'Her journey' },
+            { key: 'male',   emoji: '🧑', label: i18n.t('onboarding.setup.male'),   desc: i18n.t('onboarding.setup.maleJourney') },
+            { key: 'female', emoji: '👩', label: i18n.t('onboarding.setup.female'), desc: i18n.t('onboarding.setup.femaleJourney') },
           ] as const).map((g) => (
             <TouchableOpacity
               key={g.key}
@@ -97,7 +100,7 @@ export default function ProfileSetupName() {
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
             style={styles.continueBtn}
           >
-            <Text style={styles.continueBtnText}>Continue →</Text>
+            <Text style={styles.continueBtnText}>{i18n.t('common.next')}</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>

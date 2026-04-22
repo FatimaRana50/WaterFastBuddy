@@ -4,6 +4,7 @@ import { Text, View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../store/ThemeContext';
+import { useLanguage } from '../store/LanguageContext';
 import { COLORS } from '../constants/theme';
 import i18n from '../i18n';
 import TopBar from '../components/TopBar';
@@ -43,6 +44,7 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
 
 export default function BottomTabs() {
   const { colors } = useTheme();
+  useLanguage();
 
   return (
     <Tab.Navigator

@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../store/ThemeContext';
+import { useLanguage } from '../../store/LanguageContext';
 import { useFasts } from '../../store/FastsContext';
 import { FastRecord } from '../../types';
 import { COLORS, FONT_SIZE, SPACING, BORDER_RADIUS } from '../../constants/theme';
+import i18n from '../../i18n';
 
 // Format hours into a human-readable label
 function fmtHours(h: number): string {
@@ -60,6 +62,7 @@ export default function HistoryScreen() {
   const { colors }    = useTheme();
   const navigation    = useNavigation<any>();
   const { fasts }     = useFasts();
+  useLanguage();
 
   const stats = useMemo(() => {
     const longest    = fasts.length ? Math.max(...fasts.map((f) => f.actualHours)) : 0;
@@ -86,18 +89,18 @@ export default function HistoryScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <LinearGradient colors={[COLORS.primaryDark, COLORS.gradientStart, COLORS.gradientEnd]} style={styles.hero}>
-          <Text style={styles.heroKicker}>Fast history</Text>
-          <Text style={styles.title}>Your journey</Text>
-          <Text style={styles.heroBody}>A cleaner timeline of streaks, milestones, and completed fasts.</Text>
+          <Text style={styles.heroKicker}>{i18n.t('history.title')}</Text>
+          <Text style={styles.title}>{i18n.t('history.title')}</Text>
+          <Text style={styles.heroBody}>{i18n.t('history.noHistory')}</Text>
         </LinearGradient>
 
         {/* Stats grid — 2 × 2 */}
         <View style={styles.summaryGrid}>
           {[
-            { label: 'Longest Fast', value: stats.longest },
-            { label: 'Streak',       value: `${stats.streak}d` },
-            { label: 'Total Fasts',  value: stats.total },
-            { label: 'Total Hours',  value: stats.totalHours },
+            { label: i18n.t('history.longestFast'), value: stats.longest },
+            { label: i18n.t('history.currentStreak'), value: `${stats.streak}d` },
+            { label: i18n.t('history.totalFasts'),  value: stats.total },
+            { label: i18n.t('history.totalHours'),  value: stats.totalHours },
           ].map((item) => (
             <View key={item.label} style={[styles.summaryCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Text style={[styles.summaryValue, { color: COLORS.primary }]}>{item.value}</Text>
@@ -138,9 +141,9 @@ export default function HistoryScreen() {
 
         {/* Fast list */}
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent fasts</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('history.listView')}</Text>
           {fasts.length === 0 ? (
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No fasts recorded yet. Start your first fast!</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{i18n.t('history.noHistory')}</Text>
           ) : (
             fasts.slice(0, 20).map((fast) => (
               <TouchableOpacity
@@ -159,7 +162,7 @@ export default function HistoryScreen() {
                     {fmtHours(fast.actualHours)}
                   </Text>
                   <Text style={[styles.fastSub, { color: colors.textSecondary }]}>
-                    {fast.completed ? 'Completed ✓' : 'Partial'}
+                    {fast.completed ? `${i18n.t('history.targetMet')} ✓` : i18n.t('history.targetNotMet')}
                   </Text>
                 </View>
               </TouchableOpacity>

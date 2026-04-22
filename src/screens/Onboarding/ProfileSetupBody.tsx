@@ -4,6 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
 import WaterDrop from '../../components/Avatar/WaterDrop';
+import { useLanguage } from '../../store/LanguageContext';
+import i18n from '../../i18n';
 
 // +/− stepper
 function Stepper({ label, value, unit, min, max, step = 1, hint, onChange }: {
@@ -46,6 +48,7 @@ export default function ProfileSetupBody() {
   const [goalW,  setGoalW]    = useState(65);
   const navigation = useNavigation<any>();
   const route      = useRoute<any>();
+  useLanguage();
 
   const fadeIn = useRef(new Animated.Value(0)).current;
   const slideY = useRef(new Animated.Value(30)).current;
@@ -74,29 +77,29 @@ export default function ProfileSetupBody() {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Animated.View style={{ opacity: fadeIn, transform: [{ translateY: slideY }] }}>
-          <Text style={styles.stepLabel}>Step 2 of 3</Text>
-          <Text style={styles.title}>Your body{'\n'}measurements</Text>
-          <Text style={styles.subtitle}>This shapes your avatar and personalises your fasting plan.</Text>
+          <Text style={styles.stepLabel}>{i18n.t('onboarding.step2')}</Text>
+          <Text style={styles.title}>{i18n.t('onboarding.setup.bodyTitle')}</Text>
+          <Text style={styles.subtitle}>{i18n.t('onboarding.setup.bodySubtitle')}</Text>
 
           {/* Live avatar preview */}
           <View style={styles.avatarPreview}>
             <WaterDrop size={110} fillPct={fillPct} happy={bmi < 30} />
             <View style={styles.avatarStatBubble}>
-              <Text style={styles.avatarStatLabel}>BMI</Text>
+              <Text style={styles.avatarStatLabel}>{i18n.t('ui.bmi')}</Text>
               <Text style={styles.avatarStatVal}>{bmi.toFixed(1)}</Text>
               <Text style={styles.avatarStatCat}>
-                {bmi < 18.5 ? 'Underweight' : bmi < 25 ? 'Normal ✓' : bmi < 30 ? 'Overweight' : 'Obese'}
+                {bmi < 18.5 ? i18n.t('profile.underweight') : bmi < 25 ? `${i18n.t('profile.normal')} ✓` : bmi < 30 ? i18n.t('profile.overweight') : i18n.t('profile.obese')}
               </Text>
             </View>
           </View>
 
           {/* Steppers */}
-          <Stepper label="Height" unit="cm" value={height} min={100} max={220}
-            hint="Used to calculate your BMI" onChange={setHeight} />
-          <Stepper label="Current Weight" unit="kg" value={weight} min={30} max={250}
-            hint="Your avatar adjusts to this" onChange={setWeight} />
-          <Stepper label="Goal Weight" unit="kg" value={goalW} min={30} max={250}
-            hint="What you're aiming for" onChange={setGoalW} />
+          <Stepper label={i18n.t('onboarding.setup.height')} unit="cm" value={height} min={100} max={220}
+            hint={i18n.t('onboarding.setup.heightHint')} onChange={setHeight} />
+          <Stepper label={i18n.t('onboarding.setup.weight')} unit="kg" value={weight} min={30} max={250}
+            hint={i18n.t('onboarding.setup.weightHint')} onChange={setWeight} />
+          <Stepper label={i18n.t('onboarding.setup.goalWeight')} unit="kg" value={goalW} min={30} max={250}
+            hint={i18n.t('onboarding.setup.goalWeightHint')} onChange={setGoalW} />
         </Animated.View>
 
         <View style={{ height: SPACING.xxl }} />
@@ -112,7 +115,7 @@ export default function ProfileSetupBody() {
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
             style={styles.continueBtn}
           >
-            <Text style={styles.continueBtnText}>Continue →</Text>
+            <Text style={styles.continueBtnText}>{i18n.t('common.next')}</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>

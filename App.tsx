@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { LanguageProvider } from './src/store/LanguageContext';
 import { ThemeProvider, useTheme } from './src/store/ThemeContext';
 import { UserProvider } from './src/store/UserContext';
 import { FastsProvider } from './src/store/FastsContext';
@@ -26,13 +27,15 @@ function AppContent() {
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider>
-        <UserProvider>
-          <FastsProvider>
-            <AppContent />
-          </FastsProvider>
-        </UserProvider>
-      </ThemeProvider>
+      <LanguageProvider>
+        <ThemeProvider>
+          <UserProvider>
+            <FastsProvider>
+              <AppContent />
+            </FastsProvider>
+          </UserProvider>
+        </ThemeProvider>
+      </LanguageProvider>
     </GestureHandlerRootView>
   );
 }

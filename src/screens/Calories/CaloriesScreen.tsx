@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../store/ThemeContext';
+import { useLanguage } from '../../store/LanguageContext';
 import { useUser } from '../../store/UserContext';
 import { calculateTDEE, calculateBmi, calculateBodyFatPercentage } from '../../utils/bmi';
 import { FONT_SIZE, SPACING, COLORS, BORDER_RADIUS } from '../../constants/theme';
@@ -12,13 +13,14 @@ const OPTIONS: ActivityLevel[] = ['sedentary', 'light', 'moderate', 'active', 'v
 
 export default function CaloriesScreen() {
   const { colors } = useTheme();
+  useLanguage();
   const { profile } = useUser();
   const [activity, setActivity] = useState<ActivityLevel>(profile?.activityLevel ?? 'moderate');
 
   if (!profile) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.textSecondary }}>Complete onboarding first</Text>
+        <Text style={{ color: colors.textSecondary }}>{i18n.t('ui.completeOnboardingFirst')}</Text>
       </View>
     );
   }
@@ -31,9 +33,9 @@ export default function CaloriesScreen() {
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       <LinearGradient colors={[COLORS.primaryDark, COLORS.primary, COLORS.accent]} style={styles.hero}>
-        <Text style={styles.heroKicker}>Body energy</Text>
+        <Text style={styles.heroKicker}>{i18n.t('calories.heroKicker')}</Text>
         <Text style={styles.title}>{i18n.t('calories.title')}</Text>
-        <Text style={styles.heroBody}>A visual calorie planner with BMI, body fat %, and activity-aware estimates.</Text>
+        <Text style={styles.heroBody}>{i18n.t('calories.heroBody')}</Text>
       </LinearGradient>
       <View style={[styles.card, { backgroundColor: colors.surface }]}> 
         <Text style={[styles.label, { color: colors.textSecondary }]}>{i18n.t('calories.maintenance')}</Text>
@@ -42,7 +44,7 @@ export default function CaloriesScreen() {
       <View style={[styles.card, { backgroundColor: colors.surface }]}> 
         <Text style={[styles.label, { color: colors.textSecondary }]}>{i18n.t('calories.bmi')}</Text>
         <Text style={styles.value}>{bmi.value}</Text>
-        <Text style={{ color: COLORS[bmi.category], fontWeight: '600' }}>{bmi.category}</Text>
+        <Text style={{ color: COLORS[bmi.category], fontWeight: '600' }}>{i18n.t(`profile.${bmi.category}`)}</Text>
       </View>
       <View style={[styles.card, { backgroundColor: colors.surface }]}> 
         <Text style={[styles.label, { color: colors.textSecondary }]}>{i18n.t('calories.bodyFat')}</Text>
@@ -52,17 +54,17 @@ export default function CaloriesScreen() {
         </Text>
       </View>
       <View style={[styles.card, { backgroundColor: colors.surface }]}> 
-        <Text style={[styles.label, { color: colors.textSecondary }]}>Activity Level</Text>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>{i18n.t('onboarding.setup.activityLevel')}</Text>
         <View style={styles.chipRow}>
           {OPTIONS.map((opt) => (
             <TouchableOpacity key={opt} onPress={() => setActivity(opt)} style={[styles.chip, activity === opt && { backgroundColor: COLORS.primary }]}> 
-              <Text style={[styles.chipText, { color: activity === opt ? '#fff' : colors.text }]}>{opt.replace('_', ' ')}</Text>
+              <Text style={[styles.chipText, { color: activity === opt ? '#fff' : colors.text }]}>{i18n.t(`onboarding.setup.${opt}`)}</Text>
             </TouchableOpacity>
           ))}
         </View>
       </View>
       <View style={[styles.card, { backgroundColor: colors.surface }]}> 
-        <Text style={[styles.label, { color: colors.textSecondary }]}>Weight-loss target</Text>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>{i18n.t('ui.weightLossTarget')}</Text>
         <Text style={styles.value}>{deficit} <Text style={styles.unit}>{i18n.t('calories.kcalPerDay')}</Text></Text>
       </View>
     </ScrollView>
