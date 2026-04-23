@@ -45,6 +45,9 @@ jobs:
           cd android
           ./gradlew assembleRelease --no-daemon
 
+      - name: List APK output files
+        run: find android/app/build/outputs -name "*.apk" 2>/dev/null || echo "No APK files found"
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
