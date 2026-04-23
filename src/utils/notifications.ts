@@ -12,7 +12,10 @@ const ACTIVE_FAST_KEY  = 'active_fast';
 const NOTIF_IDENTIFIER = 'active-fast';
 const NOTIF_CHANNEL_ID = 'fast-tracking';
 const BG_TASK_NAME     = 'fast-notification-update';
-const IS_EXPO_GO       = Constants.appOwnership === 'expo';
+
+// In a release APK, appOwnership is null (not 'expo' and not 'standalone')
+// so we check for null/undefined too
+const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
 type NotificationsModule = typeof import('expo-notifications');
 
@@ -45,7 +48,7 @@ async function ensureNotificationsInitialized(): Promise<void> {
   notificationsInitialized = true;
 }
 
-// Fasting stage text — mirrors the STAGES array in FastsScreen
+// Fasting stage text
 const STAGES = [
   { minHour: 0,  text: 'Your body is burning stored glucose for energy.' },
   { minHour: 8,  text: 'Insulin dropping. Fat burning has started.' },
@@ -66,23 +69,26 @@ function formatElapsed(ms: number): string {
   return `${h}h ${String(m).padStart(2, '0')}m`;
 }
 
-// ── Background task — MUST be defined at module level before the app renders ───
-// expo-task-manager requires synchronous top-level registration
-if (!TaskManager.isTaskDefined(BG_TASK_NAME)) {
-  TaskManager.defineTask(BG_TASK_NAME, async () => {
-    try {
-      const raw = await AsyncStorage.getItem(ACTIVE_FAST_KEY);
-      if (!raw) return BackgroundFetch.BackgroundFetchResult.NoData;
-      const { startTime } = JSON.parse(raw) as { startTime: number };
-      await _postNotification(startTime);
-      return BackgroundFetch.BackgroundFetchResult.NewData;
-    } catch {
-      return BackgroundFetch.BackgroundFetchResult.Failed;
-    }
-  });
+// MUST be defined at module level before the app renders
+// Wrapped in try/catch so a failure here never crashes the whole app
+try {
+  if (!TaskManager.isTaskDefined(BG_TASK_NAME)) {
+    TaskManager.defineTask(BG_TASK_NAME, async () => {
+      try {
+        const raw = await AsyncStorage.getItem(ACTIVE_FAST_KEY);
+        if (!raw) return BackgroundFetch.BackgroundFetchResult.NoData;
+        const { startTime } = JSON.parse(raw) as { startTime: number };
+        await _postNotification(startTime);
+        return BackgroundFetch.BackgroundFetchResult.NewData;
+      } catch {
+        return BackgroundFetch.BackgroundFetchResult.Failed;
+      }
+    });
+  }
+} catch (e) {
+  console.log('Background task registration failed silently:', e);
 }
 
-// ── Internal: dismiss existing and post a fresh notification ───────────────────
 async function _postNotification(startTime: number): Promise<void> {
   const Notifications = await getNotificationsModule();
   if (!Notifications) return;
@@ -98,84 +104,96 @@ async function _postNotification(startTime: number): Promise<void> {
       title: `WaterFast Active: ${formatElapsed(elapsed)}`,
       body:  getStageText(elapsedHrs),
       data:  { type: 'active_fast', startTime },
-      // Android sticky flag — prevents the notification being swiped away
       ...(Platform.OS === 'android' ? { sticky: true } : {}),
     },
-    trigger: null, // fire immediately
+    trigger: null,
   });
 }
 
-// ── Public API ─────────────────────────────────────────────────────────────────
-
-// Create the Android notification channel (call once at app start)
 export async function setupNotificationChannel(): Promise<void> {
-  await ensureNotificationsInitialized();
-  const Notifications = await getNotificationsModule();
-  if (!Notifications) return;
+  try {
+    await ensureNotificationsInitialized();
+    const Notifications = await getNotificationsModule();
+    if (!Notifications) return;
 
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync(NOTIF_CHANNEL_ID, {
-      name:                 'Water Fast Tracking',
-      importance:           Notifications.AndroidImportance.HIGH,
-      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
-      sound:                null,
-      vibrationPattern:     [0],
-      enableVibrate:        false,
-      showBadge:            false,
-    });
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync(NOTIF_CHANNEL_ID, {
+        name:                 'Water Fast Tracking',
+        importance:           Notifications.AndroidImportance.HIGH,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        sound:                null,
+        vibrationPattern:     [0],
+        enableVibrate:        false,
+        showBadge:            false,
+      });
+    }
+  } catch (e) {
+    console.log('setupNotificationChannel failed silently:', e);
   }
 }
 
 export async function requestNotificationPermissions(): Promise<boolean> {
-  await ensureNotificationsInitialized();
-  const Notifications = await getNotificationsModule();
-  if (!Notifications) return false;
+  try {
+    await ensureNotificationsInitialized();
+    const Notifications = await getNotificationsModule();
+    if (!Notifications) return false;
 
-  const { status: current } = await Notifications.getPermissionsAsync();
-  if (current === 'granted') return true;
-  const { status } = await Notifications.requestPermissionsAsync();
-  return status === 'granted';
+    const { status: current } = await Notifications.getPermissionsAsync();
+    if (current === 'granted') return true;
+    const { status } = await Notifications.requestPermissionsAsync();
+    return status === 'granted';
+  } catch (e) {
+    console.log('requestNotificationPermissions failed silently:', e);
+    return false;
+  }
 }
 
-// Show (or refresh) the active fast notification
 export async function showFastNotification(startTime: number): Promise<void> {
-  await ensureNotificationsInitialized();
-  await _postNotification(startTime);
+  try {
+    await ensureNotificationsInitialized();
+    await _postNotification(startTime);
+  } catch (e) {
+    console.log('showFastNotification failed silently:', e);
+  }
 }
 
-// Called every 60s while the app is open to update elapsed time in the banner
 export async function updateFastNotification(startTime: number): Promise<void> {
-  await ensureNotificationsInitialized();
-  await _postNotification(startTime);
+  try {
+    await ensureNotificationsInitialized();
+    await _postNotification(startTime);
+  } catch (e) {
+    console.log('updateFastNotification failed silently:', e);
+  }
 }
 
-// Remove the notification when the fast ends
 export async function cancelFastNotification(): Promise<void> {
-  const Notifications = await getNotificationsModule();
-  if (!Notifications) return;
+  try {
+    const Notifications = await getNotificationsModule();
+    if (!Notifications) return;
 
-  await Notifications.dismissAllNotificationsAsync().catch(() => {});
-  await Notifications.cancelScheduledNotificationAsync(NOTIF_IDENTIFIER).catch(() => {});
+    await Notifications.dismissAllNotificationsAsync().catch(() => {});
+    await Notifications.cancelScheduledNotificationAsync(NOTIF_IDENTIFIER).catch(() => {});
+  } catch (e) {
+    console.log('cancelFastNotification failed silently:', e);
+  }
 }
 
-// Register the background refresh task (called when a fast starts)
 export async function registerBackgroundFastTask(): Promise<void> {
   if (IS_EXPO_GO) return;
   try {
     const isRegistered = await TaskManager.isTaskRegisteredAsync(BG_TASK_NAME);
     if (!isRegistered) {
       await BackgroundFetch.registerTaskAsync(BG_TASK_NAME, {
-        minimumInterval: 60,      // seconds between background runs
-        stopOnTerminate: false,   // keep running after app is closed
-        startOnBoot:     true,    // resume after device restart
+        minimumInterval: 60,
+        stopOnTerminate: false,
+        startOnBoot:     true,
       });
     }
-  } catch {
-    // BackgroundFetch unavailable in Expo Go — safe to ignore
+  } catch (e) {
+    console.log('registerBackgroundFastTask failed silently:', e);
   }
 }
 
-// Unregister when the fast ends
 export async function unregisterBackgroundFastTask(): Promise<void> {
   if (IS_EXPO_GO) return;
   try {
@@ -183,7 +201,7 @@ export async function unregisterBackgroundFastTask(): Promise<void> {
     if (isRegistered) {
       await BackgroundFetch.unregisterTaskAsync(BG_TASK_NAME);
     }
-  } catch {
-    // ignore
+  } catch (e) {
+    console.log('unregisterBackgroundFastTask failed silently:', e);
   }
 }
