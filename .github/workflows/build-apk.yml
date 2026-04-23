@@ -37,19 +37,16 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      - name: Bundle JS for Debug APK
+      - name: Build Release APK
         run: |
           cd android
-          ./gradlew :app:bundleDebugJsAndAssets
-
-      - name: Build Debug APK
-        run: |
-          cd android
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease --no-daemon
+        env:
+          ANDROID_BUILD_TOOLS_VERSION: "34.0.0"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: WaterFastBuddy-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: WaterFastBuddy-release
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
           retention-days: 7
