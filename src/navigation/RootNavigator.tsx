@@ -44,7 +44,6 @@ export default function RootNavigator() {
         )}
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="Booking" component={BookingScreen} />
-        <Stack.Screen name="Paywall" component={PaywallScreen} />
         <Stack.Screen name="FastDetail" component={FastDetailScreen} />
         <Stack.Screen name="TipDetail" component={TipDetailScreen} />
       </Stack.Navigator>
