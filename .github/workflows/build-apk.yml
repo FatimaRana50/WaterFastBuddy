@@ -43,19 +43,6 @@ jobs:
       - name: Run Expo Prebuild
         run: npx expo prebuild --platform android --non-interactive --clean
 
-      # Pre-bundle the JS with Metro so we get a descriptive error here if
-      # bundling fails, instead of the vague "node exit 1" from Gradle.
-      - name: Pre-bundle JS (verbose)
-        run: |
-          mkdir -p android/app/src/main/assets
-          npx react-native bundle \
-            --platform android \
-            --dev false \
-            --entry-file index.ts \
-            --bundle-output android/app/src/main/assets/index.android.bundle \
-            --assets-dest android/app/src/main/res \
-            --verbose
-
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
