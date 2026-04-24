@@ -59,10 +59,11 @@ function buildCalendar(fasts: FastRecord[]) {
 const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 export default function HistoryScreen() {
-  const { colors }    = useTheme();
+  const { colors, theme } = useTheme();
   const navigation    = useNavigation<any>();
   const { fasts }     = useFasts();
   useLanguage();
+  const isDark = theme === 'dark';
 
   const stats = useMemo(() => {
     const longest    = fasts.length ? Math.max(...fasts.map((f) => f.actualHours)) : 0;
@@ -83,9 +84,12 @@ export default function HistoryScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <LinearGradient colors={[COLORS.mist, '#D9EBFF', '#EAF6FF']} style={StyleSheet.absoluteFillObject} />
-      <View pointerEvents="none" style={styles.orbTop} />
-      <View pointerEvents="none" style={styles.orbBottom} />
+      {/* Light-mode ambient gradient — skipped in dark mode so it doesn't wash out the theme. */}
+      {!isDark && (
+        <LinearGradient colors={[COLORS.mist, '#D9EBFF', '#EAF6FF']} style={StyleSheet.absoluteFillObject} />
+      )}
+      {!isDark && <View pointerEvents="none" style={styles.orbTop} />}
+      {!isDark && <View pointerEvents="none" style={styles.orbBottom} />}
 
       <ScrollView contentContainerStyle={styles.content}>
         <LinearGradient colors={[COLORS.primaryDark, COLORS.gradientStart, COLORS.gradientEnd]} style={styles.hero}>
@@ -124,7 +128,8 @@ export default function HistoryScreen() {
                 key={i}
                 style={[
                   styles.calendarCell,
-                  cell.isFast  && { backgroundColor: COLORS.primary },
+                  { backgroundColor: colors.cardAlt, borderColor: colors.border },
+                  cell.isFast  && { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
                   cell.isToday && !cell.isFast && { borderColor: COLORS.primary, borderWidth: 1.5 },
                   !cell.day    && { backgroundColor: 'transparent', borderColor: 'transparent' },
                 ]}
@@ -201,7 +206,7 @@ const styles = StyleSheet.create({
   calendarHeader: { flexDirection: 'row', marginBottom: 6 },
   calDow:         { flex: 1, textAlign: 'center', fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
   calendarGrid:   { flexDirection: 'row', flexWrap: 'wrap' },
-  calendarCell:   { width: `${100 / 7}%` as any, aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: '#E8F2FF', borderWidth: 1, borderColor: 'rgba(30,99,233,0.08)', marginBottom: 4 },
+  calendarCell:   { width: `${100 / 7}%` as any, aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 8, borderWidth: 1, marginBottom: 4 },
   calDayNum:      { fontSize: 11, fontWeight: '700' },
 
   fastRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: SPACING.md, borderBottomWidth: 1 },

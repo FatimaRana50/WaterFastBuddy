@@ -1,6 +1,7 @@
-// Import notifications first so the background task is defined before
-// the React tree mounts — required by expo-task-manager
-//import './src/utils/notifications';
+// Register the background-task handler BEFORE the React tree mounts so
+// expo-task-manager can find it when the OS wakes the app.
+// This file is intentionally tiny — see src/utils/backgroundTask.ts for why.
+import './src/utils/backgroundTask';
 
 import { registerRootComponent } from 'expo';
 

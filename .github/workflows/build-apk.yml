@@ -5,6 +5,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+env:
+  # Bundling a release APK runs Metro in-process, which hits the default
+  # Node heap cap on GitHub runners and fails createBundleReleaseJsAndAssets
+  # with a non-descriptive "node exited 1". Bump the limit.
+  NODE_OPTIONS: --max-old-space-size=4096
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,7 +26,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Fix metro-config conflict
         run: rm -rf node_modules/metro-config/node_modules
@@ -35,7 +41,20 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Run Expo Prebuild
-        run: npx expo prebuild --platform android --non-interactive
+        run: npx expo prebuild --platform android --non-interactive --clean
+
+      # Pre-bundle the JS with Metro so we get a descriptive error here if
+      # bundling fails, instead of the vague "node exit 1" from Gradle.
+      - name: Pre-bundle JS (verbose)
+        run: |
+          mkdir -p android/app/src/main/assets
+          npx react-native bundle \
+            --platform android \
+            --dev false \
+            --entry-file index.ts \
+            --bundle-output android/app/src/main/assets/index.android.bundle \
+            --assets-dest android/app/src/main/res \
+            --verbose
 
       - name: Make gradlew executable
         run: chmod +x android/gradlew
@@ -43,7 +62,7 @@ jobs:
       - name: Build Release APK
         run: |
           cd android
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: List APK output files
         run: find android/app/build/outputs -name "*.apk" 2>/dev/null || echo "No APK files found"

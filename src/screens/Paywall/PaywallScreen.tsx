@@ -1,46 +1,94 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useTheme } from '../../store/ThemeContext';
+import { useUser } from '../../store/UserContext';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
 import { useLanguage } from '../../store/LanguageContext';
 import i18n from '../../i18n';
 
-const PLANS = [
-  { nameKey: 'paywall.monthly', price: '£7.99', noteKey: 'paywall.monthlyNote' },
-  { nameKey: 'paywall.yearly', price: '£39.99', noteKey: 'paywall.yearlyNote' },
+type PlanKey = 'monthly' | 'yearly';
+
+const PLANS: { key: PlanKey; nameKey: string; price: string; noteKey: string }[] = [
+  { key: 'monthly', nameKey: 'paywall.monthly', price: '£7.99',  noteKey: 'paywall.monthlyNote' },
+  { key: 'yearly',  nameKey: 'paywall.yearly',  price: '£39.99', noteKey: 'paywall.yearlyNote'  },
 ];
 
 export default function PaywallScreen() {
   const { colors } = useTheme();
+  const { activateSubscription, isSubscribed } = useUser();
+  const [selected, setSelected] = useState<PlanKey>('yearly');
+  const [busy, setBusy]         = useState(false);
   useLanguage();
+
+  const doSubscribe = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      // Stub — will be replaced by RevenueCat purchase flow once the
+      // client provides RC keys. For now, unlock the app locally so QA
+      // and the client can test the gate.
+      await activateSubscription();
+      Alert.alert(i18n.t('paywall.successTitle'), i18n.t('paywall.successBody'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const doRestore = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      // Stub — will call RevenueCat.restorePurchases(). For the local build
+      // we re-activate the subscription flag so returning users regain access.
+      await activateSubscription();
+      Alert.alert(i18n.t('paywall.restoredTitle'), i18n.t('paywall.restoredBody'));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <View style={[styles.hero, { backgroundColor: COLORS.primary }]}> 
-        <Text style={styles.heroTag}>{i18n.t('paywall.trialEnded')}</Text>
+      <View style={[styles.hero, { backgroundColor: COLORS.primary }]}>
+        <Text style={styles.heroTag}>{i18n.t(isSubscribed ? 'paywall.subscribed' : 'paywall.trialEnded')}</Text>
         <Text style={styles.heroTitle}>{i18n.t('paywall.title')}</Text>
         <Text style={styles.heroBody}>{i18n.t('paywall.freeTrial')}</Text>
       </View>
 
-      <View style={[styles.card, { backgroundColor: colors.surface }]}> 
+      <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('ui.complete')}</Text>
         <Text style={[styles.body, { color: colors.textSecondary }]}>{i18n.t('paywall.freeTrial')}</Text>
       </View>
 
-      {PLANS.map((plan) => (
-        <View key={plan.nameKey} style={[styles.planCard, { backgroundColor: colors.surface }]}> 
-          <View>
-            <Text style={[styles.planName, { color: colors.text }]}>{i18n.t(plan.nameKey)}</Text>
-            <Text style={[styles.planNote, { color: colors.textSecondary }]}>{i18n.t(plan.noteKey)}</Text>
-          </View>
-          <Text style={[styles.planPrice, { color: COLORS.primary }]}>{plan.price}</Text>
-        </View>
-      ))}
+      {PLANS.map((plan) => {
+        const isActive = selected === plan.key;
+        return (
+          <TouchableOpacity
+            key={plan.key}
+            activeOpacity={0.85}
+            onPress={() => setSelected(plan.key)}
+            style={[
+              styles.planCard,
+              { backgroundColor: colors.surface, borderColor: isActive ? COLORS.primary : colors.border },
+            ]}
+          >
+            <View>
+              <Text style={[styles.planName, { color: colors.text }]}>{i18n.t(plan.nameKey)}</Text>
+              <Text style={[styles.planNote, { color: colors.textSecondary }]}>{i18n.t(plan.noteKey)}</Text>
+            </View>
+            <Text style={[styles.planPrice, { color: COLORS.primary }]}>{plan.price}</Text>
+          </TouchableOpacity>
+        );
+      })}
 
-      <TouchableOpacity style={styles.primaryBtn}>
+      <TouchableOpacity style={[styles.primaryBtn, busy && { opacity: 0.6 }]} onPress={doSubscribe} disabled={busy}>
         <Text style={styles.primaryBtnText}>{i18n.t('paywall.subscribe')}</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={[styles.secondaryBtn, { borderColor: colors.border, backgroundColor: colors.surface }]}> 
+      <TouchableOpacity
+        style={[styles.secondaryBtn, { borderColor: colors.border, backgroundColor: colors.surface }, busy && { opacity: 0.6 }]}
+        onPress={doRestore}
+        disabled={busy}
+      >
         <Text style={[styles.secondaryBtnText, { color: colors.text }]}>{i18n.t('paywall.restore')}</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -57,7 +105,15 @@ const styles = StyleSheet.create({
   card: { borderRadius: BORDER_RADIUS.lg, padding: SPACING.lg, marginBottom: SPACING.md },
   sectionTitle: { fontSize: FONT_SIZE.lg, fontWeight: '700', marginBottom: SPACING.xs },
   body: { fontSize: FONT_SIZE.md, lineHeight: 22 },
-  planCard: { borderRadius: BORDER_RADIUS.lg, padding: SPACING.lg, marginBottom: SPACING.sm, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  planCard: {
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    marginBottom: SPACING.sm,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 2,
+  },
   planName: { fontSize: FONT_SIZE.md, fontWeight: '700' },
   planNote: { marginTop: 4, fontSize: FONT_SIZE.sm },
   planPrice: { fontSize: FONT_SIZE.xl, fontWeight: '800' },

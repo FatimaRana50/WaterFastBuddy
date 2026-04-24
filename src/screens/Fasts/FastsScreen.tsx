@@ -136,7 +136,8 @@ function SavedFastRow({ fast, onPress, onDelete }: { fast: SavedFast; onPress: (
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function FastsScreen() {
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
+  const isDark = theme === 'dark';
   useLanguage();
   const { profile } = useUser();
   const { activeFast, startFast, endFast, saveFastRecord, removeFast, savedFasts, saveCustomFast, removeSavedFast } = useFasts();
@@ -229,9 +230,11 @@ export default function FastsScreen() {
 
     return (
       <View style={[styles.screen, { backgroundColor: colors.background }]}>
-        <LinearGradient colors={[colors.background, '#FFFFFF', '#F7FBFF']} style={StyleSheet.absoluteFillObject} />
-        <FloatingOrb size={190} top={-40} left={-50} delay={0} opacity={0.42} />
-        <FloatingOrb size={140} top={70} left={240} delay={900} opacity={0.26} />
+        {!isDark && (
+          <LinearGradient colors={[colors.background, '#FFFFFF', '#F7FBFF']} style={StyleSheet.absoluteFillObject} />
+        )}
+        {!isDark && <FloatingOrb size={190} top={-40} left={-50} delay={0} opacity={0.42} />}
+        {!isDark && <FloatingOrb size={140} top={70} left={240} delay={900} opacity={0.26} />}
 
         <ScrollView contentContainerStyle={styles.activeScroll} showsVerticalScrollIndicator={false}>
           <Animated.View style={[styles.activeHero, { transform: [{ translateY: heroLift }, { scale: heroGlow }] }]}>
@@ -313,10 +316,12 @@ export default function FastsScreen() {
   // ── Plan selection ─────────────────────────────────────────────────────────────
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <LinearGradient colors={[colors.background, '#FFFFFF', '#F3F8FF']} style={StyleSheet.absoluteFillObject} />
-      <FloatingOrb size={220} top={-70} left={-60} delay={0} opacity={0.4} />
-      <FloatingOrb size={140} top={150} left={260} delay={1100} opacity={0.2} />
-      <FloatingOrb size={110} top={500} left={-25} delay={1800} opacity={0.18} />
+      {!isDark && (
+        <LinearGradient colors={[colors.background, '#FFFFFF', '#F3F8FF']} style={StyleSheet.absoluteFillObject} />
+      )}
+      {!isDark && <FloatingOrb size={220} top={-70} left={-60} delay={0} opacity={0.4} />}
+      {!isDark && <FloatingOrb size={140} top={150} left={260} delay={1100} opacity={0.2} />}
+      {!isDark && <FloatingOrb size={110} top={500} left={-25} delay={1800} opacity={0.18} />}
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
         <Animated.View style={[styles.heroPanel, { transform: [{ translateY: heroLift }] }]}>
@@ -431,10 +436,10 @@ export default function FastsScreen() {
             <Text style={styles.sheetTitle}>{i18n.t('fasts.customFast')}</Text>
             <Text style={styles.sheetSub}>{i18n.t('fasts.customHours')}</Text>
             <TextInput
-              style={styles.sheetInput}
+              style={[styles.sheetInput, { backgroundColor: colors.cardAlt, color: colors.text, borderColor: colors.border }]}
               keyboardType="numeric"
               placeholder={i18n.t('fasts.exampleHours')}
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textSecondary}
               value={customHours}
               onChangeText={setCustomHours}
               autoFocus
@@ -454,9 +459,9 @@ export default function FastsScreen() {
             </View>
             {shouldSave && (
               <TextInput
-                style={[styles.sheetInput, { marginBottom: SPACING.sm, fontSize: FONT_SIZE.md }]}
+                style={[styles.sheetInput, { marginBottom: SPACING.sm, fontSize: FONT_SIZE.md, backgroundColor: colors.cardAlt, color: colors.text, borderColor: colors.border }]}
                 placeholder={i18n.t('fasts.planNameOptional')}
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textSecondary}
                 value={customName}
                 onChangeText={setCustomName}
               />

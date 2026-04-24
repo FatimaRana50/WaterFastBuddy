@@ -2,6 +2,7 @@
   "expo": {
     "name": "WaterFastBuddy",
     "slug": "waterfastbuddy",
+    "scheme": "waterfastbuddy",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -49,12 +50,16 @@
       ],
       "expo-localization",
       "expo-secure-store",
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {
         "projectId": "3d86fbc7-3dd2-4b7d-a356-f446845a2e99"
-      }
+      },
+      "googleOAuthAndroidClientId": "",
+      "googleOAuthIosClientId": "",
+      "googleOAuthWebClientId": ""
     },
     "owner": "fatima_farrukh_rana"
   }

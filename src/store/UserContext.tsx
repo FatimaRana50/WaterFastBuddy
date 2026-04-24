@@ -2,15 +2,21 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { UserProfile } from '../types';
 
-const PROFILE_KEY = 'user_profile';
-const INSTALL_DATE_KEY = 'app_install_date'; // Track when app was first installed for trial period
+const PROFILE_KEY      = 'user_profile';
+const INSTALL_DATE_KEY = 'app_install_date';     // First-install timestamp, used for the 3-day trial
+const SUBSCRIPTION_KEY = 'subscription_active';  // '1' once the user has subscribed (stub until RevenueCat is wired)
+
+const TRIAL_MS = 3 * 24 * 60 * 60 * 1000;
 
 interface UserContextValue {
   profile: UserProfile | null;
   saveProfile: (p: UserProfile) => Promise<void>;
   updateProfile: (partial: Partial<UserProfile>) => Promise<void>;
-  installDate: number | null; // Unix timestamp of first install
-  isTrialExpired: boolean; // true if more than 3 days have passed
+  installDate: number | null;
+  isTrialExpired: boolean;          // true once 3 days have passed AND no active subscription
+  isSubscribed: boolean;
+  activateSubscription: () => Promise<void>;
+  cancelSubscription: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextValue>({
@@ -19,27 +25,31 @@ const UserContext = createContext<UserContextValue>({
   updateProfile: async () => {},
   installDate: null,
   isTrialExpired: false,
+  isSubscribed: false,
+  activateSubscription: async () => {},
+  cancelSubscription: async () => {},
 });
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [installDate, setInstallDate] = useState<number | null>(null);
+  const [profile, setProfile]           = useState<UserProfile | null>(null);
+  const [installDate, setInstallDate]   = useState<number | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
   useEffect(() => {
-    // Load profile
     AsyncStorage.getItem(PROFILE_KEY).then((raw) => {
       if (raw) setProfile(JSON.parse(raw));
     });
-    // Load or initialize install date
     AsyncStorage.getItem(INSTALL_DATE_KEY).then((raw) => {
       if (raw) {
         setInstallDate(parseInt(raw, 10));
       } else {
-        // First install — record timestamp
         const now = Date.now();
         AsyncStorage.setItem(INSTALL_DATE_KEY, now.toString());
         setInstallDate(now);
       }
+    });
+    AsyncStorage.getItem(SUBSCRIPTION_KEY).then((raw) => {
+      setIsSubscribed(raw === '1');
     });
   }, []);
 
@@ -53,11 +63,33 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     await saveProfile(updated as UserProfile);
   };
 
-  // Calculate if trial (3 days = 259,200,000 ms) has expired
-  const isTrialExpired = installDate ? (Date.now() - installDate) > (3 * 24 * 60 * 60 * 1000) : false;
+  const activateSubscription = async () => {
+    await AsyncStorage.setItem(SUBSCRIPTION_KEY, '1');
+    setIsSubscribed(true);
+  };
+
+  const cancelSubscription = async () => {
+    await AsyncStorage.removeItem(SUBSCRIPTION_KEY);
+    setIsSubscribed(false);
+  };
+
+  // Trial is expired only if the 3-day window has passed AND the user is not subscribed.
+  const trialWindowPassed = installDate ? (Date.now() - installDate) > TRIAL_MS : false;
+  const isTrialExpired    = trialWindowPassed && !isSubscribed;
 
   return (
-    <UserContext.Provider value={{ profile, saveProfile, updateProfile, installDate, isTrialExpired }}>
+    <UserContext.Provider
+      value={{
+        profile,
+        saveProfile,
+        updateProfile,
+        installDate,
+        isTrialExpired,
+        isSubscribed,
+        activateSubscription,
+        cancelSubscription,
+      }}
+    >
       {children}
     </UserContext.Provider>
   );

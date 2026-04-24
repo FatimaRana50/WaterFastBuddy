@@ -56,11 +56,26 @@ export default function CaloriesScreen() {
       <View style={[styles.card, { backgroundColor: colors.surface }]}> 
         <Text style={[styles.label, { color: colors.textSecondary }]}>{i18n.t('onboarding.setup.activityLevel')}</Text>
         <View style={styles.chipRow}>
-          {OPTIONS.map((opt) => (
-            <TouchableOpacity key={opt} onPress={() => setActivity(opt)} style={[styles.chip, activity === opt && { backgroundColor: COLORS.primary }]}> 
-              <Text style={[styles.chipText, { color: activity === opt ? '#fff' : colors.text }]}>{i18n.t(`onboarding.setup.${opt}`)}</Text>
-            </TouchableOpacity>
-          ))}
+          {OPTIONS.map((opt) => {
+            const isActive = activity === opt;
+            return (
+              <TouchableOpacity
+                key={opt}
+                onPress={() => setActivity(opt)}
+                style={[
+                  styles.chip,
+                  {
+                    backgroundColor: isActive ? COLORS.primary : colors.cardAlt,
+                    borderColor:     isActive ? COLORS.primary : colors.border,
+                  },
+                ]}
+              >
+                <Text style={[styles.chipText, { color: isActive ? '#fff' : colors.text }]}>
+                  {i18n.t(`onboarding.setup.${opt}`)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
       <View style={[styles.card, { backgroundColor: colors.surface }]}> 
@@ -83,6 +98,6 @@ const styles = StyleSheet.create({
   value: { fontSize: FONT_SIZE.hero, fontWeight: 'bold', color: COLORS.primary },
   unit: { fontSize: FONT_SIZE.md, color: '#999' },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: SPACING.sm },
-  chip: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: 'rgba(37,99,235,0.08)' },
+  chip: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1 },
   chipText: { fontWeight: '700', fontSize: FONT_SIZE.sm },
 });

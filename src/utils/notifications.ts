@@ -2,32 +2,48 @@
 // Android: ongoing sticky notification (non-dismissable)
 // iOS: high-priority notification that persists until the fast ends
 // Background task updates the notification body every ~1 minute when app is closed
-import * as TaskManager from 'expo-task-manager';
-import * as BackgroundFetch from 'expo-background-fetch';
+//
+// IMPORTANT: the background task DEFINITION lives in ./backgroundTask.ts and is
+// imported by index.ts before the React tree mounts. That file intentionally
+// stays tiny so it can be evaluated on bundle-load without deadlocking the
+// native bridge on Android release builds with the new architecture.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
-import Constants from 'expo-constants';
+import { FAST_BG_TASK } from './backgroundTask';
 
 const ACTIVE_FAST_KEY  = 'active_fast';
 const NOTIF_IDENTIFIER = 'active-fast';
 const NOTIF_CHANNEL_ID = 'fast-tracking';
-const BG_TASK_NAME     = 'fast-notification-update';
-
-// In a release APK, appOwnership is null (not 'expo' and not 'standalone')
-// so we check for null/undefined too
-const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
 type NotificationsModule = typeof import('expo-notifications');
+type TaskManagerModule   = typeof import('expo-task-manager');
+type BackgroundFetchModule = typeof import('expo-background-fetch');
 
+// Lazy module promises so nothing heavy is touched at import-time.
 let notificationsModulePromise: Promise<NotificationsModule | null> | null = null;
+let taskManagerModulePromise: Promise<TaskManagerModule | null> | null = null;
+let backgroundFetchModulePromise: Promise<BackgroundFetchModule | null> | null = null;
 let notificationsInitialized = false;
 
 async function getNotificationsModule(): Promise<NotificationsModule | null> {
-  if (IS_EXPO_GO) return null;
   if (!notificationsModulePromise) {
     notificationsModulePromise = import('expo-notifications').catch(() => null);
   }
   return notificationsModulePromise;
+}
+
+async function getTaskManager(): Promise<TaskManagerModule | null> {
+  if (!taskManagerModulePromise) {
+    taskManagerModulePromise = import('expo-task-manager').catch(() => null);
+  }
+  return taskManagerModulePromise;
+}
+
+async function getBackgroundFetch(): Promise<BackgroundFetchModule | null> {
+  if (!backgroundFetchModulePromise) {
+    backgroundFetchModulePromise = import('expo-background-fetch').catch(() => null);
+  }
+  return backgroundFetchModulePromise;
 }
 
 async function ensureNotificationsInitialized(): Promise<void> {
@@ -48,7 +64,7 @@ async function ensureNotificationsInitialized(): Promise<void> {
   notificationsInitialized = true;
 }
 
-// Fasting stage text
+// Fasting stage text (kept in code — the client will swap in localised copy later)
 const STAGES = [
   { minHour: 0,  text: 'Your body is burning stored glucose for energy.' },
   { minHour: 8,  text: 'Insulin dropping. Fat burning has started.' },
@@ -67,26 +83,6 @@ function formatElapsed(ms: number): string {
   const h = Math.floor(ms / 3_600_000);
   const m = Math.floor((ms % 3_600_000) / 60_000);
   return `${h}h ${String(m).padStart(2, '0')}m`;
-}
-
-// MUST be defined at module level before the app renders
-// Wrapped in try/catch so a failure here never crashes the whole app
-try {
-  if (!TaskManager.isTaskDefined(BG_TASK_NAME)) {
-    TaskManager.defineTask(BG_TASK_NAME, async () => {
-      try {
-        const raw = await AsyncStorage.getItem(ACTIVE_FAST_KEY);
-        if (!raw) return BackgroundFetch.BackgroundFetchResult.NoData;
-        const { startTime } = JSON.parse(raw) as { startTime: number };
-        await _postNotification(startTime);
-        return BackgroundFetch.BackgroundFetchResult.NewData;
-      } catch {
-        return BackgroundFetch.BackgroundFetchResult.Failed;
-      }
-    });
-  }
-} catch (e) {
-  console.log('Background task registration failed silently:', e);
 }
 
 async function _postNotification(startTime: number): Promise<void> {
@@ -108,6 +104,20 @@ async function _postNotification(startTime: number): Promise<void> {
     },
     trigger: null,
   });
+}
+
+// Invoked by the background-fetch task handler in backgroundTask.ts.
+// Returns the numeric BackgroundFetchResult (NewData=1, NoData=2, Failed=3).
+export async function _runBackgroundTask(): Promise<number> {
+  try {
+    const raw = await AsyncStorage.getItem(ACTIVE_FAST_KEY);
+    if (!raw) return 2; // NoData
+    const { startTime } = JSON.parse(raw) as { startTime: number };
+    await _postNotification(startTime);
+    return 1; // NewData
+  } catch {
+    return 3; // Failed
+  }
 }
 
 export async function setupNotificationChannel(): Promise<void> {
@@ -179,11 +189,14 @@ export async function cancelFastNotification(): Promise<void> {
 }
 
 export async function registerBackgroundFastTask(): Promise<void> {
-  if (IS_EXPO_GO) return;
   try {
-    const isRegistered = await TaskManager.isTaskRegisteredAsync(BG_TASK_NAME);
+    const TaskManager = await getTaskManager();
+    const BackgroundFetch = await getBackgroundFetch();
+    if (!TaskManager || !BackgroundFetch) return;
+
+    const isRegistered = await TaskManager.isTaskRegisteredAsync(FAST_BG_TASK);
     if (!isRegistered) {
-      await BackgroundFetch.registerTaskAsync(BG_TASK_NAME, {
+      await BackgroundFetch.registerTaskAsync(FAST_BG_TASK, {
         minimumInterval: 60,
         stopOnTerminate: false,
         startOnBoot:     true,
@@ -195,11 +208,14 @@ export async function registerBackgroundFastTask(): Promise<void> {
 }
 
 export async function unregisterBackgroundFastTask(): Promise<void> {
-  if (IS_EXPO_GO) return;
   try {
-    const isRegistered = await TaskManager.isTaskRegisteredAsync(BG_TASK_NAME);
+    const TaskManager = await getTaskManager();
+    const BackgroundFetch = await getBackgroundFetch();
+    if (!TaskManager || !BackgroundFetch) return;
+
+    const isRegistered = await TaskManager.isTaskRegisteredAsync(FAST_BG_TASK);
     if (isRegistered) {
-      await BackgroundFetch.unregisterTaskAsync(BG_TASK_NAME);
+      await BackgroundFetch.unregisterTaskAsync(FAST_BG_TASK);
     }
   } catch (e) {
     console.log('unregisterBackgroundFastTask failed silently:', e);

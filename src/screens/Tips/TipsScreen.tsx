@@ -17,15 +17,18 @@ function getTips() {
 }
 
 export default function TipsScreen() {
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
   useLanguage();
   const navigation = useNavigation<any>();
   const tips = getTips();
+  const isDark = theme === 'dark';
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <LinearGradient colors={[COLORS.mist, '#DCEEFF', '#ECF8FF']} style={StyleSheet.absoluteFillObject} />
-      <View pointerEvents="none" style={styles.orbTop} />
-      <View pointerEvents="none" style={styles.orbBottom} />
+      {!isDark && (
+        <LinearGradient colors={[COLORS.mist, '#DCEEFF', '#ECF8FF']} style={StyleSheet.absoluteFillObject} />
+      )}
+      {!isDark && <View pointerEvents="none" style={styles.orbTop} />}
+      {!isDark && <View pointerEvents="none" style={styles.orbBottom} />}
 
       <ScrollView contentContainerStyle={styles.content}>
         <LinearGradient colors={[COLORS.primaryDark, COLORS.gradientStart, COLORS.gradientEnd]} style={styles.hero}>

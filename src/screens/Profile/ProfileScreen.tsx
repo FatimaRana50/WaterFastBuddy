@@ -12,8 +12,15 @@ import { useFasts } from '../../store/FastsContext';
 import { calculateBmi, calculateTDEE, goalWeightForBmi } from '../../utils/bmi';
 import { COLORS, FONT_SIZE, SPACING, BORDER_RADIUS } from '../../constants/theme';
 import WaterBodyAvatar from '../../components/Avatar/WaterBodyAvatar';
+import MorphingAvatar from '../../components/Avatar/MorphingAvatar';
 import { ActivityLevel, Gender, Language, WeightEntry } from '../../types';
-import { insertWeightEntry, getAllWeightEntries } from '../../store/database';
+import { insertWeightEntry, getAllWeightEntries, insertFast } from '../../store/database';
+import {
+  isDriveConfigured,
+  uploadBackupToDrive,
+  downloadBackupFromDrive,
+  clearStoredToken as clearDriveToken,
+} from '../../utils/googleDrive';
 import i18n from '../../i18n';
 
 const { width: SCREEN_W } = Dimensions.get('window');
@@ -110,8 +117,8 @@ function Stepper({
 export default function ProfileScreen() {
   const { colors, theme, toggleTheme } = useTheme();
   const { language: appLanguage, setLanguage: updateAppLanguage } = useLanguage();
-  const { profile, updateProfile }     = useUser();
-  const { fasts, savedFasts }          = useFasts();
+  const { profile, updateProfile, saveProfile } = useUser();
+  const { fasts, savedFasts, reloadAll, replaceSavedFasts } = useFasts();
 
   // Edit modal state
   const [showEdit,      setShowEdit]      = useState(false);
@@ -130,6 +137,14 @@ export default function ProfileScreen() {
 
   // Language modal
   const [showLangModal, setShowLangModal] = useState(false);
+
+  // Restore / import backup modal
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [restoreInput,     setRestoreInput]     = useState('');
+  const [restoreBusy,      setRestoreBusy]      = useState(false);
+
+  // Drive sync state
+  const [driveBusy, setDriveBusy] = useState(false);
 
   useEffect(() => {
     getAllWeightEntries().then(setWeightEntries).catch(() => {});
@@ -216,6 +231,123 @@ export default function ProfileScreen() {
     }
   };
 
+  // Shared logic for turning a parsed backup object into local state +
+  // persisted rows. Used by both the paste-JSON flow and Google Drive restore.
+  const applyParsedBackup = async (parsed: any): Promise<boolean> => {
+    if (!parsed || typeof parsed !== 'object' || !parsed.profile) return false;
+    await saveProfile(parsed.profile);
+    if (Array.isArray(parsed.fasts)) {
+      for (const f of parsed.fasts as any[]) {
+        if (f && f.id) await insertFast(f);
+      }
+    }
+    if (Array.isArray(parsed.weightEntries)) {
+      for (const w of parsed.weightEntries as WeightEntry[]) {
+        if (w && w.id) await insertWeightEntry(w);
+      }
+    }
+    if (Array.isArray(parsed.savedFasts)) {
+      await replaceSavedFasts(parsed.savedFasts);
+    }
+    await reloadAll();
+    getAllWeightEntries().then(setWeightEntries).catch(() => {});
+    return true;
+  };
+
+  // Restore data from a pasted JSON backup (the same shape produced by handleExport).
+  const handleImport = async () => {
+    if (restoreBusy) return;
+    const raw = restoreInput.trim();
+    if (!raw) {
+      Alert.alert(i18n.t('profile.restoreEmptyTitle'), i18n.t('profile.restoreEmptyBody'));
+      return;
+    }
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      Alert.alert(i18n.t('profile.restoreInvalidTitle'), i18n.t('profile.restoreInvalidBody'));
+      return;
+    }
+
+    setRestoreBusy(true);
+    try {
+      const ok = await applyParsedBackup(parsed);
+      if (!ok) {
+        Alert.alert(i18n.t('profile.restoreInvalidTitle'), i18n.t('profile.restoreInvalidBody'));
+        return;
+      }
+      setRestoreInput('');
+      setShowRestoreModal(false);
+      Alert.alert(i18n.t('profile.restoreDoneTitle'), i18n.t('profile.restoreDoneBody'));
+    } catch {
+      Alert.alert(i18n.t('profile.restoreFailedTitle'), i18n.t('profile.restoreFailedBody'));
+    } finally {
+      setRestoreBusy(false);
+    }
+  };
+
+  // Upload the full backup JSON to the user's Google Drive (appDataFolder).
+  const handleDriveBackup = async () => {
+    if (driveBusy) return;
+    if (!isDriveConfigured()) {
+      Alert.alert(i18n.t('profile.driveUnconfiguredTitle'), i18n.t('profile.driveUnconfiguredBody'));
+      return;
+    }
+    setDriveBusy(true);
+    try {
+      const backupData = {
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        profile,
+        fasts,
+        weightEntries,
+        savedFasts,
+      };
+      await uploadBackupToDrive(backupData);
+      Alert.alert(i18n.t('profile.driveBackupDoneTitle'), i18n.t('profile.driveBackupDoneBody'));
+    } catch (e: any) {
+      if (String(e?.message) === 'drive_auth_cancelled') return;
+      Alert.alert(i18n.t('profile.driveFailedTitle'), i18n.t('profile.driveFailedBody'));
+    } finally {
+      setDriveBusy(false);
+    }
+  };
+
+  // Download the backup JSON from Drive and apply it locally.
+  const handleDriveRestore = async () => {
+    if (driveBusy) return;
+    if (!isDriveConfigured()) {
+      Alert.alert(i18n.t('profile.driveUnconfiguredTitle'), i18n.t('profile.driveUnconfiguredBody'));
+      return;
+    }
+    setDriveBusy(true);
+    try {
+      const parsed = await downloadBackupFromDrive();
+      if (!parsed) {
+        Alert.alert(i18n.t('profile.driveEmptyTitle'), i18n.t('profile.driveEmptyBody'));
+        return;
+      }
+      const ok = await applyParsedBackup(parsed);
+      if (!ok) {
+        Alert.alert(i18n.t('profile.restoreInvalidTitle'), i18n.t('profile.restoreInvalidBody'));
+        return;
+      }
+      Alert.alert(i18n.t('profile.restoreDoneTitle'), i18n.t('profile.restoreDoneBody'));
+    } catch (e: any) {
+      if (String(e?.message) === 'drive_auth_cancelled') return;
+      Alert.alert(i18n.t('profile.driveFailedTitle'), i18n.t('profile.driveFailedBody'));
+    } finally {
+      setDriveBusy(false);
+    }
+  };
+
+  const handleDriveSignOut = async () => {
+    await clearDriveToken();
+    Alert.alert(i18n.t('profile.driveSignedOutTitle'), i18n.t('profile.driveSignedOutBody'));
+  };
+
   const resetOnboarding = () =>
     Alert.alert(i18n.t('ui.resetOnboarding'), i18n.t('profile.resetOnboardingPrompt'), [
       { text: i18n.t('common.cancel'), style: 'cancel' },
@@ -230,11 +362,14 @@ export default function ProfileScreen() {
   const showChart     = chartEntries.length >= 2;
 
   // ── Render ───────────────────────────────────────────────────────────────────
+  const isDark = theme === 'dark';
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <LinearGradient colors={[COLORS.mist, '#DCEEFF', '#EEF8FF']} style={StyleSheet.absoluteFillObject} />
-      <View pointerEvents="none" style={styles.orbTop} />
-      <View pointerEvents="none" style={styles.orbBottom} />
+      {!isDark && (
+        <LinearGradient colors={[COLORS.mist, '#DCEEFF', '#EEF8FF']} style={StyleSheet.absoluteFillObject} />
+      )}
+      {!isDark && <View pointerEvents="none" style={styles.orbTop} />}
+      {!isDark && <View pointerEvents="none" style={styles.orbBottom} />}
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
@@ -283,6 +418,18 @@ export default function ProfileScreen() {
           <Text style={[styles.cardSubLabel, { color: colors.textSecondary }]}>
             {i18n.t('profile.currentShapeGoalShape')}
           </Text>
+
+          {/* Animated morph — crossfades between current body and goal body */}
+          <View style={{ alignItems: 'center', marginBottom: SPACING.md }}>
+            <MorphingAvatar
+              profile={profile}
+              goalWeightKg={goalWeight}
+              size={140}
+              nowLabel={i18n.t('ui.now')}
+              goalLabel={i18n.t('ui.goal')}
+            />
+          </View>
+
           <View style={styles.morphRow}>
             {/* Current avatar */}
             <View style={styles.morphAvatarWrap}>
@@ -388,13 +535,67 @@ export default function ProfileScreen() {
             <Text style={[styles.settingValue, { color: colors.textSecondary }]}>{currentLangLabel} ›</Text>
           </TouchableOpacity>
 
-          {/* Backup / Export */}
-          <TouchableOpacity style={styles.settingRow} onPress={handleExport} activeOpacity={0.7}>
+          {/* Google Drive — Backup */}
+          <TouchableOpacity
+            style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.border }, driveBusy && { opacity: 0.6 }]}
+            onPress={handleDriveBackup}
+            disabled={driveBusy}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingLeft}>
+              <Text style={styles.settingIcon}>☁️</Text>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>{i18n.t('profile.driveBackup')}</Text>
+            </View>
+            <Text style={[styles.settingValue, { color: COLORS.primary }]}>{i18n.t('common.save')} ›</Text>
+          </TouchableOpacity>
+
+          {/* Google Drive — Restore */}
+          <TouchableOpacity
+            style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.border }, driveBusy && { opacity: 0.6 }]}
+            onPress={handleDriveRestore}
+            disabled={driveBusy}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingLeft}>
+              <Text style={styles.settingIcon}>⬇️</Text>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>{i18n.t('profile.driveRestore')}</Text>
+            </View>
+            <Text style={[styles.settingValue, { color: COLORS.primary }]}>{i18n.t('profile.driveRestoreCta')} ›</Text>
+          </TouchableOpacity>
+
+          {/* Local export (share JSON) */}
+          <TouchableOpacity
+            style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+            onPress={handleExport}
+            activeOpacity={0.7}
+          >
             <View style={styles.settingLeft}>
               <Text style={styles.settingIcon}>💾</Text>
               <Text style={[styles.settingLabel, { color: colors.text }]}>{i18n.t('profile.backup')}</Text>
             </View>
             <Text style={[styles.settingValue, { color: COLORS.primary }]}>{i18n.t('common.save')} ›</Text>
+          </TouchableOpacity>
+
+          {/* Local import (paste JSON) */}
+          <TouchableOpacity
+            style={[styles.settingRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}
+            onPress={() => setShowRestoreModal(true)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingLeft}>
+              <Text style={styles.settingIcon}>♻️</Text>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>{i18n.t('profile.restore')}</Text>
+            </View>
+            <Text style={[styles.settingValue, { color: COLORS.primary }]}>{i18n.t('profile.paste')} ›</Text>
+          </TouchableOpacity>
+
+          {/* Sign out of Drive */}
+          <TouchableOpacity style={styles.settingRow} onPress={handleDriveSignOut} activeOpacity={0.7}>
+            <View style={styles.settingLeft}>
+              <Text style={styles.settingIcon}>🚪</Text>
+              <Text style={[styles.settingLabel, { color: colors.text }]}>{i18n.t('profile.driveSignOut')}</Text>
+            </View>
+            <Text style={[styles.settingValue, { color: colors.textSecondary }]}>›</Text>
           </TouchableOpacity>
         </View>
 
@@ -552,6 +753,54 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
+      </Modal>
+
+      {/* ══ Restore Backup Modal ══ */}
+      <Modal visible={showRestoreModal} animationType="slide" presentationStyle="pageSheet">
+        <View style={[styles.modalScreen, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+            <TouchableOpacity onPress={() => setShowRestoreModal(false)} disabled={restoreBusy}>
+              <Text style={[styles.modalBack, { color: COLORS.primary }]}>‹ {i18n.t('common.back')}</Text>
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{i18n.t('profile.restore')}</Text>
+            <View style={{ width: 50 }} />
+          </View>
+
+          <ScrollView contentContainerStyle={styles.modalScroll} showsVerticalScrollIndicator={false}>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginBottom: SPACING.sm }]}>
+              {i18n.t('profile.restoreHelp')}
+            </Text>
+            <TextInput
+              multiline
+              value={restoreInput}
+              onChangeText={setRestoreInput}
+              placeholder={'{ "version": "1.0", ... }'}
+              placeholderTextColor={colors.textSecondary}
+              style={[
+                styles.fieldInput,
+                {
+                  backgroundColor: colors.surface,
+                  color: colors.text,
+                  borderColor: colors.border,
+                  minHeight: 200,
+                  textAlignVertical: 'top',
+                  fontFamily: 'monospace',
+                  fontSize: FONT_SIZE.sm,
+                },
+              ]}
+            />
+
+            <TouchableOpacity
+              style={[styles.saveBtn, { backgroundColor: COLORS.primary, marginTop: SPACING.lg }, restoreBusy && { opacity: 0.6 }]}
+              onPress={handleImport}
+              disabled={restoreBusy}
+            >
+              <Text style={styles.saveBtnText}>
+                {restoreBusy ? i18n.t('common.loading') : i18n.t('profile.restoreNow')}
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       </Modal>
 

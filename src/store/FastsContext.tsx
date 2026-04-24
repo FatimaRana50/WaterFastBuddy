@@ -25,6 +25,8 @@ interface FastsContextValue {
   removeFast: (id: string) => Promise<void>;
   saveCustomFast: (name: string, hours: number) => Promise<void>;
   removeSavedFast: (id: string) => Promise<void>;
+  reloadAll: () => Promise<void>;
+  replaceSavedFasts: (next: SavedFast[]) => Promise<void>;
 }
 
 const FastsContext = createContext<FastsContextValue>({
@@ -37,6 +39,8 @@ const FastsContext = createContext<FastsContextValue>({
   removeFast: async () => {},
   saveCustomFast: async () => {},
   removeSavedFast: async () => {},
+  reloadAll: async () => {},
+  replaceSavedFasts: async () => {},
 });
 
 export function FastsProvider({ children }: { children: React.ReactNode }) {
@@ -170,8 +174,34 @@ export function FastsProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem(SAVED_FASTS_KEY, JSON.stringify(next));
   };
 
+  // Re-reads from DB + AsyncStorage. Called after a restore-from-backup so
+  // the UI reflects the freshly imported rows without requiring an app relaunch.
+  const reloadAll = async () => {
+    await loadFasts();
+    await loadSavedFasts();
+  };
+
+  const replaceSavedFasts = async (next: SavedFast[]) => {
+    setSavedFasts(next);
+    await AsyncStorage.setItem(SAVED_FASTS_KEY, JSON.stringify(next));
+  };
+
   return (
-    <FastsContext.Provider value={{ fasts, activeFast, savedFasts, startFast, endFast, saveFastRecord, removeFast, saveCustomFast, removeSavedFast }}>
+    <FastsContext.Provider
+      value={{
+        fasts,
+        activeFast,
+        savedFasts,
+        startFast,
+        endFast,
+        saveFastRecord,
+        removeFast,
+        saveCustomFast,
+        removeSavedFast,
+        reloadAll,
+        replaceSavedFasts,
+      }}
+    >
       {children}
     </FastsContext.Provider>
   );
