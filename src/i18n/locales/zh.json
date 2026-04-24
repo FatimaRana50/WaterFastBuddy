@@ -248,8 +248,9 @@
     "blueWater": "蓝色水感"
   },
   "topBar": {
-    "book": "预约1对1",
-    "buyFastingSalts": "购买盐"
+    "book": "预约",
+    "buyFastingSalts": "购买盐",
+    "shop": "商店"
   },
   "paywall": {
     "title": "完整访问",

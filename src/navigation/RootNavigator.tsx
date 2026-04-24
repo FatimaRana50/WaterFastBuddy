@@ -10,6 +10,7 @@ import BookingScreen from '../screens/Booking/BookingScreen';
 import PaywallScreen from '../screens/Paywall/PaywallScreen';
 import FastDetailScreen from '../screens/History/FastDetailScreen';
 import TipDetailScreen from '../screens/Tips/TipDetailScreen';
+import ShopScreen from '../screens/Shop/ShopScreen';
 
 const Stack = createStackNavigator();
 
@@ -57,6 +58,7 @@ export default function RootNavigator() {
         )}
         <Stack.Screen name="Settings"   component={SettingsScreen} />
         <Stack.Screen name="Booking"    component={BookingScreen} />
+        <Stack.Screen name="Shop"       component={ShopScreen} />
         <Stack.Screen name="FastDetail" component={FastDetailScreen} />
         <Stack.Screen name="TipDetail"  component={TipDetailScreen} />
       </Stack.Navigator>

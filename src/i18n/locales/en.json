@@ -344,8 +344,9 @@
     "blueWater": "Blue water"
   },
   "topBar": {
-    "book": "Book 1-on-1",
-    "buyFastingSalts": "Buy Salts"
+    "book": "Book",
+    "buyFastingSalts": "Buy Salts",
+    "shop": "Shop"
   },
   "paywall": {
     "title": "Unlock Full Access",

@@ -12,12 +12,16 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle, Defs, LinearGradient as SvgLG, Stop } from 'react-native-svg';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useUser } from '../../store/UserContext';
 import { useFasts } from '../../store/FastsContext';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
 import WaterBodyAvatar from '../../components/Avatar/WaterBodyAvatar';
+import Starfield from '../../components/Starfield';
+import Headline from '../../components/Headline';
+import Kicker from '../../components/Kicker';
 import FastCompleteScreen from './FastCompleteScreen';
 import { FastRecord, SavedFast } from '../../types';
 import i18n from '../../i18n';
@@ -67,6 +71,86 @@ function getWeekDays() {
   });
 }
 
+// ─── Ring timer ───────────────────────────────────────────────────────────────
+// Large circular progress ring used on the active-fast view. Track stroke
+// is subtle; progress stroke uses the preset's accent colour. The centre
+// renders the elapsed HH:MM:SS + percent complete.
+function RingTimer({
+  progress, color, elapsedLabel, percent,
+}: {
+  progress: number;          // 0..1
+  color: string;
+  elapsedLabel: string;
+  percent: number;
+}) {
+  const { colors } = useTheme();
+  const SIZE   = 240;
+  const STROKE = 14;
+  const R      = (SIZE - STROKE) / 2;
+  const C      = 2 * Math.PI * R;
+  const offset = C * (1 - Math.max(0, Math.min(progress, 1)));
+
+  return (
+    <View style={{ width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={SIZE} height={SIZE}>
+        <Defs>
+          <SvgLG id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0%" stopColor={COLORS.primary} />
+            <Stop offset="100%" stopColor={COLORS.accent} />
+          </SvgLG>
+        </Defs>
+        {/* Track */}
+        <Circle
+          cx={SIZE / 2}
+          cy={SIZE / 2}
+          r={R}
+          stroke={colors.border}
+          strokeWidth={STROKE}
+          fill="none"
+          opacity={0.55}
+        />
+        {/* Progress — rotated -90° so it starts at 12 o'clock */}
+        <Circle
+          cx={SIZE / 2}
+          cy={SIZE / 2}
+          r={R}
+          stroke="url(#ringGrad)"
+          strokeWidth={STROKE}
+          strokeLinecap="round"
+          fill="none"
+          strokeDasharray={`${C} ${C}`}
+          strokeDashoffset={offset}
+          transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
+        />
+      </Svg>
+
+      {/* Centre content */}
+      <View style={{ position: 'absolute', alignItems: 'center' }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 1.3, textTransform: 'uppercase' }}>
+          Fasting time
+        </Text>
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          style={{
+            color: colors.text,
+            fontSize: 40,
+            fontWeight: '900',
+            letterSpacing: -0.5,
+            marginTop: 4,
+            fontVariant: ['tabular-nums'],
+          }}
+        >
+          {elapsedLabel}
+        </Text>
+        <View style={{ marginTop: 6, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999, backgroundColor: color + '1E' }}>
+          <Text style={{ color, fontSize: 12, fontWeight: '800' }}>{percent}%</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 function FloatingOrb({ size, top, left, delay, opacity }: {
   size: number; top: number; left: number; delay: number; opacity: number;
 }) {
@@ -89,6 +173,7 @@ function FloatingOrb({ size, top, left, delay, opacity }: {
   );
 }
 
+// ─── Preset row ───────────────────────────────────────────────────────────────
 function PlanRow({ preset, onPress }: { preset: typeof PRESETS[0]; onPress: () => void }) {
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.planRow}>
@@ -228,86 +313,83 @@ export default function FastsScreen() {
     const elapsedH     = elapsed / 3600;
     const progressPct  = Math.round(progress * 100);
 
+    const startAt = new Date(activeFast.startTime);
+    const endAt   = new Date(activeFast.startTime + activeFast.targetHours * 3_600_000);
+    const fmtHM   = (d: Date) =>
+      d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
     return (
       <View style={[styles.screen, { backgroundColor: colors.background }]}>
-        {!isDark && (
-          <LinearGradient colors={[colors.background, '#FFFFFF', '#F7FBFF']} style={StyleSheet.absoluteFillObject} />
-        )}
-        {!isDark && <FloatingOrb size={190} top={-40} left={-50} delay={0} opacity={0.42} />}
-        {!isDark && <FloatingOrb size={140} top={70} left={240} delay={900} opacity={0.26} />}
+        <Starfield density={0.08} />
 
         <ScrollView contentContainerStyle={styles.activeScroll} showsVerticalScrollIndicator={false}>
-          <Animated.View style={[styles.activeHero, { transform: [{ translateY: heroLift }, { scale: heroGlow }] }]}>
-            <LinearGradient
-              colors={[COLORS.primaryDark, COLORS.primary, COLORS.gradientEnd]}
-              start={{ x: 0.05, y: 0.1 }} end={{ x: 0.95, y: 1 }}
-              style={styles.activeHeroGradient}
-            >
-              <View style={styles.heroHeaderRow}>
-                <View>
-                  <Text style={styles.activeKicker}>{i18n.t('fasts.activeFast')}</Text>
-                  <Text style={styles.activeTitle}>{i18n.t('fasts.activeFast')}</Text>
-                  <Text style={styles.activeSub}>{activeFast.name}</Text>
-                </View>
-                <View style={styles.goalPill}>
-                  <Text style={styles.goalPillLabel}>{i18n.t('ui.goal')}</Text>
-                  <Text style={styles.goalPillValue}>{activeFast.targetHours}h</Text>
-                </View>
-              </View>
+          {/* Top label row */}
+          <View style={styles.activeHeaderRow}>
+            <Text style={[styles.activeHeadline, { color: colors.text }]}>You're fasting!</Text>
+            <Text style={[styles.activeHeadSub, { color: colors.textSecondary }]}>
+              Stay with the rhythm. You've got this.
+            </Text>
+          </View>
 
-              <View style={styles.avatarStage}>
-                {profile && <WaterBodyAvatar profile={profile} size={140} fastingHours={elapsed / 3600} />}
-                <View style={styles.progressBadge}>
-                  <Text style={styles.progressBadgeValue}>{progressPct}%</Text>
-                  <Text style={styles.progressBadgeLabel}>{i18n.t('ui.complete')}</Text>
-                </View>
-              </View>
-            </LinearGradient>
-          </Animated.View>
+          {/* Current fasting info pill */}
+          <View style={[styles.currentPill, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.currentDot, { backgroundColor: activeFast.color }]} />
+            <Text style={[styles.currentText, { color: colors.text }]}>
+              Current: <Text style={{ color: activeFast.color }}>{activeFast.name}</Text>
+            </Text>
+          </View>
 
-          <View style={[styles.timeCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.cardHeaderRow}>
-              <Text style={[styles.cardLabel, { color: colors.textSecondary }]}>{i18n.t('ui.elapsed')}</Text>
-              <Text style={[styles.cardMini, { color: activeFast.color }]}>{formatTime(Math.max(targetSec - elapsed, 0))} {i18n.t('ui.remaining')}</Text>
-            </View>
-            <Text style={[styles.timeCardVal, { color: colors.text }]}>{formatTime(elapsed)}</Text>
-            <View style={styles.timeCardBar}>
-              <View style={[styles.timeCardBarFill, { width: `${progressPct}%` as any, backgroundColor: activeFast.color }]} />
-            </View>
-            <View style={styles.timeCardBarLabels}>
-              <Text style={[styles.barLabel, { color: colors.textSecondary }]}>{i18n.t('ui.start')}</Text>
-              <Text style={[styles.barLabel, { color: colors.textSecondary }]}>{activeFast.targetHours}h {i18n.t('ui.goal')}</Text>
+          {/* Circular ring */}
+          <View style={[styles.ringCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <RingTimer
+              progress={Math.min(elapsed / targetSec, 1)}
+              color={activeFast.color}
+              elapsedLabel={formatTime(elapsed)}
+              percent={progressPct}
+            />
+
+            <TouchableOpacity activeOpacity={0.9} onPress={handleEndFast} style={styles.endInline}>
+              <LinearGradient
+                colors={[COLORS.primaryDeep, COLORS.primaryDark]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.endInlineGrad}
+              >
+                <Text style={styles.endInlineText}>End fasting</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Start / End row */}
+            <View style={[styles.startEndRow, { borderTopColor: colors.border }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.seLabel, { color: colors.textSecondary }]}>Start fasting</Text>
+                <Text style={[styles.seValue, { color: colors.text }]}>Today {fmtHM(startAt)}</Text>
+              </View>
+              <View style={[styles.seDivider, { backgroundColor: colors.border }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.seLabel, { color: colors.textSecondary }]}>End fasting</Text>
+                <Text style={[styles.seValue, { color: colors.text }]}>
+                  {endAt.toDateString() === new Date().toDateString() ? 'Today' : 'Tomorrow'} {fmtHM(endAt)}
+                </Text>
+              </View>
             </View>
           </View>
 
-          <View style={styles.statsGrid}>
-            {[
-              { label: i18n.t('ui.start'),   value: new Date(activeFast.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
-              { label: i18n.t('ui.goal'),      value: `${activeFast.targetHours}h` },
-              { label: i18n.t('ui.remaining'), value: formatTime(Math.max(targetSec - elapsed, 0)) },
-            ].map((item, index) => (
-              <View key={item.label} style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <Text style={[styles.statLbl, { color: colors.textSecondary }]}>{item.label}</Text>
-                <Text style={[styles.statVal, { color: index === 2 ? activeFast.color : colors.text }]}>{item.value}</Text>
-              </View>
-            ))}
-          </View>
-
-          <View style={[styles.stageCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={[styles.stageIconBox, { backgroundColor: activeFast.color + '14' }]}>
-              <View style={[styles.stageDot, { backgroundColor: activeFast.color }]} />
+          {/* Body status card */}
+          <View style={[styles.bodyStatusCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.bodyIconBubble, { backgroundColor: activeFast.color + '1E' }]}>
+              <Text style={{ fontSize: 18 }}>💧</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.stageHour, { color: activeFast.color }]}>{i18n.t('fasts.hourLabel')} {Math.floor(elapsedH)}</Text>
-              <Text style={[styles.stageText, { color: colors.textSecondary }]}>{getStage(elapsedH)}</Text>
+              <Text style={[styles.bodyTitle, { color: colors.text }]}>Body status</Text>
+              <Text style={[styles.bodyDesc, { color: colors.textSecondary }]}>
+                {getStage(elapsedH)}
+              </Text>
+            </View>
+            <View style={[styles.bodyLevelPill, { backgroundColor: activeFast.color + '1E' }]}>
+              <Text style={[styles.bodyLevelText, { color: activeFast.color }]}>Lv.{Math.min(Math.floor(elapsedH / 8) + 1, 6)}</Text>
             </View>
           </View>
-
-          <TouchableOpacity activeOpacity={0.9} onPress={handleEndFast} style={styles.endBtnWrap}>
-            <LinearGradient colors={[COLORS.primaryDark, COLORS.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.endBtn}>
-              <Text style={styles.endBtnText}>{i18n.t('fasts.stopFast')}</Text>
-            </LinearGradient>
-          </TouchableOpacity>
         </ScrollView>
       </View>
     );
@@ -316,44 +398,26 @@ export default function FastsScreen() {
   // ── Plan selection ─────────────────────────────────────────────────────────────
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      {!isDark && (
-        <LinearGradient colors={[colors.background, '#FFFFFF', '#F3F8FF']} style={StyleSheet.absoluteFillObject} />
-      )}
-      {!isDark && <FloatingOrb size={220} top={-70} left={-60} delay={0} opacity={0.4} />}
-      {!isDark && <FloatingOrb size={140} top={150} left={260} delay={1100} opacity={0.2} />}
-      {!isDark && <FloatingOrb size={110} top={500} left={-25} delay={1800} opacity={0.18} />}
+      <Starfield />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
-        <Animated.View style={[styles.heroPanel, { transform: [{ translateY: heroLift }] }]}>
-          <LinearGradient
-            colors={[COLORS.primaryDark, COLORS.primary, COLORS.gradientEnd]}
-            start={{ x: 0.05, y: 0.1 }} end={{ x: 0.95, y: 1 }}
-            style={styles.heroGradient}
-          >
-            <View style={styles.heroTopRow}>
-              <View>
-                <Text style={styles.heroKicker}>{i18n.t('fasts.title')}</Text>
-                <Text style={styles.heroTitle}>{i18n.t('fasts.title')}</Text>
-                <Text style={styles.heroBodyText}>{i18n.t('fasts.customFast')}</Text>
-              </View>
-              <View style={styles.heroBadge}>
-                <Text style={styles.heroBadgeLabel}>{i18n.t('ui.today')}</Text>
-                <Text style={styles.heroBadgeValue}>{weekDays.find((d) => d.isToday)?.date ?? ''}</Text>
-              </View>
+        {/* Editorial hero — kicker + two-tone headline + avatar aside */}
+        <Animated.View style={[styles.heroEditorial, { transform: [{ translateY: heroLift }] }]}>
+          <View style={{ flex: 1, paddingRight: SPACING.sm }}>
+            <Kicker>{profile ? `Hello, ${profile.name}` : 'WaterFastBuddy'}</Kicker>
+            <View style={{ marginTop: 10 }}>
+              <Headline line1="Fast smarter." line2="Become fluid." size={34} />
             </View>
-            <View style={styles.heroFooterRow}>
-              <View style={styles.heroChip}>
-                <Text style={styles.heroChipLabel}>{i18n.t('ui.profile')}</Text>
-                <Text style={styles.heroChipValue}>{profile ? profile.name : i18n.t('ui.guest')}</Text>
-              </View>
-              <View style={styles.heroChip}>
-                <Text style={styles.heroChipLabel}>{i18n.t('ui.appearance')}</Text>
-                <Text style={styles.heroChipValue}>{i18n.t('ui.blueWater')}</Text>
-              </View>
-            </View>
-          </LinearGradient>
+            <Text style={[styles.heroLead, { color: colors.textSecondary }]}>
+              {i18n.t('fasts.consistentPlanHint')}
+            </Text>
+          </View>
+          <View style={styles.heroAvatarHalo}>
+            {profile && <WaterBodyAvatar profile={profile} size={110} fastingHours={0} />}
+          </View>
         </Animated.View>
 
+        {/* Week strip */}
         <View style={[styles.weekCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {weekDays.map((d) => (
             <View key={d.date} style={[styles.dayItem, d.isToday && styles.dayItemActive]}>
@@ -362,19 +426,6 @@ export default function FastsScreen() {
               {d.isToday && <View style={styles.dayDot} />}
             </View>
           ))}
-        </View>
-
-        <View style={[styles.heroSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.heroAvatarWrap}>
-            {profile && <WaterBodyAvatar profile={profile} size={104} fastingHours={0} />}
-          </View>
-          <View style={styles.heroBubble}>
-            <Text style={[styles.heroEyebrow, { color: COLORS.primary }]}>{i18n.t('fasts.dailyFocus')}</Text>
-            <Text style={[styles.heroBubbleText, { color: colors.text }]}>
-              {profile ? `${i18n.t('fasts.readyToFast')},\n${profile.name}?` : `${i18n.t('fasts.readyToFast')}?`}
-            </Text>
-            <Text style={[styles.heroSubtle, { color: colors.textSecondary }]}>{i18n.t('fasts.consistentPlanHint')}</Text>
-          </View>
         </View>
 
         <View style={[styles.plansSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -505,6 +556,41 @@ const styles = StyleSheet.create({
   screen:     { flex: 1 },
   scrollBody: { paddingTop: 8, paddingBottom: 112 },
 
+  // New editorial hero (two-tone headline + avatar halo)
+  heroEditorial: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  heroLead: {
+    fontSize: FONT_SIZE.sm,
+    lineHeight: 20,
+    marginTop: SPACING.md,
+    maxWidth: 240,
+  },
+  heroAvatarHalo: {
+    width: 140,
+    height: 140,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  heroHaloRing: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 1.5,
+  },
+  heroHaloRing2: {
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    borderStyle: 'dashed',
+  },
+
   heroPanel:    { marginHorizontal: SPACING.lg, marginBottom: SPACING.md },
   heroGradient: { borderRadius: BORDER_RADIUS.xl, padding: SPACING.lg, shadowColor: '#0F3D8A', shadowOpacity: 0.24, shadowRadius: 20, elevation: 8 },
   heroTopRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: SPACING.md },
@@ -536,11 +622,11 @@ const styles = StyleSheet.create({
   heroSubtle:     { marginTop: 8, fontSize: FONT_SIZE.sm, lineHeight: 20 },
 
   plansSection:   { marginHorizontal: SPACING.lg, marginBottom: SPACING.md, padding: SPACING.md, borderRadius: BORDER_RADIUS.xl, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 12, elevation: 2 },
+  customBtn:      { borderRadius: BORDER_RADIUS.round, paddingHorizontal: 14, paddingVertical: 10 },
+  customBtnText:  { fontSize: FONT_SIZE.sm, fontWeight: '800' },
   sectionHeader:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.md },
   sectionTitle:   { fontSize: FONT_SIZE.lg, fontWeight: '800' },
   sectionSubTitle:{ fontSize: FONT_SIZE.sm, marginTop: 4 },
-  customBtn:      { borderRadius: BORDER_RADIUS.round, paddingHorizontal: 14, paddingVertical: 10 },
-  customBtnText:  { fontSize: FONT_SIZE.sm, fontWeight: '800' },
 
   plansList:    { borderRadius: BORDER_RADIUS.lg, overflow: 'hidden', borderWidth: 1, borderColor: 'transparent' },
   planRow:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.md, paddingVertical: SPACING.md },
@@ -564,6 +650,130 @@ const styles = StyleSheet.create({
 
   // ── Active fast ──────────────────────────────────────────────────────────────
   activeScroll:        { paddingTop: 8, paddingBottom: 118 },
+
+  // Active fast (new)
+  activeHeaderRow: {
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.md,
+    alignItems: 'center',
+  },
+  activeHeadline: {
+    fontSize: FONT_SIZE.xxl,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+    textAlign: 'center',
+  },
+  activeHeadSub: {
+    fontSize: FONT_SIZE.sm,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  currentPill: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: BORDER_RADIUS.round,
+    borderWidth: 1,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.lg,
+  },
+  currentDot: {
+    width: 8, height: 8, borderRadius: 4,
+  },
+  currentText: {
+    fontSize: FONT_SIZE.sm, fontWeight: '700',
+  },
+  ringCard: {
+    marginHorizontal: SPACING.lg,
+    borderRadius: BORDER_RADIUS.xl,
+    borderWidth: 1,
+    paddingVertical: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
+    alignItems: 'center',
+    shadowColor: '#0B5DD1',
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
+    marginBottom: SPACING.lg,
+  },
+  endInline: {
+    marginTop: SPACING.lg,
+    width: '100%',
+  },
+  endInlineGrad: {
+    paddingVertical: 14,
+    borderRadius: BORDER_RADIUS.round,
+    alignItems: 'center',
+  },
+  endInlineText: {
+    color: '#fff',
+    fontSize: FONT_SIZE.md,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  startEndRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: SPACING.lg,
+    marginTop: SPACING.lg,
+    borderTopWidth: 1,
+    width: '100%',
+  },
+  seLabel: {
+    fontSize: FONT_SIZE.xs,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  seValue: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: '900',
+    marginTop: 3,
+  },
+  seDivider: {
+    width: 1,
+    height: 32,
+    marginHorizontal: SPACING.md,
+  },
+  bodyStatusCard: {
+    marginHorizontal: SPACING.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    borderRadius: BORDER_RADIUS.xl,
+    borderWidth: 1,
+    padding: SPACING.md,
+  },
+  bodyIconBubble: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bodyTitle: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: '900',
+  },
+  bodyDesc: {
+    fontSize: FONT_SIZE.sm,
+    marginTop: 2,
+    lineHeight: 18,
+  },
+  bodyLevelPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: BORDER_RADIUS.round,
+  },
+  bodyLevelText: {
+    fontSize: FONT_SIZE.xs,
+    fontWeight: '800',
+  },
+
   activeHero:          { marginHorizontal: SPACING.lg, marginBottom: SPACING.lg },
   activeHeroGradient:  { borderRadius: BORDER_RADIUS.xl, padding: SPACING.lg, shadowColor: '#0F3D8A', shadowOpacity: 0.25, shadowRadius: 22, elevation: 8 },
   heroHeaderRow:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },

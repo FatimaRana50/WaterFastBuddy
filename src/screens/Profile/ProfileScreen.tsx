@@ -13,6 +13,10 @@ import { calculateBmi, calculateTDEE, goalWeightForBmi } from '../../utils/bmi';
 import { COLORS, FONT_SIZE, SPACING, BORDER_RADIUS } from '../../constants/theme';
 import WaterBodyAvatar from '../../components/Avatar/WaterBodyAvatar';
 import MorphingAvatar from '../../components/Avatar/MorphingAvatar';
+import Starfield from '../../components/Starfield';
+import Headline from '../../components/Headline';
+import Kicker from '../../components/Kicker';
+import StatTile from '../../components/StatTile';
 import { ActivityLevel, Gender, Language, WeightEntry } from '../../types';
 import { insertWeightEntry, getAllWeightEntries, insertFast } from '../../store/database';
 import {
@@ -362,38 +366,57 @@ export default function ProfileScreen() {
   const showChart     = chartEntries.length >= 2;
 
   // ── Render ───────────────────────────────────────────────────────────────────
-  const isDark = theme === 'dark';
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      {!isDark && (
-        <LinearGradient colors={[COLORS.mist, '#DCEEFF', '#EEF8FF']} style={StyleSheet.absoluteFillObject} />
-      )}
-      {!isDark && <View pointerEvents="none" style={styles.orbTop} />}
-      {!isDark && <View pointerEvents="none" style={styles.orbBottom} />}
+      <Starfield density={0.08} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
-        {/* ── Header ── */}
-        <LinearGradient colors={[COLORS.primaryDark, COLORS.gradientStart, COLORS.gradientEnd]} style={styles.header}>
-          <Text style={styles.headerKicker}>{i18n.t('profile.personalDashboard')}</Text>
-          <Text style={styles.headerTitle}>{i18n.t('profile.title')}</Text>
-          <Text style={styles.headerSub}>{i18n.t('profile.headerSubtitle')}</Text>
-        </LinearGradient>
-
-        {/* ── Avatar card ── */}
-        <View style={[styles.avatarCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.avatarGlow} />
-          <WaterBodyAvatar profile={profile} size={90} />
-          <View style={styles.avatarInfo}>
-            <Text style={[styles.avatarName, { color: colors.text }]}>{profile.name}</Text>
-            <Text style={[styles.avatarSub, { color: colors.textSecondary }]}>
-              {profile.gender === 'male' ? i18n.t('profile.male') : i18n.t('profile.female')} · {profile.age} {i18n.t('ui.years')}
+        {/* ── Editorial hero ── */}
+        <View style={styles.heroBlock}>
+          <View style={{ flex: 1, paddingRight: SPACING.sm }}>
+            <Kicker>Personal dashboard</Kicker>
+            <View style={{ marginTop: 10 }}>
+              <Headline line1={`Hello,`} line2={`${profile.name}.`} size={32} />
+            </View>
+            <Text style={[styles.heroLead, { color: colors.textSecondary }]}>
+              {profile.gender === 'male' ? i18n.t('profile.male') : i18n.t('profile.female')} · {profile.age} {i18n.t('ui.years')} · BMI {bmi.value}
             </Text>
+            <TouchableOpacity
+              onPress={openEdit}
+              style={[styles.heroEditBtn, { backgroundColor: COLORS.primary }]}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.heroEditText}>{i18n.t('common.edit')} profile</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={[styles.editBtn, { backgroundColor: COLORS.primary + '18' }]} onPress={openEdit}>
-            <Text style={styles.editBtnIcon}>⌁</Text>
-            <Text style={[styles.editBtnText, { color: COLORS.primary }]}>{i18n.t('common.edit')}</Text>
-          </TouchableOpacity>
+          <View style={styles.heroAvatarHalo}>
+            <WaterBodyAvatar profile={profile} size={104} />
+          </View>
+        </View>
+
+        {/* ── Stat tile row ── */}
+        <View style={styles.statRow}>
+          <StatTile
+            icon="flash-outline"
+            value={`${profile.weightKg}kg`}
+            label="Weight"
+            style={{ flex: 1 }}
+          />
+          <StatTile
+            icon="body-outline"
+            value={`${profile.heightCm}cm`}
+            label="Height"
+            accent={COLORS.accent}
+            style={{ flex: 1 }}
+          />
+          <StatTile
+            icon="pulse-outline"
+            value={`${tdee}`}
+            label="Kcal/day"
+            accent={COLORS.success}
+            style={{ flex: 1 }}
+          />
         </View>
 
         {/* ── Body stats ── */}
@@ -845,6 +868,58 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(111,216,238,0.16)', bottom: -170, left: -120,
   },
   scroll: { paddingBottom: 110 },
+
+  // New editorial hero
+  heroBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.lg,
+  },
+  heroLead: {
+    fontSize: FONT_SIZE.sm,
+    lineHeight: 20,
+    marginTop: SPACING.sm,
+  },
+  heroEditBtn: {
+    alignSelf: 'flex-start',
+    marginTop: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 10,
+    borderRadius: BORDER_RADIUS.round,
+  },
+  heroEditText: {
+    color: '#fff',
+    fontSize: FONT_SIZE.sm,
+    fontWeight: '800',
+  },
+  heroAvatarHalo: {
+    width: 132,
+    height: 132,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  heroHaloRing: {
+    position: 'absolute',
+    width: 132,
+    height: 132,
+    borderRadius: 66,
+    borderWidth: 1.5,
+  },
+  heroHaloRing2: {
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    borderStyle: 'dashed',
+  },
+  statRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginHorizontal: SPACING.lg,
+    marginBottom: SPACING.lg,
+  },
 
   header: {
     paddingTop: 8, paddingBottom: SPACING.xl,

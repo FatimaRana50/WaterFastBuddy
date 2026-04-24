@@ -7,6 +7,10 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useFasts } from '../../store/FastsContext';
 import { FastRecord } from '../../types';
 import { COLORS, FONT_SIZE, SPACING, BORDER_RADIUS } from '../../constants/theme';
+import Starfield from '../../components/Starfield';
+import Headline from '../../components/Headline';
+import Kicker from '../../components/Kicker';
+import StatTile from '../../components/StatTile';
 import i18n from '../../i18n';
 
 // Format hours into a human-readable label
@@ -84,33 +88,27 @@ export default function HistoryScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Light-mode ambient gradient — skipped in dark mode so it doesn't wash out the theme. */}
-      {!isDark && (
-        <LinearGradient colors={[COLORS.mist, '#D9EBFF', '#EAF6FF']} style={StyleSheet.absoluteFillObject} />
-      )}
-      {!isDark && <View pointerEvents="none" style={styles.orbTop} />}
-      {!isDark && <View pointerEvents="none" style={styles.orbBottom} />}
+      <Starfield density={0.08} />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <LinearGradient colors={[COLORS.primaryDark, COLORS.gradientStart, COLORS.gradientEnd]} style={styles.hero}>
-          <Text style={styles.heroKicker}>{i18n.t('history.title')}</Text>
-          <Text style={styles.title}>{i18n.t('history.title')}</Text>
-          <Text style={styles.heroBody}>{i18n.t('history.noHistory')}</Text>
-        </LinearGradient>
+        {/* Editorial hero */}
+        <View style={styles.heroBlock}>
+          <Kicker>History</Kicker>
+          <View style={{ marginTop: 10 }}>
+            <Headline line1="Every hour" line2="counts." size={34} />
+          </View>
+          <Text style={[styles.heroLead, { color: colors.textSecondary }]}>
+            {fasts.length > 0
+              ? `${stats.total} fasts · ${stats.totalHours} logged this year.`
+              : i18n.t('history.noHistory')}
+          </Text>
+        </View>
 
-        {/* Stats grid — 2 × 2 */}
-        <View style={styles.summaryGrid}>
-          {[
-            { label: i18n.t('history.longestFast'), value: stats.longest },
-            { label: i18n.t('history.currentStreak'), value: `${stats.streak}d` },
-            { label: i18n.t('history.totalFasts'),  value: stats.total },
-            { label: i18n.t('history.totalHours'),  value: stats.totalHours },
-          ].map((item) => (
-            <View key={item.label} style={[styles.summaryCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.summaryValue, { color: COLORS.primary }]}>{item.value}</Text>
-              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{item.label}</Text>
-            </View>
-          ))}
+        {/* Stat tile row */}
+        <View style={styles.statRow}>
+          <StatTile icon="flame-outline"      value={`${stats.streak}d`} label="Streak"    style={{ flex: 1 }} />
+          <StatTile icon="trophy-outline"     value={stats.longest}      label="Longest"   accent={COLORS.accent}  style={{ flex: 1 }} />
+          <StatTile icon="checkmark-outline"  value={stats.total}        label="Completed" accent={COLORS.success} style={{ flex: 1 }} />
         </View>
 
         {/* Calendar */}
@@ -189,7 +187,11 @@ const styles = StyleSheet.create({
     position: 'absolute', width: 300, height: 300, borderRadius: 150,
     backgroundColor: 'rgba(147,230,255,0.2)', bottom: -140, left: -90,
   },
-  content:    { padding: SPACING.lg, paddingTop: 8, paddingBottom: 90 },
+  content:    { padding: SPACING.lg, paddingTop: 8, paddingBottom: 120 },
+
+  heroBlock: { marginTop: SPACING.md, marginBottom: SPACING.lg },
+  heroLead:  { fontSize: FONT_SIZE.sm, lineHeight: 20, marginTop: SPACING.md, maxWidth: 320 },
+  statRow:   { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg },
   hero:       { borderRadius: BORDER_RADIUS.xl, padding: SPACING.lg, marginBottom: SPACING.lg, shadowColor: '#2A84E2', shadowOpacity: 0.24, shadowRadius: 16, elevation: 8 },
   heroKicker: { color: 'rgba(255,255,255,0.8)', fontSize: FONT_SIZE.xs, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
   title:      { fontSize: FONT_SIZE.xxl, fontWeight: '900', marginTop: 6, color: '#fff' },

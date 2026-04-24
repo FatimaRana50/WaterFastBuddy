@@ -43,8 +43,13 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
 }
 
 export default function BottomTabs() {
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
   useLanguage();
+  const isDark = theme === 'dark';
+  // Tab bar background gradient — light-navy in dark mode, near-white in light.
+  const tabBgColors = isDark
+    ? (['rgba(14,27,49,0.96)', 'rgba(10,17,33,0.94)'] as const)
+    : (['rgba(255,255,255,0.98)', 'rgba(245,251,255,0.96)'] as const);
 
   return (
     <Tab.Navigator
@@ -72,10 +77,7 @@ export default function BottomTabs() {
           paddingBottom: 10,
         },
         tabBarBackground: () => (
-          <LinearGradient
-            colors={['rgba(255,255,255,0.98)', 'rgba(245,251,255,0.96)']}
-            style={StyleSheet.absoluteFillObject}
-          />
+          <LinearGradient colors={tabBgColors} style={StyleSheet.absoluteFillObject} />
         ),
         tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginTop: 2 },
         tabBarItemStyle: { paddingTop: 4 },

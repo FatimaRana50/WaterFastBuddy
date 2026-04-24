@@ -248,8 +248,9 @@
     "blueWater": "Eau bleue"
   },
   "topBar": {
-    "book": "Réserver 1-à-1",
-    "buyFastingSalts": "Acheter des Sels"
+    "book": "Réserver",
+    "buyFastingSalts": "Acheter des Sels",
+    "shop": "Boutique"
   },
   "paywall": {
     "title": "Accès Complet",

@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useUser } from '../../store/UserContext';
 import { calculateTDEE, calculateBmi, calculateBodyFatPercentage } from '../../utils/bmi';
-import { FONT_SIZE, SPACING, COLORS, BORDER_RADIUS } from '../../constants/theme';
+import { FONT, FONT_SIZE, SPACING, COLORS, BORDER_RADIUS } from '../../constants/theme';
+import Starfield from '../../components/Starfield';
+import Headline from '../../components/Headline';
+import Kicker from '../../components/Kicker';
+import StatTile from '../../components/StatTile';
 import i18n from '../../i18n';
 import type { ActivityLevel } from '../../types';
 
@@ -25,36 +30,65 @@ export default function CaloriesScreen() {
     );
   }
 
-  const tdee = calculateTDEE(profile.weightKg, profile.heightCm, profile.age, profile.gender, activity);
-  const bmi = calculateBmi(profile.weightKg, profile.heightCm);
+  const tdee    = calculateTDEE(profile.weightKg, profile.heightCm, profile.age, profile.gender, activity);
+  const bmi     = calculateBmi(profile.weightKg, profile.heightCm);
   const bodyFat = calculateBodyFatPercentage(bmi.value, profile.age, profile.gender);
   const deficit = Math.max(tdee - 500, 1200);
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
-      <LinearGradient colors={[COLORS.primaryDark, COLORS.primary, COLORS.accent]} style={styles.hero}>
-        <Text style={styles.heroKicker}>{i18n.t('calories.heroKicker')}</Text>
-        <Text style={styles.title}>{i18n.t('calories.title')}</Text>
-        <Text style={styles.heroBody}>{i18n.t('calories.heroBody')}</Text>
-      </LinearGradient>
-      <View style={[styles.card, { backgroundColor: colors.surface }]}> 
-        <Text style={[styles.label, { color: colors.textSecondary }]}>{i18n.t('calories.maintenance')}</Text>
-        <Text style={styles.value}>{tdee} <Text style={styles.unit}>{i18n.t('calories.kcalPerDay')}</Text></Text>
-      </View>
-      <View style={[styles.card, { backgroundColor: colors.surface }]}> 
-        <Text style={[styles.label, { color: colors.textSecondary }]}>{i18n.t('calories.bmi')}</Text>
-        <Text style={styles.value}>{bmi.value}</Text>
-        <Text style={{ color: COLORS[bmi.category], fontWeight: '600' }}>{i18n.t(`profile.${bmi.category}`)}</Text>
-      </View>
-      <View style={[styles.card, { backgroundColor: colors.surface }]}> 
-        <Text style={[styles.label, { color: colors.textSecondary }]}>{i18n.t('calories.bodyFat')}</Text>
-        <Text style={styles.value}>{bodyFat.value}%</Text>
-        <Text style={{ color: colors.textSecondary, fontWeight: '600', textTransform: 'capitalize' }}>
-          {i18n.t(`calories.bodyFatCategories.${bodyFat.category}`)}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Starfield density={0.08} />
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Hero */}
+        <View style={styles.heroBlock}>
+          <Kicker>Calories</Kicker>
+          <View style={{ marginTop: 10 }}>
+            <Headline line1="Fuel the fast." line2="Balance the day." size={30} />
+          </View>
+          <Text style={[styles.heroLead, { color: colors.textSecondary }]}>
+            {i18n.t('calories.heroBody')}
+          </Text>
+        </View>
+
+        {/* Big TDEE gauge */}
+        <LinearGradient
+          colors={[COLORS.primaryDeep, COLORS.primaryDark, COLORS.primary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.tdeeCard}
+        >
+          <Text style={styles.tdeeKicker}>{i18n.t('calories.maintenance')}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 6 }}>
+            <Text style={styles.tdeeValue}>{tdee}</Text>
+            <Text style={styles.tdeeUnit}>{i18n.t('calories.kcalPerDay')}</Text>
+          </View>
+          <View style={styles.tdeeDivider} />
+          <View style={styles.tdeeSplit}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.tdeeSubLabel}>{i18n.t('ui.weightLossTarget')}</Text>
+              <Text style={styles.tdeeSubValue}>{deficit}</Text>
+            </View>
+            <View style={styles.tdeeSepVert} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.tdeeSubLabel}>{i18n.t('calories.bmi')}</Text>
+              <Text style={styles.tdeeSubValue}>{bmi.value}</Text>
+            </View>
+            <View style={styles.tdeeSepVert} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.tdeeSubLabel}>{i18n.t('calories.bodyFat')}</Text>
+              <Text style={styles.tdeeSubValue}>{bodyFat.value}%</Text>
+            </View>
+          </View>
+        </LinearGradient>
+
+        {/* Activity selector */}
+        <View style={{ marginTop: SPACING.lg, marginBottom: SPACING.sm }}>
+          <Kicker>Activity level</Kicker>
+        </View>
+        <Text style={[styles.sectionBody, { color: colors.textSecondary }]}>
+          Pick the one that best matches your current week.
         </Text>
-      </View>
-      <View style={[styles.card, { backgroundColor: colors.surface }]}> 
-        <Text style={[styles.label, { color: colors.textSecondary }]}>{i18n.t('onboarding.setup.activityLevel')}</Text>
         <View style={styles.chipRow}>
           {OPTIONS.map((opt) => {
             const isActive = activity === opt;
@@ -62,6 +96,7 @@ export default function CaloriesScreen() {
               <TouchableOpacity
                 key={opt}
                 onPress={() => setActivity(opt)}
+                activeOpacity={0.85}
                 style={[
                   styles.chip,
                   {
@@ -70,34 +105,140 @@ export default function CaloriesScreen() {
                   },
                 ]}
               >
-                <Text style={[styles.chipText, { color: isActive ? '#fff' : colors.text }]}>
+                <Text
+                  style={[
+                    styles.chipText,
+                    { color: isActive ? '#fff' : colors.text },
+                  ]}
+                >
                   {i18n.t(`onboarding.setup.${opt}`)}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </View>
-      </View>
-      <View style={[styles.card, { backgroundColor: colors.surface }]}> 
-        <Text style={[styles.label, { color: colors.textSecondary }]}>{i18n.t('ui.weightLossTarget')}</Text>
-        <Text style={styles.value}>{deficit} <Text style={styles.unit}>{i18n.t('calories.kcalPerDay')}</Text></Text>
-      </View>
-    </ScrollView>
+
+        {/* Supporting stats */}
+        <View style={{ marginTop: SPACING.lg, marginBottom: SPACING.sm }}>
+          <Kicker>Body profile</Kicker>
+        </View>
+        <View style={styles.tileRow}>
+          <StatTile
+            icon="person-outline"
+            value={`${profile.age}`}
+            label="Years"
+            style={{ flex: 1 }}
+          />
+          <StatTile
+            icon="body-outline"
+            value={`${profile.heightCm}cm`}
+            label="Height"
+            accent={COLORS.accent}
+            style={{ flex: 1 }}
+          />
+          <StatTile
+            icon="fitness-outline"
+            value={`${profile.weightKg}kg`}
+            label="Weight"
+            accent={COLORS.success}
+            style={{ flex: 1 }}
+          />
+        </View>
+
+        {/* Info card */}
+        <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="information-circle-outline" size={18} color={COLORS.primary} style={{ marginRight: 8 }} />
+          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+            TDEE is estimated with the Mifflin-St Jeor equation. Your coach can fine-tune this on a 1-on-1 call.
+          </Text>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: SPACING.lg, paddingTop: 8, paddingBottom: 90 },
-  hero: { borderRadius: BORDER_RADIUS.xl, padding: SPACING.lg, marginBottom: SPACING.lg },
-  heroKicker: { color: 'rgba(255,255,255,0.8)', fontSize: FONT_SIZE.xs, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
-  title: { fontSize: FONT_SIZE.xxl, fontWeight: '800', color: '#fff', marginTop: 6 },
-  heroBody: { color: 'rgba(255,255,255,0.9)', marginTop: SPACING.sm, fontSize: FONT_SIZE.md, lineHeight: 22 },
-  card: { borderRadius: BORDER_RADIUS.lg, padding: SPACING.lg, marginBottom: SPACING.md, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 10, elevation: 2 },
-  label: { fontSize: FONT_SIZE.sm, marginBottom: SPACING.xs },
-  value: { fontSize: FONT_SIZE.hero, fontWeight: 'bold', color: COLORS.primary },
-  unit: { fontSize: FONT_SIZE.md, color: '#999' },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: SPACING.sm },
-  chip: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1 },
-  chipText: { fontWeight: '700', fontSize: FONT_SIZE.sm },
+  content: { padding: SPACING.lg, paddingTop: SPACING.md, paddingBottom: 120 },
+
+  heroBlock: { marginTop: SPACING.md, marginBottom: SPACING.lg },
+  heroLead:  { fontSize: FONT_SIZE.sm, lineHeight: 20, marginTop: SPACING.md, maxWidth: 320 },
+
+  tdeeCard: {
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.lg,
+    shadowColor: '#0B5DD1',
+    shadowOpacity: 0.3,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 8,
+  },
+  tdeeKicker: {
+    color: 'rgba(255,255,255,0.72)',
+    fontFamily: FONT.extra,
+    fontSize: FONT_SIZE.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+  tdeeValue: {
+    color: '#fff',
+    fontFamily: FONT.black,
+    fontSize: 72,
+    letterSpacing: -2,
+    lineHeight: 72,
+  },
+  tdeeUnit: {
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: FONT_SIZE.md,
+    fontFamily: FONT.semibold,
+    marginLeft: 8,
+  },
+  tdeeDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    marginVertical: SPACING.md,
+  },
+  tdeeSplit: { flexDirection: 'row', alignItems: 'center' },
+  tdeeSepVert: {
+    width: 1,
+    height: 28,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    marginHorizontal: SPACING.sm,
+  },
+  tdeeSubLabel: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: FONT_SIZE.xs,
+    fontFamily: FONT.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+  },
+  tdeeSubValue: {
+    color: '#fff',
+    fontFamily: FONT.extra,
+    fontSize: FONT_SIZE.lg,
+    marginTop: 2,
+  },
+
+  sectionBody: { fontSize: FONT_SIZE.sm, marginTop: 6, marginBottom: SPACING.md },
+
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: {
+    borderRadius: BORDER_RADIUS.round,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+  },
+  chipText: { fontFamily: FONT.bold, fontSize: FONT_SIZE.sm },
+
+  tileRow: { flexDirection: 'row', gap: SPACING.sm },
+
+  infoCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    padding: SPACING.md,
+    marginTop: SPACING.lg,
+  },
+  infoText: { flex: 1, fontSize: FONT_SIZE.sm, lineHeight: 20 },
 });

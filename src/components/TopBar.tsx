@@ -1,134 +1,191 @@
-// Persistent top navigation bar — visible on all 5 tab screens
-// Spec §2.6: logo (left), Book 1-on-1 + Buy Salts (centre), social icons (right)
+// Persistent floating "pill" top bar — matches the website nav exactly:
+//   Logo droplet + WaterFastBuddy wordmark (left)
+//   Book 1-on-1 + Shop pill CTAs (center-right)
+//   IG / FB / YouTube small icons (right)
+//
+// Uses the theme's `pillBg` / `pillBorder` so it reads correctly in both
+// light and dark modes.
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Linking, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../store/ThemeContext';
 import i18n from '../i18n';
 import { COLORS, FONT_SIZE, BORDER_RADIUS, SPACING } from '../constants/theme';
 
 // ── Placeholder URLs — client will supply final values ────────────────────────
-const URL_BUY_SALTS   = 'https://waterfastbuddy.com/salts';   // affiliate link TBC
 const URL_INSTAGRAM   = 'https://instagram.com/waterfastbuddy';
 const URL_FACEBOOK    = 'https://facebook.com/waterfastbuddy';
 const URL_YOUTUBE     = 'https://youtube.com/@waterfastbuddy';
 
+// Gradient-filled droplet SVG — the website's logo mark.
+function DropletLogo({ size = 20 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size * 1.15} viewBox="0 0 24 28">
+      <Defs>
+        <SvgGradient id="drop" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0%"  stopColor={COLORS.accent} />
+          <Stop offset="100%" stopColor={COLORS.primaryDark} />
+        </SvgGradient>
+      </Defs>
+      <Path
+        d="M12 1 C 7 10, 3 15, 3 19 a 9 9 0 0 0 18 0 c 0 -4 -4 -9 -9 -18 Z"
+        fill="url(#drop)"
+      />
+    </Svg>
+  );
+}
+
 export default function TopBar() {
   const insets     = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
 
   const openUrl = (url: string) => Linking.openURL(url).catch(() => {});
 
   return (
-    <LinearGradient
-      colors={[COLORS.primaryDark, COLORS.primary]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
-      style={[styles.container, { paddingTop: insets.top + 6 }]}
-    >
-      {/* Left: Logo */}
-      <TouchableOpacity
-        onPress={() => navigation.navigate('Fasts')}
-        activeOpacity={0.8}
-        style={styles.logoWrap}
+    <View style={{ paddingTop: insets.top + 6, paddingHorizontal: SPACING.md }}>
+      <View
+        style={[
+          styles.pill,
+          {
+            backgroundColor: colors.pillBg,
+            borderColor:     colors.pillBorder,
+            shadowColor:     COLORS.primary,
+          },
+        ]}
       >
-        <Text style={styles.logoText}>💧</Text>
-        <Text style={styles.logoLabel}>WFB</Text>
-      </TouchableOpacity>
-
-      {/* Centre: CTA buttons */}
-      <View style={styles.ctaRow}>
+        {/* Left: logo droplet + wordmark */}
         <TouchableOpacity
-          style={styles.ctaBtn}
-          onPress={() => navigation.navigate('Booking')}
-          activeOpacity={0.85}
+          onPress={() => navigation.navigate('Main', { screen: 'Fasts' })}
+          activeOpacity={0.8}
+          style={styles.logoWrap}
         >
-            <Text style={styles.ctaText}>{i18n.t('topBar.book')}</Text>
+          <DropletLogo size={18} />
+          <Text style={[styles.logoLabel, { color: colors.text }]}>
+            WFB
+          </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.ctaBtn, styles.ctaBtnAlt]}
-          onPress={() => openUrl(URL_BUY_SALTS)}
-          activeOpacity={0.85}
-        >
-            <Text style={styles.ctaText}>{i18n.t('topBar.buyFastingSalts')}</Text>
-        </TouchableOpacity>
-      </View>
+        {/* Center CTAs */}
+        <View style={styles.ctaRow}>
+          <TouchableOpacity
+            style={[styles.ctaPrimary]}
+            onPress={() => navigation.navigate('Booking')}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="calendar-outline" size={13} color="#fff" style={{ marginRight: 5 }} />
+            <Text style={styles.ctaPrimaryText}>{i18n.t('topBar.book')}</Text>
+          </TouchableOpacity>
 
-      {/* Right: Social icons */}
-      <View style={styles.socialRow}>
-        <TouchableOpacity onPress={() => openUrl(URL_INSTAGRAM)} style={styles.socialBtn} activeOpacity={0.75}>
-          <Ionicons name="logo-instagram" size={17} color="rgba(255,255,255,0.9)" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => openUrl(URL_FACEBOOK)} style={styles.socialBtn} activeOpacity={0.75}>
-          <Ionicons name="logo-facebook" size={17} color="rgba(255,255,255,0.9)" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => openUrl(URL_YOUTUBE)} style={styles.socialBtn} activeOpacity={0.75}>
-          <Ionicons name="logo-youtube" size={17} color="rgba(255,255,255,0.9)" />
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.ctaSecondary, { backgroundColor: colors.cardAlt, borderColor: colors.border }]}
+            onPress={() => navigation.navigate('Shop')}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="bag-handle-outline" size={13} color={COLORS.primary} style={{ marginRight: 5 }} />
+            <Text style={[styles.ctaSecondaryText, { color: COLORS.primary }]}>
+              {i18n.t('topBar.shop')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Right: social icons */}
+        <View style={styles.socialRow}>
+          <TouchableOpacity
+            onPress={() => openUrl(URL_INSTAGRAM)}
+            style={[styles.socialBtn, { backgroundColor: colors.cardAlt }]}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="logo-instagram" size={14} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => openUrl(URL_YOUTUBE)}
+            style={[styles.socialBtn, { backgroundColor: colors.cardAlt }]}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="logo-youtube" size={14} color={colors.text} />
+          </TouchableOpacity>
+        </View>
       </View>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingBottom: 10,
-    gap: SPACING.xs,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: BORDER_RADIUS.round,
+    borderWidth: 1,
+    shadowOpacity: Platform.OS === 'android' ? 0 : 0.18,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+    gap: 8,
   },
 
   // Logo
   logoWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    marginRight: 2,
+    gap: 6,
+    paddingHorizontal: 4,
   },
-  logoText:  { fontSize: 18 },
-  logoLabel: { fontSize: FONT_SIZE.sm, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
+  logoLabel: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: '900',
+    letterSpacing: 0.2,
+  },
 
-  // CTA buttons
+  // CTAs
   ctaRow: {
     flex: 1,
     flexDirection: 'row',
     gap: 6,
     justifyContent: 'center',
   },
-  ctaBtn: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderRadius: BORDER_RADIUS.round,
-    paddingVertical: 6,
+  ctaPrimary: {
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
+    backgroundColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.round,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
   },
-  ctaBtnAlt: {
-    backgroundColor: 'rgba(255,255,255,0.10)',
-  },
-  ctaText: {
+  ctaPrimaryText: {
     color: '#fff',
     fontSize: FONT_SIZE.xs,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  ctaSecondary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: BORDER_RADIUS.round,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderWidth: 1,
+  },
+  ctaSecondaryText: {
+    fontSize: FONT_SIZE.xs,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
 
-  // Social icons
+  // Socials
   socialRow: {
     flexDirection: 'row',
-    gap: 2,
-    marginLeft: 2,
+    gap: 4,
   },
   socialBtn: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },

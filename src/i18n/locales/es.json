@@ -248,8 +248,9 @@
     "blueWater": "Agua azul"
   },
   "topBar": {
-    "book": "Reservar 1-a-1",
-    "buyFastingSalts": "Comprar Sales"
+    "book": "Reservar",
+    "buyFastingSalts": "Comprar Sales",
+    "shop": "Tienda"
   },
   "paywall": {
     "title": "Acceso Completo",

@@ -1,65 +1,81 @@
-// WaterFastBuddy design tokens — blue water aesthetic
+// WaterFastBuddy design tokens — matches the web brand
+// Palette distilled from the website: near-white backgrounds with vivid blue
+// accents (light) and deep navy with electric blue (dark). Both modes share
+// the same primary accent so screenshots look consistent side-by-side.
 export const COLORS = {
-  // Brand blues
-  primary: '#1972E8',
-  primaryDark: '#0A3E93',
-  primaryLight: '#7DB7FF',
-  accent: '#21B0D8',
-  accentLight: '#C7EEFF',
+  // Brand blues — used across both themes
+  primary:      '#1B8CFF',   // vivid "WaterFastBuddy" blue
+  primaryDark:  '#0B5DD1',
+  primaryDeep:  '#083B8A',
+  primaryLight: '#7FBEFF',
+  accent:       '#21C7FF',   // cyan-ish gradient tail
+  accentLight:  '#BCE9FF',
 
-  // Atmospheric support
-  mist: '#EAF4FF',
-  frost: '#F6FAFF',
-  navyInk: '#0E2443',
+  // Kicker text (small uppercase section label)
+  kicker:       '#1B8CFF',
+
+  // Atmospheric support — kept for legacy callers
+  mist:      '#EEF5FF',
+  frost:     '#F6FAFF',
+  navyInk:   '#0B1530',
 
   // Gradients (start → end)
-  gradientStart: '#0E5EE4',
-  gradientMid: '#2A85F2',
-  gradientEnd: '#63C7E8',
+  gradientStart: '#0B5DD1',
+  gradientMid:   '#1B8CFF',
+  gradientEnd:   '#21C7FF',
 
   // Status
   success: '#10B981',
   warning: '#F59E0B',
-  danger: '#EF4444',
+  danger:  '#EF4444',
 
   // BMI gauge
   underweight: '#60A5FA',
-  normal: '#10B981',
-  overweight: '#F59E0B',
-  obese: '#EF4444',
+  normal:      '#10B981',
+  overweight:  '#F59E0B',
+  obese:       '#EF4444',
 
   white: '#FFFFFF',
-  black: '#0F172A',
+  black: '#060E1E',
 };
 
+// Near-white neutrals, soft blue tint — matches the website's light hero
 export const LIGHT_THEME = {
-  background: '#EAF4FF',
-  surface: '#F7FBFF',
-  card: '#FFFFFF',
-  cardAlt: '#E6F2FF',
-  text: '#0E2443',
-  textSecondary: '#5F7897',
-  border: '#CCE0F7',
-  tabBar: 'rgba(255,255,255,0.94)',
-  tabBarActive: COLORS.primary,
-  tabBarInactive: '#7E99B8',
-  headerBg: '#1E63E9',
-  headerText: '#FFFFFF',
+  background:    '#F4F8FE',
+  surface:       '#FFFFFF',
+  card:          '#FFFFFF',
+  cardAlt:       '#EBF2FB',
+  text:          '#0B1530',
+  textSecondary: '#5C6B85',
+  border:        '#D6E2F2',
+  tabBar:        'rgba(255,255,255,0.96)',
+  tabBarActive:  COLORS.primary,
+  tabBarInactive:'#7E8DA8',
+  headerBg:      '#0B5DD1',
+  headerText:    '#FFFFFF',
+  // Extras used by the new design system
+  pillBg:        'rgba(255,255,255,0.94)', // floating top bar fill
+  pillBorder:    'rgba(27,140,255,0.12)',
+  glow:          'rgba(27,140,255,0.18)',
 };
 
+// Deep navy — matches the website's dark hero
 export const DARK_THEME = {
-  background: '#071429',
-  surface: '#102B4A',
-  card: '#163A61',
-  cardAlt: '#0C213D',
-  text: '#E8F4FF',
-  textSecondary: '#8FB4D7',
-  border: '#214B75',
-  tabBar: 'rgba(10,27,49,0.92)',
-  tabBarActive: COLORS.accent,
-  tabBarInactive: '#5D85A8',
-  headerBg: '#10243E',
-  headerText: '#EAF4FF',
+  background:    '#060E1E',
+  surface:       '#0E1B31',
+  card:          '#162848',
+  cardAlt:       '#0A142A',
+  text:          '#E8F1FF',
+  textSecondary: '#8BA2C8',
+  border:        '#1F3358',
+  tabBar:        'rgba(10,17,33,0.94)',
+  tabBarActive:  COLORS.accent,
+  tabBarInactive:'#5A7299',
+  headerBg:      '#0A1630',
+  headerText:    '#EAF4FF',
+  pillBg:        'rgba(14,27,49,0.92)',
+  pillBorder:    'rgba(27,140,255,0.28)',
+  glow:          'rgba(33,199,255,0.22)',
 };
 
 export const SPACING = {
@@ -72,19 +88,29 @@ export const SPACING = {
 };
 
 export const FONT_SIZE = {
-  xs: 11,
-  sm: 13,
-  md: 15,
-  lg: 18,
-  xl: 22,
-  xxl: 28,
+  xs:   11,
+  sm:   13,
+  md:   15,
+  lg:   18,
+  xl:   22,
+  xxl:  28,
   hero: 36,
 };
 
 export const BORDER_RADIUS = {
-  sm: 8,
-  md: 12,
-  lg: 20,
-  xl: 32,
+  sm:    8,
+  md:    12,
+  lg:    20,
+  xl:    32,
   round: 9999,
 };
+
+// Inter font family names — loaded in App.tsx via @expo-google-fonts/inter.
+export const FONT = {
+  regular:  'Inter_400Regular',
+  medium:   'Inter_500Medium',
+  semibold: 'Inter_600SemiBold',
+  bold:     'Inter_700Bold',
+  extra:    'Inter_800ExtraBold',
+  black:    'Inter_900Black',
+} as const;

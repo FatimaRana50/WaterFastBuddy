@@ -248,8 +248,9 @@
     "blueWater": "नीला पानी"
   },
   "topBar": {
-    "book": "1-on-1 बुक करें",
-    "buyFastingSalts": "नमक खरीदें"
+    "book": "बुक करें",
+    "buyFastingSalts": "नमक खरीदें",
+    "shop": "शॉप"
   },
   "paywall": {
     "title": "पूर्ण पहुँच",
