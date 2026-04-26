@@ -57,9 +57,9 @@
       "eas": {
         "projectId": "3d86fbc7-3dd2-4b7d-a356-f446845a2e99"
       },
-      "googleOAuthAndroidClientId": "",
+      "googleOAuthAndroidClientId": "884105320267-g28cud3na3ni45r5kkc13m1b3hfen281.apps.googleusercontent.com",
       "googleOAuthIosClientId": "",
-      "googleOAuthWebClientId": ""
+      "googleOAuthWebClientId": "884105320267-f0p1s2qrambjdi5oa3tvdb6loatv38iu.apps.googleusercontent.com"
     },
     "owner": "fatima_farrukh_rana"
   }

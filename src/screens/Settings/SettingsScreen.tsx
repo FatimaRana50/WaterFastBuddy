@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Switch, Alert, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
+import { useUser } from '../../store/UserContext';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
 import i18n from '../../i18n';
 import { Language } from '../../types';
+import { uploadBackupToDrive, downloadBackupFromDrive, isDriveConfigured } from '../../utils/googleDrive';
+import { getAllFasts, insertFast, getAllWeightEntries, insertWeightEntry } from '../../store/database';
 
 const LANGUAGE_OPTIONS: { key: Language; label: string }[] = [
   { key: 'en', label: 'English' },
@@ -18,7 +21,9 @@ const LANGUAGE_OPTIONS: { key: Language; label: string }[] = [
 export default function SettingsScreen() {
   const { colors, theme, toggleTheme } = useTheme();
   const { language: appLanguage, setLanguage: updateAppLanguage } = useLanguage();
+  const { profile, saveProfile } = useUser();
   const [selectedLanguage, setSelectedLanguage] = useState<Language>(appLanguage);
+  const [driveLoading, setDriveLoading] = useState(false);
 
   useEffect(() => {
     setSelectedLanguage(appLanguage);
@@ -30,6 +35,71 @@ export default function SettingsScreen() {
   };
 
   const openBooking = () => Linking.openURL('https://bookings.waterfastbuddy.com');
+
+  const handleBackup = async () => {
+    if (!isDriveConfigured()) {
+      Alert.alert('Not configured', 'Google Drive backup is not set up yet.');
+      return;
+    }
+    try {
+      setDriveLoading(true);
+      const [fasts, weightEntries] = await Promise.all([getAllFasts(), getAllWeightEntries()]);
+      await uploadBackupToDrive({
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        profile,
+        fasts,
+        weightEntries,
+      });
+      Alert.alert('Backup complete', 'Your data has been saved to Google Drive.');
+    } catch (e: any) {
+      if (e.message === 'drive_auth_cancelled') return;
+      Alert.alert('Backup failed', e.message ?? 'Something went wrong.');
+    } finally {
+      setDriveLoading(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!isDriveConfigured()) {
+      Alert.alert('Not configured', 'Google Drive backup is not set up yet.');
+      return;
+    }
+    Alert.alert(
+      'Restore from Drive',
+      'This will overwrite your current data. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Restore',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDriveLoading(true);
+              const data = await downloadBackupFromDrive() as any;
+              if (!data) {
+                Alert.alert('No backup found', 'No backup file was found in your Google Drive.');
+                return;
+              }
+              if (data.profile) await saveProfile(data.profile);
+              if (Array.isArray(data.fasts)) {
+                for (const fast of data.fasts) await insertFast(fast);
+              }
+              if (Array.isArray(data.weightEntries)) {
+                for (const entry of data.weightEntries) await insertWeightEntry(entry);
+              }
+              Alert.alert('Restore complete', 'Your data has been restored from Google Drive.');
+            } catch (e: any) {
+              if (e.message === 'drive_auth_cancelled') return;
+              Alert.alert('Restore failed', e.message ?? 'Something went wrong.');
+            } finally {
+              setDriveLoading(false);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const isDark = theme === 'dark';
 
@@ -83,8 +153,22 @@ export default function SettingsScreen() {
           <TouchableOpacity style={styles.actionBtn} onPress={openBooking}>
             <Text style={styles.actionText}>{i18n.t('ui.bookOneOnOneSession')}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionBtn, { backgroundColor: COLORS.primary + '14' }]} onPress={() => Alert.alert(i18n.t('settingsScreen.backupTitle'), i18n.t('settingsScreen.backupBody')) }>
-            <Text style={[styles.actionText, { color: COLORS.primary }]}>{i18n.t('settingsScreen.backupRestore')}</Text>
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: COLORS.primary + '14', opacity: driveLoading ? 0.6 : 1 }]}
+            onPress={handleBackup}
+            disabled={driveLoading}
+          >
+            {driveLoading
+              ? <ActivityIndicator color={COLORS.primary} />
+              : <Text style={[styles.actionText, { color: COLORS.primary }]}>Backup to Google Drive</Text>
+            }
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionBtn, { backgroundColor: COLORS.primary + '08', marginTop: SPACING.sm, opacity: driveLoading ? 0.6 : 1 }]}
+            onPress={handleRestore}
+            disabled={driveLoading}
+          >
+            <Text style={[styles.actionText, { color: COLORS.primary }]}>Restore from Google Drive</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

@@ -37,8 +37,9 @@ const TOKEN_EXP_KEY = 'google_drive_token_expires_at';
 const FILE_ID_KEY   = 'google_drive_backup_file_id';
 const BACKUP_NAME   = 'waterfastbuddy_backup.json';
 
-// Drive scope — appDataFolder keeps the file private to this app.
-const SCOPES = ['https://www.googleapis.com/auth/drive.appdata'];
+// drive.file lets the app read/write only the files it creates — matches the
+// scope registered in Google Cloud Console OAuth consent screen.
+const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 
 const DISCOVERY = {
   authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
@@ -51,8 +52,8 @@ export function isDriveConfigured(): boolean {
 }
 
 function resolveClientId(): string | null {
-  // Platform-specific IDs take precedence. In a bare-bones build with only a
-  // web client, Google accepts that too (with slightly weaker UX).
+  // Android client IDs validate via package name + SHA-1, not redirect URI,
+  // so custom app scheme redirects work without extra Google Cloud setup.
   if (ANDROID_OAUTH_CLIENT_ID) return ANDROID_OAUTH_CLIENT_ID;
   if (IOS_OAUTH_CLIENT_ID)     return IOS_OAUTH_CLIENT_ID;
   if (WEB_OAUTH_CLIENT_ID)     return WEB_OAUTH_CLIENT_ID;
@@ -89,8 +90,8 @@ export async function signInAndGetToken(): Promise<string | null> {
   if (!clientId) throw new Error('drive_not_configured');
 
   const redirectUri = AuthSession.makeRedirectUri({
-    // 'waterfastbuddy' matches app.json → scheme when we add it.
     scheme: 'waterfastbuddy',
+    path: 'oauth2redirect',
   });
 
   const request = new AuthSession.AuthRequest({
@@ -132,9 +133,9 @@ async function findOrCreateBackupFileId(token: string): Promise<string> {
   const cachedId = await AsyncStorage.getItem(FILE_ID_KEY);
   if (cachedId) return cachedId;
 
-  // List files in appDataFolder matching our name.
+  // List files created by this app matching our backup name.
   const listResp = await fetch(
-    `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${encodeURIComponent(`name='${BACKUP_NAME}'`)}&fields=files(id,name)`,
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`name='${BACKUP_NAME}' and trashed=false`)}&fields=files(id,name)`,
     { headers: { Authorization: `Bearer ${token}` } },
   );
   if (!listResp.ok) throw new Error(`drive_list_failed: ${listResp.status}`);
@@ -145,17 +146,14 @@ async function findOrCreateBackupFileId(token: string): Promise<string> {
     return first.id;
   }
 
-  // Nothing there — create an empty file we can update with content.
+  // Nothing there yet — create the backup file in the user's Drive root.
   const metaResp = await fetch('https://www.googleapis.com/drive/v3/files', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      name: BACKUP_NAME,
-      parents: ['appDataFolder'],
-    }),
+    body: JSON.stringify({ name: BACKUP_NAME }),
   });
   if (!metaResp.ok) throw new Error(`drive_create_failed: ${metaResp.status}`);
   const meta = await metaResp.json();
