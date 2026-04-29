@@ -38,6 +38,7 @@
       "edgeToEdgeEnabled": true
     },
     "plugins": [
+      "@react-native-google-signin/google-signin",
       "expo-notifications",
       "expo-task-manager",
       [

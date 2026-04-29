@@ -20,111 +20,48 @@
 // Until a client ID is configured, the feature reports "Drive not configured"
 // and the user can fall back to the Backup/Restore paste-JSON workflow.
 
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
-WebBrowser.maybeCompleteAuthSession();
+const WEB_OAUTH_CLIENT_ID = (Constants.expoConfig?.extra as any)?.googleOAuthWebClientId ?? '';
 
-// ── Client IDs — leave empty until the client provides real ones ───────────
-const ANDROID_OAUTH_CLIENT_ID = (Constants.expoConfig?.extra as any)?.googleOAuthAndroidClientId ?? '';
-const IOS_OAUTH_CLIENT_ID     = (Constants.expoConfig?.extra as any)?.googleOAuthIosClientId     ?? '';
-const WEB_OAUTH_CLIENT_ID     = (Constants.expoConfig?.extra as any)?.googleOAuthWebClientId     ?? '';
+const FILE_ID_KEY = 'google_drive_backup_file_id';
+const BACKUP_NAME = 'waterfastbuddy_backup.json';
 
-const TOKEN_KEY     = 'google_drive_access_token';
-const TOKEN_EXP_KEY = 'google_drive_token_expires_at';
-const FILE_ID_KEY   = 'google_drive_backup_file_id';
-const BACKUP_NAME   = 'waterfastbuddy_backup.json';
-
-// drive.file lets the app read/write only the files it creates — matches the
-// scope registered in Google Cloud Console OAuth consent screen.
-const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
-
-const DISCOVERY = {
-  authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-  tokenEndpoint:         'https://oauth2.googleapis.com/token',
-  revocationEndpoint:    'https://oauth2.googleapis.com/revoke',
-};
+// Configure native Google Sign-In once when this module loads.
+// webClientId is required to get an access token with Drive scopes.
+GoogleSignin.configure({
+  webClientId: WEB_OAUTH_CLIENT_ID,
+  scopes: ['https://www.googleapis.com/auth/drive.file'],
+  offlineAccess: false,
+});
 
 export function isDriveConfigured(): boolean {
-  return !!(ANDROID_OAUTH_CLIENT_ID || IOS_OAUTH_CLIENT_ID || WEB_OAUTH_CLIENT_ID);
-}
-
-function resolveClientId(): string | null {
-  // Android client IDs validate via package name + SHA-1, not redirect URI,
-  // so custom app scheme redirects work without extra Google Cloud setup.
-  if (ANDROID_OAUTH_CLIENT_ID) return ANDROID_OAUTH_CLIENT_ID;
-  if (IOS_OAUTH_CLIENT_ID)     return IOS_OAUTH_CLIENT_ID;
-  if (WEB_OAUTH_CLIENT_ID)     return WEB_OAUTH_CLIENT_ID;
-  return null;
-}
-
-async function loadStoredToken(): Promise<string | null> {
-  try {
-    const token = await AsyncStorage.getItem(TOKEN_KEY);
-    const expAt = await AsyncStorage.getItem(TOKEN_EXP_KEY);
-    if (!token || !expAt) return null;
-    if (Date.now() > parseInt(expAt, 10)) return null;
-    return token;
-  } catch {
-    return null;
-  }
-}
-
-async function storeToken(accessToken: string, expiresInSec: number): Promise<void> {
-  const expiresAt = Date.now() + Math.max(0, expiresInSec - 60) * 1000;
-  await AsyncStorage.setItem(TOKEN_KEY, accessToken);
-  await AsyncStorage.setItem(TOKEN_EXP_KEY, String(expiresAt));
+  return !!WEB_OAUTH_CLIENT_ID;
 }
 
 export async function clearStoredToken(): Promise<void> {
-  await AsyncStorage.removeItem(TOKEN_KEY);
-  await AsyncStorage.removeItem(TOKEN_EXP_KEY);
   await AsyncStorage.removeItem(FILE_ID_KEY);
+  try { await GoogleSignin.signOut(); } catch {}
 }
 
-// Runs the OAuth flow and returns a fresh access token, or null on cancel/failure.
+// Signs the user in natively (no browser popup) and returns a Drive access token.
 export async function signInAndGetToken(): Promise<string | null> {
-  const clientId = resolveClientId();
-  if (!clientId) throw new Error('drive_not_configured');
-
-  const redirectUri = AuthSession.makeRedirectUri({
-    scheme: 'waterfastbuddy',
-    path: 'oauth2redirect',
-  });
-
-  const request = new AuthSession.AuthRequest({
-    clientId,
-    scopes: SCOPES,
-    redirectUri,
-    usePKCE: true,
-    responseType: AuthSession.ResponseType.Code,
-  });
-
-  await request.makeAuthUrlAsync(DISCOVERY);
-  const result = await request.promptAsync(DISCOVERY);
-
-  if (result.type !== 'success' || !result.params.code) return null;
-
-  const tokenResult = await AuthSession.exchangeCodeAsync(
-    {
-      clientId,
-      code: result.params.code,
-      redirectUri,
-      extraParams: request.codeVerifier ? { code_verifier: request.codeVerifier } : {},
-    },
-    DISCOVERY,
-  );
-
-  if (!tokenResult.accessToken) return null;
-  await storeToken(tokenResult.accessToken, tokenResult.expiresIn ?? 3600);
-  return tokenResult.accessToken;
+  if (!WEB_OAUTH_CLIENT_ID) throw new Error('drive_not_configured');
+  try {
+    await GoogleSignin.hasPlayServices();
+    const currentUser = GoogleSignin.getCurrentUser();
+    if (!currentUser) await GoogleSignin.signIn();
+    const tokens = await GoogleSignin.getTokens();
+    return tokens.accessToken;
+  } catch (error: any) {
+    if (error.code === statusCodes.SIGN_IN_CANCELLED) return null;
+    throw error;
+  }
 }
 
 async function ensureToken(): Promise<string | null> {
-  const existing = await loadStoredToken();
-  if (existing) return existing;
   return signInAndGetToken();
 }
 

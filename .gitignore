@@ -42,4 +42,5 @@ yarn-error.*
 /android
 
 *.keystore
+google-services.json
 
