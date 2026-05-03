@@ -51,11 +51,9 @@ export default function RootNavigator() {
         <Stack.Screen name="Splash"     component={SplashScreen} />
         <Stack.Screen name="Onboarding" component={OnboardingNavigator} />
         {/* Trial gate: show Paywall if the trial has expired and there's no active subscription */}
-        {isTrialExpired ? (
-          <Stack.Screen name="Paywall" component={PaywallScreen} />
-        ) : (
-          <Stack.Screen name="Main" component={BottomTabs} />
-        )}
+        <Stack.Screen name="Main" component={BottomTabs} />
+<Stack.Screen name="Paywall" component={PaywallScreen} />
+
         <Stack.Screen name="Settings"   component={SettingsScreen} />
         <Stack.Screen name="Booking"    component={BookingScreen} />
         <Stack.Screen name="Shop"       component={ShopScreen} />

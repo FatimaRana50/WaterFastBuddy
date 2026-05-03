@@ -1,9 +1,19 @@
-// Crossfades between the user's current body shape and their goal body shape
-// so the transformation feels alive rather than a static before/after.
-// Implemented as two stacked WaterBodyAvatars whose opacities are animated in
-// antiphase — this avoids re-rendering the SVG path every frame.
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, View, Text, StyleSheet } from 'react-native';
+/**
+ * MorphingAvatar — crossfades the user's current body shape with their
+ * goal body shape using two stacked WaterBodyAvatars. Opacity is animated
+ * in antiphase so the SVG paths are NOT recomputed every frame.
+ *
+ * Migrated to react-native-reanimated v3.
+ */
+
+import React, { useEffect } from 'react';
+import { View, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue, useAnimatedStyle,
+  withRepeat, withTiming, withSequence, withDelay,
+  Easing, interpolate,
+} from 'react-native-reanimated';
+
 import WaterBodyAvatar from './WaterBodyAvatar';
 import { UserProfile } from '../../types';
 import { COLORS, FONT_SIZE } from '../../constants/theme';
@@ -16,42 +26,48 @@ interface Props {
   goalLabel: string;
 }
 
-export default function MorphingAvatar({ profile, goalWeightKg, size = 120, nowLabel, goalLabel }: Props) {
-  // 0 = fully showing current, 1 = fully showing goal
-  const t = useRef(new Animated.Value(0)).current;
+export default function MorphingAvatar({
+  profile, goalWeightKg, size = 120, nowLabel, goalLabel,
+}: Props) {
+  const t = useSharedValue(0);
 
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(t, { toValue: 1, duration: 2200, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
-        Animated.delay(900),
-        Animated.timing(t, { toValue: 0, duration: 2200, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
-        Animated.delay(900),
-      ]),
+    t.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.cubic) }),
+        withDelay(900, withTiming(1, { duration: 1 })),
+        withTiming(0, { duration: 2200, easing: Easing.inOut(Easing.cubic) }),
+        withDelay(900, withTiming(0, { duration: 1 })),
+      ),
+      -1, false,
     );
-    loop.start();
-    return () => loop.stop();
-  }, [t]);
+  }, []);
 
-  const nowOpacity  = t.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
-  const goalOpacity = t;
-  const nowScale    = t.interpolate({ inputRange: [0, 1], outputRange: [1, 0.96] });
-  const goalScale   = t.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] });
+  const nowStyle = useAnimatedStyle(() => ({
+    opacity:   interpolate(t.value, [0, 1], [1, 0]),
+    transform: [{ scale: interpolate(t.value, [0, 1], [1, 0.96]) }],
+  }));
+  const goalStyle = useAnimatedStyle(() => ({
+    opacity:   t.value,
+    transform: [{ scale: interpolate(t.value, [0, 1], [0.96, 1]) }],
+  }));
+  const nowLabelStyle  = useAnimatedStyle(() => ({ opacity: interpolate(t.value, [0, 1], [1, 0]) }));
+  const goalLabelStyle = useAnimatedStyle(() => ({ opacity: t.value }));
 
   return (
-    <View style={[styles.wrap, { height: size * 1.7 }]}>
-      <Animated.View style={[styles.layer, { opacity: nowOpacity, transform: [{ scale: nowScale }] }]}>
+    <View style={[styles.wrap, { height: size * 1.85 }]}>
+      <Animated.View style={[styles.layer, nowStyle]}>
         <WaterBodyAvatar profile={profile} size={size} />
       </Animated.View>
-      <Animated.View style={[styles.layer, { opacity: goalOpacity, transform: [{ scale: goalScale }] }]}>
+      <Animated.View style={[styles.layer, goalStyle]}>
         <WaterBodyAvatar profile={{ ...profile, weightKg: goalWeightKg }} size={size} />
       </Animated.View>
 
       <View style={styles.labels} pointerEvents="none">
-        <Animated.Text style={[styles.label, { color: COLORS.primary, opacity: nowOpacity }]}>
+        <Animated.Text style={[styles.label, { color: COLORS.primary }, nowLabelStyle]}>
           {nowLabel}
         </Animated.Text>
-        <Animated.Text style={[styles.label, { color: COLORS.success, opacity: goalOpacity }]}>
+        <Animated.Text style={[styles.label, { color: COLORS.success }, goalLabelStyle]}>
           {goalLabel}
         </Animated.Text>
       </View>

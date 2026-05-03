@@ -50,7 +50,10 @@ export default function ProfileSetupLifestyle() {
       onboardingComplete: true,
       createdAt: new Date().toISOString(),
     });
-    navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+    //navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+    navigation.getParent()?.reset({ index: 0, routes: [{ name: 'Main' }] });
+
+
   };
 
   return (

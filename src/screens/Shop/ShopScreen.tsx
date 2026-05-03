@@ -1,6 +1,10 @@
-// Shop screen — in-app storefront mirroring the website's Shop section.
-// Tapping any "Buy" button opens the Nutri-Align affiliate URL in the browser
-// (checkout always happens on the affiliate site, per the brief).
+// ShopScreen — premium storefront mirroring the website's Shop.
+// Same handlers, links, and components as the original.
+// Visual polish:
+//  • Hero gradient with halo orb + centered icon medallion
+//  • Feature grid kept (FeatureCard)
+//  • Product cards: gradient art block with crystal motif, larger badge,
+//    rating ribbon, refined tag chips, gradient buy button
 import React from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, SafeAreaView,
@@ -30,7 +34,7 @@ type Product = {
 const PRODUCTS: Product[] = [
   {
     key: 'powder',
-    badge: 'Powder',
+    badge: 'POWDER',
     badgeColor: '#F97316',
     name: 'Fasting Salts Original Powder',
     description: 'Fasting Electrolytes Powder with Sodium, Potassium, Magnesium.',
@@ -40,11 +44,10 @@ const PRODUCTS: Product[] = [
   },
   {
     key: 'capsules',
-    badge: 'Capsules',
+    badge: 'CAPSULES',
     badgeColor: '#1E3A8A',
     name: 'Fasting Salts Advanced Capsules',
-    description:
-      'Fasting Electrolytes Capsules for extended fasting: Sodium, Potassium, Magnesium, Phosphorus.',
+    description: 'Fasting Electrolytes Capsules for extended fasting: Sodium, Potassium, Magnesium, Phosphorus.',
     rating: 4.8,
     tags: ['Sugar-free', 'Zero calories', 'No junk fillers'],
     url: 'https://www.nutri-align.com/products/fasting-electrolytes-advanced-capsules#a_aid=waterfastbuddy',
@@ -61,11 +64,8 @@ export default function ShopScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <SafeAreaView>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={[styles.backBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
-          activeOpacity={0.8}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.8}
+          style={[styles.backBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Ionicons name="chevron-back" size={18} color={colors.text} />
           <Text style={[styles.backText, { color: colors.text }]}>{i18n.t('common.back')}</Text>
         </TouchableOpacity>
@@ -74,14 +74,18 @@ export default function ShopScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <LinearGradient
-          colors={[COLORS.primaryDeep, COLORS.primaryDark, COLORS.primary]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          colors={['#0A1628', COLORS.primaryDeep ?? '#08226B', COLORS.primaryDark ?? '#0D3AA8', COLORS.primary]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
           style={styles.heroCard}
         >
+          <View style={styles.heroOrb} />
+          <View style={styles.heroMedallion}>
+            <Ionicons name="bag-handle" size={22} color="#fff" />
+          </View>
           <Text style={styles.heroKicker}>SHOP</Text>
           <Text style={styles.heroTitle}>
-            Shop salts in a clean{'\n'}storefront.
+            Shop salts in a clean{'\n'}
+            <Text style={{ color: COLORS.accent }}>storefront.</Text>
           </Text>
           <Text style={styles.heroBody}>
             Hand-picked fasting salts, electrolyte powders, and crystal packs. Checkout
@@ -114,17 +118,13 @@ export default function ShopScreen() {
         </View>
 
         {/* Featured products */}
-        <View style={{ alignItems: 'center', marginTop: SPACING.xl, marginBottom: SPACING.sm }}>
+        <View style={{ alignItems: 'center', marginTop: SPACING.xxl, marginBottom: SPACING.sm }}>
           <Kicker>Featured products</Kicker>
         </View>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          Salts for your fasting setup
-        </Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Salts for your fasting setup</Text>
         <View style={styles.trustRow}>
           <Ionicons name="shield-checkmark" size={16} color={COLORS.primary} />
-          <Text style={[styles.trustText, { color: colors.textSecondary }]}>
-            Trusted affiliate listings
-          </Text>
+          <Text style={[styles.trustText, { color: colors.textSecondary }]}>Trusted affiliate listings</Text>
         </View>
 
         {PRODUCTS.map((p) => (
@@ -147,25 +147,23 @@ export default function ShopScreen() {
   );
 }
 
-// ─── Product card ─────────────────────────────────────────────────────────────
 function ProductCard({ product, onBuy }: { product: Product; onBuy: () => void }) {
   const { colors } = useTheme();
 
   return (
-    <View
-      style={[
-        styles.productCard,
-        { backgroundColor: colors.surface, borderColor: colors.border },
-      ]}
-    >
-      {/* Top art strip — stylized gradient with SALT wordmark */}
+    <View style={[styles.productCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      {/* Top art strip */}
       <LinearGradient
-        colors={[product.badgeColor, '#ffffff']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
+        colors={[product.badgeColor, '#0A1628']}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
         style={styles.productArt}
       >
-        <View style={[styles.badge, { backgroundColor: 'rgba(0,0,0,0.72)' }]}>
+        {/* decorative crystal orbs */}
+        <View style={[styles.crystal, { top: 20, left: 30, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.18)' }]} />
+        <View style={[styles.crystal, { bottom: 70, right: 28, width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.12)' }]} />
+        <View style={[styles.crystal, { top: 60, right: 70, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.22)' }]} />
+
+        <View style={styles.badge}>
           <Text style={styles.badgeText}>{product.badge}</Text>
         </View>
 
@@ -175,33 +173,32 @@ function ProductCard({ product, onBuy }: { product: Product; onBuy: () => void }
         </View>
 
         <Text style={styles.productMark}>FASTING SALTS</Text>
-        <Text style={styles.productMarkSub}>
-          SODIUM · POTASSIUM · MAGNESIUM
-        </Text>
+        <Text style={styles.productMarkSub}>SODIUM · POTASSIUM · MAGNESIUM</Text>
       </LinearGradient>
 
       <View style={styles.productBody}>
         <Text style={[styles.productName, { color: colors.text }]}>{product.name}</Text>
-        <Text style={[styles.productDesc, { color: colors.textSecondary }]}>
-          {product.description}
-        </Text>
+        <Text style={[styles.productDesc, { color: colors.textSecondary }]}>{product.description}</Text>
 
         <View style={styles.tagRow}>
           {product.tags.map((t) => (
-            <View key={t} style={[styles.tag, { backgroundColor: COLORS.primary + '14' }]}>
+            <View key={t} style={[styles.tag, { backgroundColor: COLORS.primary + '18', borderColor: COLORS.primary + '30' }]}>
+              <Ionicons name="checkmark" size={10} color={COLORS.primary} />
               <Text style={[styles.tagText, { color: COLORS.primary }]}>{t}</Text>
             </View>
           ))}
         </View>
 
-        <TouchableOpacity
-          style={[styles.buyBtn, { backgroundColor: COLORS.primary }]}
-          onPress={onBuy}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="bag-handle" size={16} color="#fff" style={{ marginRight: 8 }} />
-          <Text style={styles.buyBtnText}>Buy on Nutri-Align</Text>
-          <Ionicons name="open-outline" size={14} color="rgba(255,255,255,0.8)" style={{ marginLeft: 8 }} />
+        <TouchableOpacity onPress={onBuy} activeOpacity={0.9}>
+          <LinearGradient
+            colors={[COLORS.primary, COLORS.accent]}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={styles.buyBtn}
+          >
+            <Ionicons name="bag-handle" size={16} color="#fff" />
+            <Text style={styles.buyBtnText}>Buy on Nutri-Align</Text>
+            <Ionicons name="open-outline" size={14} color="rgba(255,255,255,0.85)" />
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </View>
@@ -214,120 +211,88 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     alignSelf: 'flex-start',
     marginTop: 8, marginLeft: SPACING.md,
-    paddingVertical: 6, paddingHorizontal: 12,
-    borderRadius: BORDER_RADIUS.round, borderWidth: 1,
-    gap: 4,
+    paddingVertical: 8, paddingHorizontal: 14,
+    borderRadius: BORDER_RADIUS.round, borderWidth: 1, gap: 4,
   },
-  backText: { fontSize: FONT_SIZE.sm, fontWeight: '700' },
+  backText: { fontSize: FONT_SIZE.sm, fontWeight: '800' },
 
   content: { padding: SPACING.lg, paddingTop: SPACING.md, paddingBottom: SPACING.xxl },
 
-  // Hero
   heroCard: {
-    borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.xl,
-    shadowColor: '#0B5DD1',
-    shadowOpacity: 0.25,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 6,
+    borderRadius: BORDER_RADIUS.xl, padding: SPACING.xl,
+    overflow: 'hidden',
+    shadowColor: COLORS.primary, shadowOpacity: 0.4, shadowRadius: 24,
+    shadowOffset: { width: 0, height: 14 }, elevation: 10,
   },
-  heroKicker: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: FONT_SIZE.xs, fontWeight: '800',
-    letterSpacing: 2, textTransform: 'uppercase',
-    marginBottom: SPACING.sm,
+  heroOrb: { position: 'absolute', width: 240, height: 240, borderRadius: 120, backgroundColor: 'rgba(56,189,248,0.18)', top: -100, right: -80 },
+  heroMedallion: {
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.32)',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: SPACING.md,
   },
-  heroTitle: {
-    color: '#fff', fontSize: FONT_SIZE.hero,
-    fontWeight: '900', lineHeight: 42,
-  },
-  heroBody: {
-    color: 'rgba(255,255,255,0.88)',
-    fontSize: FONT_SIZE.md, lineHeight: 22,
-    marginTop: SPACING.md,
-  },
-  chipRow: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: 8,
-    marginTop: SPACING.md,
-  },
+  heroKicker: { color: 'rgba(255,255,255,0.78)', fontSize: FONT_SIZE.xs, fontWeight: '900', letterSpacing: 2.5 },
+  heroTitle:  { color: '#fff', fontSize: 36, fontWeight: '900', lineHeight: 40, marginTop: 8, letterSpacing: -1 },
+  heroBody:   { color: 'rgba(255,255,255,0.9)', fontSize: FONT_SIZE.md, lineHeight: 22, marginTop: SPACING.md },
+
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: SPACING.lg },
   heroChip: {
     paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: BORDER_RADIUS.round,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.16)',
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)',
   },
-  heroChipText: { color: '#fff', fontSize: FONT_SIZE.xs, fontWeight: '700' },
+  heroChipText: { color: '#fff', fontSize: FONT_SIZE.xs, fontWeight: '800' },
 
-  // Feature grid
-  featureGrid: {
-    flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.lg,
-  },
+  featureGrid: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.lg },
 
-  // Products
-  sectionTitle: {
-    fontSize: FONT_SIZE.xxl, fontWeight: '900', textAlign: 'center',
-  },
-  trustRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, marginTop: 4, marginBottom: SPACING.lg,
-  },
-  trustText: { fontSize: FONT_SIZE.sm, fontWeight: '600' },
+  sectionTitle: { fontSize: 26, fontWeight: '900', textAlign: 'center', letterSpacing: -0.6 },
+  trustRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 4, marginBottom: SPACING.lg },
+  trustText: { fontSize: FONT_SIZE.sm, fontWeight: '700' },
 
   productCard: {
-    borderRadius: BORDER_RADIUS.xl,
-    borderWidth: 1,
-    marginBottom: SPACING.lg,
-    overflow: 'hidden',
-    shadowColor: '#0B5DD1',
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
+    borderRadius: BORDER_RADIUS.xl, borderWidth: 1,
+    marginBottom: SPACING.lg, overflow: 'hidden',
+    shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 }, elevation: 6,
   },
-  productArt: {
-    height: 190,
-    padding: SPACING.md,
-    justifyContent: 'flex-end',
-    position: 'relative',
-  },
+  productArt: { height: 200, padding: SPACING.md, justifyContent: 'flex-end', position: 'relative', overflow: 'hidden' },
+  crystal: { position: 'absolute' },
   badge: {
-    position: 'absolute', top: 10, left: 10,
+    position: 'absolute', top: 12, left: 12,
     paddingHorizontal: 12, paddingVertical: 5,
-    borderRadius: BORDER_RADIUS.round,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.78)',
   },
-  badgeText: { color: '#fff', fontSize: FONT_SIZE.xs, fontWeight: '800' },
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
   ratingPill: {
-    position: 'absolute', top: 10, right: 10,
+    position: 'absolute', top: 12, right: 12,
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.72)',
-    paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: BORDER_RADIUS.round,
+    backgroundColor: 'rgba(0,0,0,0.78)',
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999,
   },
-  ratingText: { color: '#fff', fontWeight: '800', fontSize: FONT_SIZE.xs },
-  productMark: {
-    color: '#0B1530', fontSize: 26, fontWeight: '900',
-    letterSpacing: 2, textAlign: 'center',
-  },
-  productMarkSub: {
-    color: '#0B1530', fontSize: 10, fontWeight: '800',
-    letterSpacing: 1.2, textAlign: 'center', marginTop: 4,
-  },
+  ratingText: { color: '#fff', fontWeight: '900', fontSize: FONT_SIZE.xs },
+  productMark:    { color: '#fff', fontSize: 26, fontWeight: '900', letterSpacing: 2.5, textAlign: 'center' },
+  productMarkSub: { color: 'rgba(255,255,255,0.85)', fontSize: 10, fontWeight: '900', letterSpacing: 1.5, textAlign: 'center', marginTop: 4 },
 
   productBody: { padding: SPACING.lg },
-  productName: { fontSize: FONT_SIZE.lg, fontWeight: '900' },
+  productName: { fontSize: FONT_SIZE.lg, fontWeight: '900', letterSpacing: -0.3 },
   productDesc: { fontSize: FONT_SIZE.sm, lineHeight: 20, marginTop: 6 },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.sm },
+  tagRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: SPACING.sm },
   tag: {
-    paddingHorizontal: 10, paddingVertical: 4,
-    borderRadius: BORDER_RADIUS.round,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: 999, borderWidth: 1,
   },
-  tagText: { fontSize: FONT_SIZE.xs, fontWeight: '800' },
+  tagText: { fontSize: FONT_SIZE.xs, fontWeight: '900' },
 
   buyBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 12, borderRadius: BORDER_RADIUS.round,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 14, borderRadius: BORDER_RADIUS.round,
     marginTop: SPACING.md,
+    shadowColor: COLORS.primary, shadowOpacity: 0.4, shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 }, elevation: 5,
   },
-  buyBtnText: { color: '#fff', fontSize: FONT_SIZE.md, fontWeight: '800' },
+  buyBtnText: { color: '#fff', fontSize: FONT_SIZE.md, fontWeight: '900' },
 });

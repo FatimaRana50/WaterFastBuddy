@@ -20,7 +20,11 @@
 // Until a client ID is configured, the feature reports "Drive not configured"
 // and the user can fall back to the Backup/Restore paste-JSON workflow.
 
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+//import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+ import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+//const GoogleSignin: any = { configure:()=>{}, hasPlayServices:async()=>{}, getCurrentUser:()=>null, signIn:async()=>{}, getTokens:async()=>({accessToken:''}), signOut:async()=>{} };
+//const statusCodes = { SIGN_IN_CANCELLED: 'SIGN_IN_CANCELLED' };
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 

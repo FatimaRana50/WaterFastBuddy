@@ -1,15 +1,18 @@
 /**
- * avatarUtils.ts — math, color, and SVG path helpers for the WaterFastBuddy avatar.
- * Design: "Translucent Glass Water-Being" — glassy outer shell, living water inside.
+ * avatarUtils.ts — Foundation math, color, geometry, and SVG path helpers
+ * for the WaterFastBuddy "Premium Human Companion" avatar system.
+ *
+ * BACKWARDS COMPAT: every previously-exported symbol is preserved.
  */
 
 import { UserProfile } from '../../types';
 
-export const VW = 120;
-export const VH = 260;
-export const CX = VW / 2; // 60
+// ─── Canvas constants ────────────────────────────────────────────────────────
+export const VW = 200;
+export const VH = 360;
+export const CX = VW / 2; // 100
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types (unchanged) ───────────────────────────────────────────────────────
 export type MoodState = 'ecstatic' | 'happy' | 'neutral' | 'sad' | 'distressed';
 export type Gender = 'male' | 'female';
 
@@ -17,6 +20,36 @@ export interface WaterColors {
   main: string; dark: string; light: string; glow: string; accent: string;
   mid?: string; wave?: string;
 }
+
+// ─── Skin / hair / clothing palette ─────────────────────────────────────────
+export interface SkinPalette {
+  base: string;
+  shadow: string;
+  highlight: string;
+  blush: string;
+  lip: string;
+}
+
+export const SKIN: SkinPalette = {
+  base:      '#F4B58A',
+  shadow:    '#C68660',
+  highlight: '#FFD7B5',
+  blush:     '#F87171',
+  lip:       '#C25A6F',
+};
+
+export const HAIR = {
+  female: { base: '#6B3A2A', shadow: '#3F2114', highlight: '#9C5B3F' },
+  male:   { base: '#2C1810', shadow: '#120904', highlight: '#4A2A1A' },
+} as const;
+
+export const CLOTHING = {
+  primary:   '#1A56E8',
+  secondary: '#0EA5E9',
+  shadow:    '#0B2F87',
+  highlight: '#60A5FA',
+  accent:    '#14B8A6',
+} as const;
 
 // ─── Purity & Mood ────────────────────────────────────────────────────────────
 export function calcPurity(profile: UserProfile, fastingHours = 0): number {
@@ -56,16 +89,24 @@ export function recentMilestone(fastingHours: number, windowH = 0.25): number | 
   return null;
 }
 
-// ─── Colors ───────────────────────────────────────────────────────────────────
+// ─── Water colours ────────────────────────────────────────────────────────────
 export function purityToColors(purity: number): WaterColors {
-  if (purity >= 0.75) return { main: '#60A5FA', dark: '#1D4ED8', light: '#DBEAFE', glow: '#93C5FD', accent: '#EFF6FF', mid: '#3B82F6', wave: '#2563EB' };
-  if (purity >= 0.50) return { main: '#38BDF8', dark: '#0369A1', light: '#BAE6FD', glow: '#7DD3FC', accent: '#E0F2FE', mid: '#0EA5E9', wave: '#0284C7' };
-  if (purity >= 0.30) return { main: '#2DD4BF', dark: '#0F766E', light: '#99F6E4', glow: '#5EEAD4', accent: '#CCFBF1', mid: '#14B8A6', wave: '#0D9488' };
+  if (purity >= 0.75) return { main: '#38BDF8', dark: '#0369A1', light: '#BAE6FD', glow: '#7DD3FC', accent: '#E0F2FE', mid: '#0EA5E9', wave: '#0284C7' };
+  if (purity >= 0.50) return { main: '#22D3EE', dark: '#155E75', light: '#CFFAFE', glow: '#67E8F9', accent: '#ECFEFF', mid: '#06B6D4', wave: '#0891B2' };
+  if (purity >= 0.30) return { main: '#14B8A6', dark: '#115E59', light: '#99F6E4', glow: '#5EEAD4', accent: '#CCFBF1', mid: '#0D9488', wave: '#0F766E' };
   if (purity >= 0.15) return { main: '#FACC15', dark: '#A16207', light: '#FEF08A', glow: '#FDE047', accent: '#FEFCE8', mid: '#EAB308', wave: '#CA8A04' };
-  return { main: '#FB923C', dark: '#9A3412', light: '#FED7AA', glow: '#FDBA74', accent: '#FFF7ED', mid: '#F97316', wave: '#EA580C' };
+  return                    { main: '#F97316', dark: '#9A3412', light: '#FED7AA', glow: '#FDBA74', accent: '#FFF7ED', mid: '#EA580C', wave: '#C2410C' };
 }
 
-// ─── Wave path ────────────────────────────────────────────────────────────────
+export function fillPctToWater(fillPct: number): WaterColors {
+  if (fillPct >= 0.75) return purityToColors(0.85);
+  if (fillPct >= 0.50) return purityToColors(0.60);
+  if (fillPct >= 0.30) return purityToColors(0.40);
+  if (fillPct >= 0.15) return purityToColors(0.20);
+  return purityToColors(0.05);
+}
+
+// ─── Wave paths ───────────────────────────────────────────────────────────────
 export function buildWavePath(offsetX: number, amplitude = 8, period = 30, height = 250, width = 240): string {
   let d = `M ${-offsetX},${height}`;
   for (let x = 0; x <= width; x += 4) {
@@ -74,37 +115,48 @@ export function buildWavePath(offsetX: number, amplitude = 8, period = 30, heigh
   return d + ` L ${width - offsetX},${height} Z`;
 }
 
+export function buildWaveTop(
+  offsetX: number, surfaceY: number, amplitude = 4, period = 28, width = VW
+): string {
+  let d = `M ${-10},${surfaceY}`;
+  for (let x = -10; x <= width + 10; x += 3) {
+    const y = surfaceY + amplitude * Math.sin(((x + offsetX) / period) * Math.PI * 2);
+    d += ` L ${x},${y}`;
+  }
+  d += ` L ${width + 10},${VH + 20} L ${-10},${VH + 20} Z`;
+  return d;
+}
+
 // ─── Geometry ─────────────────────────────────────────────────────────────────
 const BASE = {
   female: {
-    headRx: 17, headRy: 20, headCY: 28,
-    neckW: 12, shoulderW: 46, shoulderY: 64,
-    waistW: 32, waistY: 124, hipW: 50, hipY: 158,
-    legW: 19, legGap: 4, legBot: 250, armW: 12,
+    headRx: 28, headRy: 34, headCY: 56,
+    neckW: 18, shoulderW: 78, shoulderY: 116,
+    waistW: 56, waistY: 196, hipW: 86, hipY: 236,
+    legW: 26, legGap: 6, legBot: 348, armW: 18,
   },
   male: {
-    headRx: 18, headRy: 21, headCY: 28,
-    neckW: 15, shoulderW: 56, shoulderY: 64,
-    waistW: 42, waistY: 124, hipW: 46, hipY: 158,
-    legW: 21, legGap: 4, legBot: 250, armW: 15,
+    headRx: 30, headRy: 36, headCY: 58,
+    neckW: 24, shoulderW: 96, shoulderY: 120,
+    waistW: 76, waistY: 198, hipW: 80, hipY: 238,
+    legW: 30, legGap: 6, legBot: 348, armW: 22,
   },
 } as const;
 
 export function getGeometry(gender: Gender) { return BASE[gender]; }
 
-// BMI morph helpers (0=lean, 1=very obese)
-function fatF(bmi: number)  { return Math.max(0, Math.min(1, (bmi - 20) / 18)); }
-function thinF(bmi: number) { return Math.max(0, Math.min(1, (20 - bmi) / 6)); }
+export function fatF(bmi: number)  { return Math.max(0, Math.min(1, (bmi - 22) / 14)); }
+export function thinF(bmi: number) { return Math.max(0, Math.min(1, (20 - bmi) / 6)); }
 
-// ─── Body silhouette (BMI-morphed) ───────────────────────────────────────────
 export function buildBodyPath(gender: Gender, bmi = 22): string {
   const g = BASE[gender];
   const ff = fatF(bmi), tf = thinF(bmi);
+  const isF = gender === 'female';
 
-  const shW = g.shoulderW + ff * 10 - tf * 7;
-  const waW = g.waistW   + ff * 38 - tf * 9;
-  const hiW = g.hipW     + ff * 16 - tf * 5;
-  const lgW = g.legW     + ff * 7  - tf * 3;
+  const shW = g.shoulderW + ff * 16 - tf * 8;
+  const waW = g.waistW   + ff * 44 - tf * (isF ? 10 : 6);
+  const hiW = g.hipW     + ff * 22 - tf * 6;
+  const lgW = g.legW     + ff * 10 - tf * 4;
 
   const shL = CX - shW / 2, shR = CX + shW / 2;
   const waL = CX - waW / 2, waR = CX + waW / 2;
@@ -113,85 +165,128 @@ export function buildBodyPath(gender: Gender, bmi = 22): string {
   const lgRo = CX + g.legGap / 2 + lgW;
   const lgLi = CX - g.legGap / 2;
   const lgRi = CX + g.legGap / 2;
-  const neckY = g.headCY + g.headRy - 2;
+  const neckY = g.headCY + g.headRy - 4;
 
-  // Control points: fat bodies don't curve inward at waist
-  const lCtrl1x = shL - 3 + ff * 10;
-  const lCtrl2x = waL - 2 + ff * 5;
-  const rCtrl1x = shR + 3 - ff * 10;
-  const rCtrl2x = waR + 2 - ff * 5;
+  const waistPullF = isF ? 14 - ff * 10 : 4 - ff * 6;
+  const lCtrl1x = shL + waistPullF * 0.4;
+  const lCtrl2x = waL - 4 + ff * 6;
+  const rCtrl1x = shR - waistPullF * 0.4;
+  const rCtrl2x = waR + 4 - ff * 6;
 
   return [
     `M ${CX - g.neckW / 2},${neckY}`,
     `L ${shL},${g.shoulderY}`,
-    `C ${lCtrl1x},${g.shoulderY + 24} ${lCtrl2x},${g.waistY - 10} ${waL},${g.waistY}`,
-    `C ${waL},${g.waistY + 12} ${hiL - 2},${g.hipY - 14} ${hiL},${g.hipY}`,
-    `L ${lgLo},${g.hipY + 4}`,
-    `L ${lgLo + 1},${g.legBot}`,
-    `Q ${CX - g.legGap / 2 - lgW / 2},${g.legBot + 8} ${lgLi - 1},${g.legBot}`,
-    `L ${lgLi},${g.hipY + 18}`,
-    `Q ${CX},${g.hipY + 27} ${lgRi},${g.hipY + 18}`,
-    `L ${lgRi + 1},${g.legBot}`,
-    `Q ${CX + g.legGap / 2 + lgW / 2},${g.legBot + 8} ${lgRo - 1},${g.legBot}`,
-    `L ${lgRo},${g.hipY + 4}`,
+    `C ${lCtrl1x},${g.shoulderY + 32} ${lCtrl2x},${g.waistY - 14} ${waL},${g.waistY}`,
+    `C ${waL - 4},${g.waistY + 14} ${hiL - 2},${g.hipY - 16} ${hiL},${g.hipY}`,
+    `L ${lgLo},${g.hipY + 6}`,
+    `L ${lgLo + 2},${g.legBot}`,
+    `Q ${CX - g.legGap / 2 - lgW / 2},${g.legBot + 10} ${lgLi - 2},${g.legBot}`,
+    `L ${lgLi},${g.hipY + 22}`,
+    `Q ${CX},${g.hipY + 32} ${lgRi},${g.hipY + 22}`,
+    `L ${lgRi + 2},${g.legBot}`,
+    `Q ${CX + g.legGap / 2 + lgW / 2},${g.legBot + 10} ${lgRo - 2},${g.legBot}`,
+    `L ${lgRo},${g.hipY + 6}`,
     `L ${hiR},${g.hipY}`,
-    `C ${hiR + 2},${g.hipY - 14} ${rCtrl2x},${g.waistY + 12} ${waR},${g.waistY}`,
-    `C ${rCtrl1x},${g.waistY - 10} ${shR + 3},${g.shoulderY + 24} ${shR},${g.shoulderY}`,
+    `C ${hiR + 2},${g.hipY - 16} ${rCtrl2x},${g.waistY + 14} ${waR},${g.waistY}`,
+    `C ${rCtrl1x},${g.waistY - 14} ${shR},${g.shoulderY + 32} ${shR},${g.shoulderY}`,
     `L ${CX + g.neckW / 2},${neckY}`,
     'Z',
   ].join(' ');
 }
 
-export function buildArmPath(side: 'left' | 'right', gender: Gender, bmi = 22): string {
+export function buildArmPath(
+  side: 'left' | 'right', gender: Gender, bmi = 22, raise = 0
+): string {
   const g = BASE[gender];
   const ff = fatF(bmi);
-  const shW = g.shoulderW + ff * 10;
-  const aw  = g.armW + ff * 5;
-  const sX  = side === 'left' ? CX - shW / 2 : CX + shW / 2;
+  const shW = g.shoulderW + ff * 16;
+  const aw  = g.armW + ff * 6;
   const sgn = side === 'left' ? -1 : 1;
-  const oX  = sX + sgn * aw * 0.85;
-  const iX  = sX + sgn * aw * 0.1;
-  const top = g.shoulderY + 4;
-  const bot = g.shoulderY + 80;
+  const sX  = CX + sgn * shW / 2;
+  const top = g.shoulderY + 6;
+
+  const r = Math.max(-1, Math.min(1, raise));
+  const handX = sX + sgn * (32 + ff * 6) - sgn * r * 18;
+  const handY = top + 110 - r * 130;
+
+  const elbowX = (sX + handX) / 2 + sgn * (8 - r * 6);
+  const elbowY = (top + handY) / 2 + 10;
+
+  const oX = sX + sgn * aw * 0.55;
+  const iX = sX + sgn * aw * 0.05;
+
   return [
     `M ${sX},${top}`,
-    `C ${oX},${top + 12} ${oX + sgn * 3},${top + 44} ${oX - sgn},${bot}`,
-    `Q ${oX - sgn * aw / 2},${bot + 9} ${iX},${bot - 5}`,
-    `C ${iX + sgn * 2},${top + 28} ${iX},${top + 12} ${sX},${top}`,
+    `Q ${oX},${top + 14} ${elbowX + sgn * aw / 2},${elbowY}`,
+    `Q ${handX + sgn * aw / 2},${handY - 6} ${handX},${handY + aw / 2}`,
+    `Q ${handX - sgn * aw / 2},${handY + aw} ${handX - sgn * aw * 0.6},${handY}`,
+    `Q ${elbowX - sgn * aw / 2},${elbowY - 4} ${iX},${top + 28}`,
+    `Q ${iX + sgn * 4},${top + 14} ${sX},${top}`,
     'Z',
   ].join(' ');
 }
 
-// ─── Hair paths ───────────────────────────────────────────────────────────────
+// ─── Hair ─────────────────────────────────────────────────────────────────────
 
-/** Female: bun on top + flowing side strands. Returns array of SVG path strings. */
 export function buildFemaleHairPaths(cx: number, headCY: number, headRx: number, headRy: number): string[] {
   const topY = headCY - headRy;
   return [
-    // Bun dome (filled ellipse shape)
-    `M ${cx - 17},${topY + 5} A 17 13 0 0 1 ${cx + 17},${topY + 5} L ${cx + 13},${topY + 11} L ${cx - 13},${topY + 11} Z`,
-    // Bun bump at very top
-    `M ${cx - 10},${topY + 3} A 10 9 0 0 1 ${cx + 10},${topY + 3}`,
-    // Left flowing strand
-    `M ${cx - headRx + 1},${headCY - 4} C ${cx - headRx - 7},${headCY + 10} ${cx - headRx - 5},${headCY + 24} ${cx - headRx},${headCY + 33}`,
-    // Right flowing strand
-    `M ${cx + headRx - 1},${headCY - 4} C ${cx + headRx + 7},${headCY + 10} ${cx + headRx + 5},${headCY + 24} ${cx + headRx},${headCY + 33}`,
-    // Front hair fringe across forehead
-    `M ${cx - 15},${topY + 2} Q ${cx - 5},${topY - 4} ${cx},${topY - 2} Q ${cx + 5},${topY - 4} ${cx + 15},${topY + 2}`,
+    `M ${cx - headRx - 4},${headCY - 4}
+     C ${cx - headRx - 8},${topY - 4} ${cx - 14},${topY - 14} ${cx},${topY - 12}
+     C ${cx + 14},${topY - 14} ${cx + headRx + 8},${topY - 4} ${cx + headRx + 4},${headCY - 4}
+     C ${cx + headRx + 2},${headCY - 12} ${cx + headRx - 2},${topY + 4} ${cx},${topY - 2}
+     C ${cx - headRx + 2},${topY + 4} ${cx - headRx - 2},${headCY - 12} ${cx - headRx - 4},${headCY - 4} Z`,
+    `M ${cx - headRx - 3},${headCY - 2}
+     C ${cx - headRx - 10},${headCY + 14} ${cx - headRx - 8},${headCY + headRy + 4} ${cx - headRx + 4},${headCY + headRy + 10}
+     L ${cx - headRx + 2},${headCY + headRy - 6}
+     C ${cx - headRx + 2},${headCY + 6} ${cx - headRx - 1},${headCY - 2} ${cx - headRx - 3},${headCY - 2} Z`,
+    `M ${cx + headRx + 3},${headCY - 2}
+     C ${cx + headRx + 10},${headCY + 14} ${cx + headRx + 8},${headCY + headRy + 4} ${cx + headRx - 4},${headCY + headRy + 10}
+     L ${cx + headRx - 2},${headCY + headRy - 6}
+     C ${cx + headRx - 2},${headCY + 6} ${cx + headRx + 1},${headCY - 2} ${cx + headRx + 3},${headCY - 2} Z`,
+    `M ${cx - 14},${topY + 4} Q ${cx - 2},${topY - 2} ${cx + 16},${topY + 8} Q ${cx + 4},${topY + 14} ${cx - 14},${topY + 12} Z`,
   ];
 }
 
-/** Male: short swept strokes. Returns a single SVG path string (multi-stroke). */
-export function buildMaleHairPath(cx: number, headCY: number, _headRx: number, headRy: number): string {
+export function buildMaleHairPath(cx: number, headCY: number, headRx: number, headRy: number): string {
   const topY = headCY - headRy;
   return [
-    `M ${cx - 18},${topY + 5} Q ${cx - 10},${topY - 5} ${cx - 2},${topY - 3}`,
-    `M ${cx - 10},${topY + 3} Q ${cx},${topY - 7} ${cx + 10},${topY - 4}`,
-    `M ${cx - 2},${topY + 1} Q ${cx + 8},${topY - 7} ${cx + 17},${topY - 2}`,
-    `M ${cx + 8},${topY + 4} Q ${cx + 15},${topY - 3} ${cx + 19},${topY + 3}`,
-    `M ${cx - 18},${topY + 7} C ${cx - 20},${topY + 13} ${cx - 17},${topY + 17} ${cx - 14},${topY + 18}`,
-    `M ${cx + 16},${topY + 7} C ${cx + 19},${topY + 12} ${cx + 17},${topY + 17} ${cx + 14},${topY + 18}`,
+    `M ${cx - headRx - 1},${headCY - 6}
+     C ${cx - headRx - 4},${topY - 2} ${cx - 12},${topY - 10} ${cx},${topY - 8}
+     C ${cx + 12},${topY - 10} ${cx + headRx + 4},${topY - 2} ${cx + headRx + 1},${headCY - 6}
+     C ${cx + headRx - 2},${topY + 8} ${cx + 8},${topY + 2} ${cx - 4},${topY + 6}
+     C ${cx - 14},${topY + 4} ${cx - headRx + 2},${topY + 8} ${cx - headRx - 1},${headCY - 6} Z`,
   ].join(' ');
+}
+
+// ─── Mood face descriptor ─────────────────────────────────────────────────────
+
+export interface MoodFace {
+  eyeOpen: number;
+  browTilt: number;
+  browLift: number;
+  mouthCurve: number;
+  mouthOpen: number;
+  blush: number;
+  tears: 0 | 1 | 2;
+  auraColor: string;
+  sparkles: boolean;
+}
+
+export function moodToFace(mood: MoodState): MoodFace {
+  switch (mood) {
+    case 'ecstatic':
+      return { eyeOpen: 0.35, browTilt: 0, browLift: 4, mouthCurve: 1, mouthOpen: 0.9, blush: 0.85, tears: 0, auraColor: '#FACC15', sparkles: true };
+    case 'happy':
+      return { eyeOpen: 0.85, browTilt: 0, browLift: 2, mouthCurve: 0.7, mouthOpen: 0.25, blush: 0.45, tears: 0, auraColor: '#38BDF8', sparkles: false };
+    case 'neutral':
+      return { eyeOpen: 1.0, browTilt: 0, browLift: 0, mouthCurve: 0.2, mouthOpen: 0, blush: 0.15, tears: 0, auraColor: '#60A5FA', sparkles: false };
+    case 'sad':
+      return { eyeOpen: 0.55, browTilt: 0.6, browLift: -1, mouthCurve: -0.6, mouthOpen: 0, blush: 0.05, tears: 1, auraColor: '#64748B', sparkles: false };
+    case 'distressed':
+    default:
+      return { eyeOpen: 0.45, browTilt: 1.0, browLift: -2, mouthCurve: -0.9, mouthOpen: 0.2, blush: 0.0, tears: 2, auraColor: '#FB923C', sparkles: false };
+  }
 }
 
 // ─── Backwards-compat stubs ───────────────────────────────────────────────────

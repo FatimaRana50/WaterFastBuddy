@@ -1,275 +1,310 @@
 /**
- * WaterDrop — kawaii animated water drop for compact contexts (active fast
- * screen, list rows, badges).
+ * WaterDrop — compact "portrait mode" of the human companion.
+ * Round chibi face + shoulders, animated water fill from the bottom,
+ * full mood system. Used in list rows, badges, the active-fast screen.
  *
- * Visual design ("Translucent Water-Being" — drop variant):
- *   • Glassy translucent shell with internal animated water level.
- *   • Mood-driven expression + behaviour:
- *       ecstatic  → big jump + sparkle crown + happy closed eyes
- *       happy     → gentle bob + smile
- *       neutral   → calm idle squish
- *       sad       → slow droop + frown
- *       distressed→ heavy droop, dim, tear drop
- *   • Continuous wave on the water surface.
- *   • Color shifts with fill level.
+ * Tech: react-native-svg + react-native-reanimated v3.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue, useAnimatedStyle, useAnimatedProps,
+  withRepeat, withTiming, withSequence,
+  Easing, interpolate,
+} from 'react-native-reanimated';
 import Svg, {
-  Path, Circle, Ellipse, G, Defs, ClipPath, Rect,
-  LinearGradient as SvgGradient, RadialGradient, Stop, Line,
+  G, Path, Circle, Ellipse, Rect,
+  Defs, ClipPath,
+  LinearGradient as SvgGradient, RadialGradient, Stop,
 } from 'react-native-svg';
-import { MoodState } from './avatarUtils';
 
-// Colours keyed to fill level
-function fillToColors(fillPct: number) {
-  if (fillPct >= 0.8) return { main: '#1D4ED8', mid: '#3B82F6', light: '#BFDBFE', wave: '#2563EB', glow: '#93C5FD' };
-  if (fillPct >= 0.5) return { main: '#2563EB', mid: '#60A5FA', light: '#DBEAFE', wave: '#3B82F6', glow: '#BFDBFE' };
-  if (fillPct >= 0.3) return { main: '#0EA5E9', mid: '#38BDF8', light: '#BAE6FD', wave: '#0284C7', glow: '#7DD3FC' };
-  return                     { main: '#7DD3FC', mid: '#BAE6FD', light: '#E0F2FE', wave: '#38BDF8', glow: '#BAE6FD' };
-}
+import {
+  fillPctToWater, moodToFace,
+  SKIN, HAIR,
+  type MoodState,
+} from './avatarUtils';
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 interface Props {
   size?: number;
-  fillPct?: number;   // 0–1
+  fillPct?: number;
   mood?: MoodState;
-  /** @deprecated use mood instead */
+  /** @deprecated use mood */
   happy?: boolean;
 }
+
+const VW = 160;
+const VH = 180;
+const CX = VW / 2;
 
 export default function WaterDrop({
   size = 140, fillPct = 0, mood, happy = true,
 }: Props) {
   const resolvedMood: MoodState = mood ?? (happy ? 'happy' : 'sad');
-  const colors = fillToColors(fillPct);
+  const water = fillPctToWater(fillPct);
+  const face  = moodToFace(resolvedMood);
 
-  // ─── Animated values ────────────────────────────────────────────────────
-  const bob     = useRef(new Animated.Value(0)).current;
-  const squish  = useRef(new Animated.Value(1)).current;
-  const sparkle = useRef(new Animated.Value(1)).current;
+  const bob     = useSharedValue(0);
+  const shake   = useSharedValue(0);
+  const blinkSv = useSharedValue(1);
 
-  // ─── Wave JS state (continuous slosh) ───────────────────────────────────
+  useEffect(() => {
+    const amp =
+      resolvedMood === 'ecstatic'   ? -7  :
+      resolvedMood === 'happy'      ? -3  :
+      resolvedMood === 'sad'        ?  2  :
+      resolvedMood === 'distressed' ?  3  : -1;
+    const dur =
+      resolvedMood === 'ecstatic'   ?  480 :
+      resolvedMood === 'happy'      ? 1300 :
+      resolvedMood === 'sad'        ? 2200 :
+      resolvedMood === 'distressed' ? 2000 : 2600;
+
+    bob.value = withRepeat(
+      withSequence(
+        withTiming(amp, { duration: dur, easing: Easing.inOut(Easing.quad) }),
+        withTiming(0,   { duration: dur, easing: Easing.inOut(Easing.quad) }),
+      ), -1, false,
+    );
+
+    if (resolvedMood === 'distressed') {
+      shake.value = withRepeat(
+        withSequence(
+          withTiming(-1, { duration: 80 }),
+          withTiming( 1, { duration: 80 }),
+        ), -1, true,
+      );
+    } else {
+      shake.value = withTiming(0, { duration: 200 });
+    }
+
+    if (resolvedMood !== 'ecstatic') {
+      blinkSv.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 2800 }),
+          withTiming(0, { duration: 80 }),
+          withTiming(1, { duration: 100 }),
+        ),
+        -1, false,
+      );
+    } else {
+      blinkSv.value = withTiming(0.35, { duration: 200 });
+    }
+  }, [resolvedMood]);
+
   const [waveT, setWaveT] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setWaveT(t => (t + 0.12) % (Math.PI * 4)), 50);
+    const id = setInterval(() => setWaveT(t => (t + 0.18) % (Math.PI * 100)), 60);
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    bob.stopAnimation(); squish.stopAnimation(); sparkle.stopAnimation();
+  const wrapStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: bob.value }, { translateX: shake.value }],
+  }));
+  const lidProps = useAnimatedProps(() => ({
+    opacity: interpolate(blinkSv.value, [0, 1], [1, 0]),
+  }) as any);
 
-    if (resolvedMood === 'ecstatic') {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(bob,    { toValue: -22, duration: 360, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-          Animated.timing(bob,    { toValue:   0, duration: 320, easing: Easing.bounce,           useNativeDriver: true }),
-          Animated.delay(180),
-        ]),
-      ).start();
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(sparkle, { toValue: 0.3, duration: 600, useNativeDriver: true }),
-          Animated.timing(sparkle, { toValue: 1.0, duration: 600, useNativeDriver: true }),
-        ]),
-      ).start();
-    } else if (resolvedMood === 'happy') {
-      Animated.loop(
-        Animated.sequence([
-          Animated.parallel([
-            Animated.timing(bob,    { toValue: -10, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-            Animated.timing(squish, { toValue: 0.96, duration: 900, useNativeDriver: true }),
-          ]),
-          Animated.parallel([
-            Animated.timing(bob,    { toValue: 0, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-            Animated.timing(squish, { toValue: 1, duration: 900, useNativeDriver: true }),
-          ]),
-        ]),
-      ).start();
-    } else if (resolvedMood === 'neutral') {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(squish, { toValue: 0.98, duration: 1800, useNativeDriver: true }),
-          Animated.timing(squish, { toValue: 1.00, duration: 1800, useNativeDriver: true }),
-        ]),
-      ).start();
-    } else if (resolvedMood === 'sad') {
-      Animated.timing(bob,    { toValue: 4,    duration: 800, useNativeDriver: true }).start();
-      Animated.timing(squish, { toValue: 1.05, duration: 800, useNativeDriver: true }).start();
-    } else {
-      // distressed
-      Animated.timing(bob,    { toValue: 8,    duration: 1000, useNativeDriver: true }).start();
-      Animated.timing(squish, { toValue: 1.10, duration: 1000, useNativeDriver: true }).start();
-    }
-  }, [resolvedMood, bob, squish, sparkle]);
+  const headCY = 70;
+  const headRx = 50;
+  const headRy = 54;
 
-  const W = size;
-  const H = size * 1.2;
-  const cx = W / 2;
-  const cy = H * 0.58;
-
-  // Drop outline (teardrop)
-  const dropPath = `
-    M ${cx},${H * 0.04}
-    C ${cx + W * 0.10},${H * 0.18} ${cx + W * 0.5},${H * 0.32} ${cx + W * 0.5},${H * 0.62}
-    A ${W * 0.5} ${H * 0.40} 0 1 1 ${cx - W * 0.5},${H * 0.62}
-    C ${cx - W * 0.5},${H * 0.32} ${cx - W * 0.10},${H * 0.18} ${cx},${H * 0.04}
+  const silhouetteD = `
+    M ${CX - headRx} ${headCY}
+    a ${headRx} ${headRy} 0 1 1 ${headRx * 2} 0
+    L ${CX + 60} ${VH - 4}
+    L ${CX - 60} ${VH - 4}
     Z
   `;
 
-  // Water level inside drop
-  const topFill    = H * 0.18;
-  const bottomFill = H * 1.02;
-  const fillTopY   = bottomFill - fillPct * (bottomFill - topFill);
-
-  // Animated wave on surface
-  const waveAmp = resolvedMood === 'distressed' ? 1.5 : resolvedMood === 'sad' ? 2 : 4;
-  let wavePath = `M 0,${fillTopY}`;
-  for (let x = 0; x <= W; x += 4) {
-    const y = fillTopY + Math.sin(x / 12 + waveT) * waveAmp;
-    wavePath += ` L ${x},${y}`;
+  const fillTop  = headCY - headRy + 8;
+  const fillBot  = VH - 6;
+  const surfaceY = fillBot - (fillBot - fillTop) * Math.max(0, Math.min(1, fillPct));
+  let wavePath = `M -10 ${surfaceY}`;
+  for (let x = -10; x <= VW + 10; x += 4) {
+    const y = surfaceY + 2.5 * Math.sin((x / 18) + waveT) + 1.2 * Math.sin((x / 7) + waveT * 1.6);
+    wavePath += ` L ${x} ${y}`;
   }
-  wavePath += ` L ${W},${H} L 0,${H} Z`;
+  wavePath += ` L ${VW + 10} ${VH + 20} L -10 ${VH + 20} Z`;
 
-  const eyeY   = cy - size * 0.06;
-  const eyeGap = size * 0.13;
-  const eyeR   = size * 0.05;
+  const eyeY   = headCY + 2;
+  const eyeOffX = 16;
+  const eyeRx  = 8;
+  const eyeRy  = 9 * face.eyeOpen + 1;
 
-  const dim = resolvedMood === 'distressed' ? 0.6 : resolvedMood === 'sad' ? 0.8 : 1;
+  const browPath = (side: 'l' | 'r') => {
+    const sgn = side === 'l' ? -1 : 1;
+    const x0 = CX + sgn * (eyeOffX + 9);
+    const x1 = CX + sgn * (eyeOffX - 6);
+    const baseY  = eyeY - 14 - face.browLift;
+    const yInner = baseY + face.browTilt * 5;
+    const yOuter = baseY - face.browTilt * 3;
+    return `M ${x0} ${yOuter} Q ${(x0 + x1) / 2} ${(yOuter + yInner) / 2 - 3} ${x1} ${yInner}`;
+  };
 
-  function MouthEl() {
-    const mY    = cy + size * 0.1;
-    const mHalf = size * 0.1;
-    switch (resolvedMood) {
-      case 'ecstatic':
-        return (
-          <G>
-            <Path d={`M ${cx - mHalf * 1.2},${mY - 4} Q ${cx},${mY + 14} ${cx + mHalf * 1.2},${mY - 4} Z`}
-              fill={colors.main} opacity={0.85} />
-            <Path d={`M ${cx - mHalf * 0.9},${mY + 1} Q ${cx},${mY + 9} ${cx + mHalf * 0.9},${mY + 1}`}
-              fill="#FB7185" opacity={0.55} />
-          </G>
-        );
-      case 'happy':
-        return <Path d={`M ${cx - mHalf},${mY} Q ${cx},${mY + 11} ${cx + mHalf},${mY}`}
-          fill="none" stroke={colors.main} strokeWidth={2.6} strokeLinecap="round" />;
-      case 'neutral':
-        return <Path d={`M ${cx - mHalf * 0.8},${mY + 2} L ${cx + mHalf * 0.8},${mY + 2}`}
-          fill="none" stroke={colors.main} strokeWidth={2.4} strokeLinecap="round" />;
-      case 'sad':
-        return <Path d={`M ${cx - mHalf},${mY + 8} Q ${cx},${mY + 1} ${cx + mHalf},${mY + 8}`}
-          fill="none" stroke={colors.main} strokeWidth={2.4} strokeLinecap="round" />;
-      case 'distressed':
-        return (
-          <G>
-            <Path d={`M ${cx - mHalf * 1.1},${mY + 11} Q ${cx},${mY + 1} ${cx + mHalf * 1.1},${mY + 11}`}
-              fill="none" stroke={colors.main} strokeWidth={2.6} strokeLinecap="round" />
-            {/* tear */}
-            <Path d={`M ${cx - eyeGap - 2},${eyeY + 4} Q ${cx - eyeGap - 4},${eyeY + 14} ${cx - eyeGap},${eyeY + 14} Q ${cx - eyeGap + 2},${eyeY + 9} ${cx - eyeGap - 2},${eyeY + 4} Z`}
-              fill="#7DD3FC" opacity={0.85} />
-          </G>
-        );
-    }
-  }
+  const mouthY      = headCY + 26;
+  const mouthW      = 30;
+  const curve       = face.mouthCurve * 12;
+  const openH       = face.mouthOpen * 14;
+  const mouthClosed = `M ${CX - mouthW / 2} ${mouthY} Q ${CX} ${mouthY + curve} ${CX + mouthW / 2} ${mouthY}`;
+  const mouthOpen   = `M ${CX - mouthW / 2} ${mouthY}
+                       Q ${CX} ${mouthY + curve + openH} ${CX + mouthW / 2} ${mouthY}
+                       Q ${CX} ${mouthY - 1} ${CX - mouthW / 2} ${mouthY} Z`;
+
+  const sparkles = useMemo(() => face.sparkles ? [
+    { x: CX - 50, y: headCY - 36, s: 0.8 },
+    { x: CX + 52, y: headCY - 30, s: 0.7 },
+    { x: CX,      y: headCY - 52, s: 0.9 },
+  ] : [], [face.sparkles]);
 
   return (
-    <Animated.View style={{
-      transform: [{ translateY: bob }, { scaleX: squish }],
-      alignItems: 'center',
-    }}>
-      {/* Sparkle crown (ecstatic) */}
-      {resolvedMood === 'ecstatic' && (
-        <Animated.View style={{
-          opacity: sparkle,
-          flexDirection: 'row',
-          gap: size * 0.14,
-          marginBottom: -size * 0.05,
-        }}>
-          {[0, 1, 2].map(i => (
-            <Svg key={i} width={size * 0.12} height={size * 0.12} viewBox="0 0 14 14">
-              <Line x1={7} y1={1}  x2={7} y2={13} stroke={colors.mid} strokeWidth={1.6} strokeLinecap="round" />
-              <Line x1={1} y1={7}  x2={13} y2={7} stroke={colors.mid} strokeWidth={1.6} strokeLinecap="round" />
-              <Line x1={3} y1={3}  x2={11} y2={11} stroke={colors.light} strokeWidth={1.1} strokeLinecap="round" />
-              <Line x1={11} y1={3} x2={3}  y2={11} stroke={colors.light} strokeWidth={1.1} strokeLinecap="round" />
-            </Svg>
-          ))}
-        </Animated.View>
-      )}
-
-      {/* Glow halo */}
-      <View pointerEvents="none" style={{
-        position: 'absolute',
-        width: W * 1.2, height: H * 0.55,
-        top: H * 0.3,
-        borderRadius: W,
-        backgroundColor: colors.glow,
-        opacity: 0.25 * dim,
-      }} />
-
-      <Svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+    <Animated.View style={[styles.wrap, { width: size, height: size * (VH / VW) }, wrapStyle]}>
+      <Svg width={size} height={size * (VH / VW)} viewBox={`0 0 ${VW} ${VH}`}>
         <Defs>
-          <ClipPath id="dropClip">
-            <Path d={dropPath} />
-          </ClipPath>
-          <SvgGradient id="dropShell" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={colors.light} stopOpacity="0.85" />
-            <Stop offset="1" stopColor={colors.light} stopOpacity="0.55" />
-          </SvgGradient>
-          <SvgGradient id="dropFill" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={colors.mid}  stopOpacity="0.95" />
-            <Stop offset="1" stopColor={colors.main} stopOpacity="1"    />
-          </SvgGradient>
-          <RadialGradient id="dropHi" cx="32%" cy="22%" r="55%">
-            <Stop offset="0" stopColor="#ffffff" stopOpacity="0.55" />
-            <Stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+          <RadialGradient id="dSkin" cx="40%" cy="35%" r="70%">
+            <Stop offset="0%"   stopColor={SKIN.highlight} />
+            <Stop offset="55%" stopColor={SKIN.base} />
+            <Stop offset="100%" stopColor={SKIN.shadow} />
           </RadialGradient>
+          <SvgGradient id="dHair" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0%"   stopColor={HAIR.female.highlight} />
+            <Stop offset="100%" stopColor={HAIR.female.shadow} />
+          </SvgGradient>
+          <SvgGradient id="dWater" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0%"   stopColor={water.light} stopOpacity="0.95" />
+            <Stop offset="60%" stopColor={water.main}  stopOpacity="0.85" />
+            <Stop offset="100%" stopColor={water.dark} stopOpacity="0.95" />
+          </SvgGradient>
+          <RadialGradient id="dShimmer" cx="50%" cy="40%" r="60%">
+            <Stop offset="0%"   stopColor="#fff" stopOpacity="0.5" />
+            <Stop offset="100%" stopColor="#fff" stopOpacity="0" />
+          </RadialGradient>
+          <RadialGradient id="dIris" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%"   stopColor="#3B82F6" />
+            <Stop offset="60%" stopColor="#1E40AF" />
+            <Stop offset="100%" stopColor="#0F172A" />
+          </RadialGradient>
+          <ClipPath id="dClip"><Path d={silhouetteD} /></ClipPath>
         </Defs>
 
-        {/* Glass shell */}
-        <Path d={dropPath} fill="url(#dropShell)" />
+        {/* Body / shoulders */}
+        <Path d={silhouetteD} fill="url(#dSkin)" />
 
-        {/* Animated water fill, clipped to drop */}
-        <G clipPath="url(#dropClip)">
-          <Path d={wavePath} fill="url(#dropFill)" opacity={0.92} />
-          {/* surface shine */}
-          <Rect x={4} y={fillTopY - 1} width={W - 8} height={3} fill="#ffffff" opacity={0.45} rx={1.5} />
+        {/* Hair behind head */}
+        <Ellipse cx={CX} cy={headCY + 2} rx={headRx + 6} ry={headRy + 4} fill="url(#dHair)" opacity={0.95} />
+        {/* Face over hair */}
+        <Ellipse cx={CX} cy={headCY} rx={headRx} ry={headRy} fill="url(#dSkin)" />
+        {/* Front hair sweep */}
+        <Path
+          d={`M ${CX - headRx + 4} ${headCY - headRy + 14}
+              Q ${CX - 8} ${headCY - headRy + 2} ${CX + 28} ${headCY - headRy + 18}
+              Q ${CX + 4} ${headCY - headRy + 22} ${CX - headRx + 4} ${headCY - headRy + 22} Z`}
+          fill="url(#dHair)"
+        />
+
+        {/* Water fill */}
+        <G clipPath="url(#dClip)">
+          <Path d={wavePath} fill="url(#dWater)" opacity={0.78} />
+          <Ellipse cx={CX} cy={surfaceY + 14} rx={VW * 0.3} ry={20} fill="url(#dShimmer)" />
+          <Path
+            d={(() => {
+              let p = `M -10 ${surfaceY}`;
+              for (let x = -10; x <= VW + 10; x += 4) {
+                const y = surfaceY + 2.5 * Math.sin((x / 18) + waveT) + 1.2 * Math.sin((x / 7) + waveT * 1.6);
+                p += ` L ${x} ${y}`;
+              }
+              return p;
+            })()}
+            stroke={water.light} strokeWidth={1.2} fill="none" opacity={0.85}
+          />
         </G>
 
-        {/* Outline + highlight */}
-        <Path d={dropPath} fill="none" stroke={colors.mid} strokeWidth={2.2} opacity={0.7 * dim} />
-        <Ellipse cx={cx - size * 0.16} cy={H * 0.27} rx={size * 0.10} ry={size * 0.16}
-          fill="white" opacity={0.55} transform={`rotate(-20, ${cx - size * 0.16}, ${H * 0.27})`} />
-        <Path d={dropPath} fill="url(#dropHi)" opacity={0.6} />
-
-        {/* Eyes */}
-        {resolvedMood === 'ecstatic' ? (
-          <G stroke={colors.main} strokeWidth={2.5} strokeLinecap="round" fill="none">
-            <Path d={`M ${cx - eyeGap - eyeR},${eyeY} Q ${cx - eyeGap},${eyeY - eyeR * 1.5} ${cx - eyeGap + eyeR},${eyeY}`} />
-            <Path d={`M ${cx + eyeGap - eyeR},${eyeY} Q ${cx + eyeGap},${eyeY - eyeR * 1.5} ${cx + eyeGap + eyeR},${eyeY}`} />
-          </G>
-        ) : (
-          <G>
-            <Circle cx={cx - eyeGap} cy={eyeY} r={eyeR} fill={colors.main} opacity={0.95} />
-            <Circle cx={cx + eyeGap} cy={eyeY} r={eyeR} fill={colors.main} opacity={0.95} />
-            <Circle cx={cx - eyeGap + eyeR * 0.35} cy={eyeY - eyeR * 0.35} r={eyeR * 0.35} fill="white" opacity={0.95} />
-            <Circle cx={cx + eyeGap + eyeR * 0.35} cy={eyeY - eyeR * 0.35} r={eyeR * 0.35} fill="white" opacity={0.95} />
-            {(resolvedMood === 'sad' || resolvedMood === 'distressed') && (
-              <G stroke={colors.main} strokeWidth={1.6} strokeLinecap="round" fill="none" opacity={0.9}>
-                <Path d={`M ${cx - eyeGap - eyeR - 1},${eyeY - eyeR + 0.5} Q ${cx - eyeGap},${eyeY - eyeR * 1.7} ${cx - eyeGap + eyeR + 1},${eyeY - eyeR + 0.5}`} />
-                <Path d={`M ${cx + eyeGap - eyeR - 1},${eyeY - eyeR + 0.5} Q ${cx + eyeGap},${eyeY - eyeR * 1.7} ${cx + eyeGap + eyeR + 1},${eyeY - eyeR + 0.5}`} />
-              </G>
-            )}
-          </G>
+        {/* Blush */}
+        {face.blush > 0 && (
+          <>
+            <Ellipse cx={CX - 22} cy={headCY + 18} rx={9} ry={5} fill={SKIN.blush} opacity={face.blush * 0.55} />
+            <Ellipse cx={CX + 22} cy={headCY + 18} rx={9} ry={5} fill={SKIN.blush} opacity={face.blush * 0.55} />
+          </>
         )}
 
-        {/* Cheek blush */}
-        <Ellipse cx={cx - eyeGap - size * 0.09} cy={eyeY + size * 0.07} rx={size * 0.06} ry={size * 0.03}
-          fill={resolvedMood === 'distressed' ? '#F87171' : '#FB7185'} opacity={0.5} />
-        <Ellipse cx={cx + eyeGap + size * 0.09} cy={eyeY + size * 0.07} rx={size * 0.06} ry={size * 0.03}
-          fill={resolvedMood === 'distressed' ? '#F87171' : '#FB7185'} opacity={0.5} />
+        {/* Eyes */}
+        {(['l', 'r'] as const).map(side => {
+          const sgn = side === 'l' ? -1 : 1;
+          const ex  = CX + sgn * eyeOffX;
+          if (resolvedMood === 'ecstatic') {
+            return (
+              <Path key={side}
+                d={`M ${ex - 7} ${eyeY + 1} Q ${ex} ${eyeY - 6} ${ex + 7} ${eyeY + 1}`}
+                stroke="#1F2937" strokeWidth={2.4} fill="none" strokeLinecap="round" />
+            );
+          }
+          return (
+            <G key={side}>
+              <Ellipse cx={ex} cy={eyeY} rx={eyeRx} ry={eyeRy} fill="#FFFFFF" />
+              <Circle cx={ex} cy={eyeY - 0.5} r={4.6 * Math.max(face.eyeOpen, 0.5)} fill="url(#dIris)" />
+              <Circle cx={ex} cy={eyeY - 0.5} r={2.6 * Math.max(face.eyeOpen, 0.5)} fill="#0B1220" />
+              <Circle cx={ex - 1.5} cy={eyeY - 2} r={1.6} fill="#FFFFFF" />
+              <Path
+                d={`M ${ex - eyeRx} ${eyeY - eyeRy + 1} Q ${ex} ${eyeY - eyeRy - 1} ${ex + eyeRx} ${eyeY - eyeRy + 1}`}
+                stroke="#1F2937" strokeWidth={1.8} fill="none" strokeLinecap="round"
+              />
+              <AnimatedPath
+                d={`M ${ex - eyeRx} ${eyeY} Q ${ex} ${eyeY + eyeRy} ${ex + eyeRx} ${eyeY}
+                    L ${ex + eyeRx} ${eyeY - eyeRy} Q ${ex} ${eyeY - eyeRy} ${ex - eyeRx} ${eyeY - eyeRy} Z`}
+                fill={SKIN.base}
+                animatedProps={lidProps}
+              />
+            </G>
+          );
+        })}
 
-        <MouthEl />
+        {/* Brows */}
+        <Path d={browPath('l')} stroke={HAIR.female.shadow} strokeWidth={3} fill="none" strokeLinecap="round" />
+        <Path d={browPath('r')} stroke={HAIR.female.shadow} strokeWidth={3} fill="none" strokeLinecap="round" />
+
+        {/* Nose */}
+        <Path
+          d={`M ${CX - 2} ${headCY + 10} Q ${CX - 3} ${headCY + 17} ${CX} ${headCY + 18}
+              Q ${CX + 3} ${headCY + 17} ${CX + 2} ${headCY + 10}`}
+          stroke={SKIN.shadow} strokeWidth={1.2} fill="none" opacity={0.55}
+        />
+
+        {/* Mouth */}
+        {face.mouthOpen > 0.4 ? (
+          <>
+            <Path d={mouthOpen} fill="#7A2A3A" />
+            <Rect x={CX - mouthW / 2 + 3} y={mouthY - 1} width={mouthW - 6} height={openH * 0.4 + 2} rx={2} fill="#FFFFFF" />
+          </>
+        ) : face.mouthOpen > 0 ? (
+          <Path d={mouthOpen} fill="#7A2A3A" />
+        ) : (
+          <Path d={mouthClosed} stroke={SKIN.lip} strokeWidth={2.6} fill="none" strokeLinecap="round" />
+        )}
+
+        {/* Tears */}
+        {face.tears >= 1 && (
+          <Path d={`M ${CX - eyeOffX} ${eyeY + 8} q -1.4 8 0 14 q 2.5 -2 2.5 -7 q 0 -3 -2.5 -7 Z`}
+                fill="#7DD3FC" opacity={0.9} />
+        )}
+        {face.tears >= 2 && (
+          <Path d={`M ${CX + eyeOffX} ${eyeY + 8} q 1.4 8 0 14 q -2.5 -2 -2.5 -7 q 0 -3 2.5 -7 Z`}
+                fill="#7DD3FC" opacity={0.9} />
+        )}
+
+        {/* Sparkles */}
+        {sparkles.map((s, i) => (
+          <G key={i} transform={`translate(${s.x} ${s.y}) scale(${s.s})`}>
+            <Path d="M 0 -7 L 1.6 -1.6 L 7 0 L 1.6 1.6 L 0 7 L -1.6 1.6 L -7 0 L -1.6 -1.6 Z" fill="#FDE047" />
+            <Circle cx={0} cy={0} r={1.4} fill="#FFFFFF" />
+          </G>
+        ))}
       </Svg>
     </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  wrap: { alignItems: 'center', justifyContent: 'center' },
+});

@@ -1,10 +1,10 @@
-// Booking landing + cal.com WebView.
-//
-// Mirrors the website's Booking page:
-//   - kicker + display headline
-//   - three session cards (Intro, Standard, Bundle) with "Most popular" badge
-//   - coach testimonial row
-//   - HeroCTA that opens the cal.com booking calendar inside a WebView
+// BookingScreen — premium 1-on-1 coaching landing.
+// Same handlers, navigation, and modal logic as the original.
+// Visual polish:
+//  • Hero gradient panel (instead of plain card) with halo orb
+//  • Pricing tiles: Standard upgraded with internal glow & ribbon
+//  • Coach row: gradient avatar, star ribbon
+//  • Closing CTA kept (HeroCTA component)
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Linking, SafeAreaView,
@@ -22,7 +22,6 @@ import { COLORS, FONT_SIZE, SPACING, BORDER_RADIUS } from '../../constants/theme
 
 const BOOKING_URL = 'https://bookings.waterfastbuddy.com';
 
-// Session plans mirroring the website's pricing tiles.
 type Session = {
   key: string;
   duration: string;
@@ -33,34 +32,15 @@ type Session = {
 };
 
 const SESSIONS: Session[] = [
-  {
-    key: 'intro',
-    duration: '30 MIN',
-    name: 'Intro call',
-    price: 'Free',
-    bullets: ['Meet your coach', 'Share your current goals', 'Get a sense of fit'],
-  },
-  {
-    key: 'standard',
-    duration: '60 MIN',
-    name: 'Standard session',
-    price: '£79',
-    bullets: ['Full protocol review', 'Personalised adjustments', 'Written follow-up notes'],
-    popular: true,
-  },
-  {
-    key: 'bundle',
-    duration: '3 × 60 MIN',
-    name: '3-session bundle',
-    price: '£199',
-    bullets: ['Priority scheduling', 'Between-session messaging', 'Progress tracking summary'],
-  },
+  { key: 'intro',    duration: '30 MIN',     name: 'Intro call',         price: 'Free',  bullets: ['Meet your coach', 'Share your current goals', 'Get a sense of fit'] },
+  { key: 'standard', duration: '60 MIN',     name: 'Standard session',   price: '£79',   bullets: ['Full protocol review', 'Personalised adjustments', 'Written follow-up notes'], popular: true },
+  { key: 'bundle',   duration: '3 × 60 MIN', name: '3-session bundle',   price: '£199',  bullets: ['Priority scheduling', 'Between-session messaging', 'Progress tracking summary'] },
 ];
 
 const COACHES = [
   { key: 'rachel', initial: 'R', name: 'Rachel T.', role: '3-session bundle' },
   { key: 'marcus', initial: 'M', name: 'Marcus W.', role: 'Standard session' },
-  { key: 'anya',   initial: 'A', name: 'Anya K.',  role: 'Standard session' },
+  { key: 'anya',   initial: 'A', name: 'Anya K.',   role: 'Standard session' },
 ];
 
 export default function BookingScreen() {
@@ -73,39 +53,47 @@ export default function BookingScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      {/* Back button */}
       <SafeAreaView>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backBtn, { backgroundColor: colors.surface, borderColor: colors.border }]} activeOpacity={0.8}>
+        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.8}
+          style={[styles.backBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Ionicons name="chevron-back" size={18} color={colors.text} />
           <Text style={[styles.backText, { color: colors.text }]}>{i18n.t('common.back')}</Text>
         </TouchableOpacity>
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Hero */}
-        <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Kicker>1-on-1 Coaching</Kicker>
-          <Text style={[styles.heroTitle, { color: colors.text }]}>
+        {/* Hero gradient */}
+        <LinearGradient
+          colors={['#0A1628', COLORS.primaryDeep ?? '#08226B', COLORS.primaryDark ?? '#0D3AA8', COLORS.primary]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={styles.heroCard}
+        >
+          <View style={styles.heroOrb} />
+          <View style={styles.heroIconWrap}>
+            <Ionicons name="videocam" size={22} color="#fff" />
+          </View>
+          <Text style={styles.heroKicker}>1-ON-1 COACHING</Text>
+          <Text style={styles.heroTitle}>
             Book a 1-on-1{'\n'}
-            <Text style={{ color: COLORS.primary }}>fasting session.</Text>
+            <Text style={{ color: COLORS.accent }}>fasting session.</Text>
           </Text>
-          <Text style={[styles.heroBody, { color: colors.textSecondary }]}>
+          <Text style={styles.heroBody}>
             Personalised guidance from certified fasting coaches. Plan your protocol,
             troubleshoot symptoms, and hit your goals.
           </Text>
 
           <View style={styles.chipRow}>
             {['30 or 60 min video sessions', 'Custom fasting protocol', 'Follow-up notes'].map((chip) => (
-              <View key={chip} style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.cardAlt }]}>
-                <Ionicons name="checkmark-circle" size={14} color={COLORS.primary} style={{ marginRight: 6 }} />
-                <Text style={[styles.chipText, { color: colors.text }]}>{chip}</Text>
+              <View key={chip} style={styles.chip}>
+                <Ionicons name="checkmark-circle" size={13} color="#fff" />
+                <Text style={styles.chipText}>{chip}</Text>
               </View>
             ))}
           </View>
-        </View>
+        </LinearGradient>
 
         {/* Pricing */}
-        <View style={{ alignItems: 'center', marginTop: SPACING.xl, marginBottom: SPACING.sm }}>
+        <View style={{ alignItems: 'center', marginTop: SPACING.xxl, marginBottom: SPACING.sm }}>
           <Kicker>Pricing</Kicker>
         </View>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Simple, transparent sessions</Text>
@@ -124,11 +112,20 @@ export default function BookingScreen() {
         <View style={styles.coachRow}>
           {COACHES.map((c) => (
             <View key={c.key} style={[styles.coachCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <View style={[styles.coachAvatar, { backgroundColor: COLORS.primary + '20' }]}>
-                <Text style={[styles.coachInitial, { color: COLORS.primary }]}>{c.initial}</Text>
-              </View>
+              <LinearGradient
+                colors={[COLORS.primary, COLORS.accent]}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={styles.coachAvatar}
+              >
+                <Text style={styles.coachInitial}>{c.initial}</Text>
+              </LinearGradient>
               <Text style={[styles.coachName, { color: colors.text }]}>{c.name}</Text>
               <Text style={[styles.coachRole, { color: colors.textSecondary }]}>{c.role}</Text>
+              <View style={styles.coachStars}>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Ionicons key={i} name="star" size={10} color={COLORS.warning ?? '#F59E0B'} />
+                ))}
+              </View>
             </View>
           ))}
         </View>
@@ -146,7 +143,7 @@ export default function BookingScreen() {
         </View>
 
         <TouchableOpacity onPress={openExternal} style={{ alignSelf: 'center', marginTop: SPACING.md, padding: SPACING.sm }}>
-          <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Open in browser ↗</Text>
+          <Text style={{ color: COLORS.primary, fontWeight: '800' }}>Open in browser  ↗</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -169,35 +166,35 @@ export default function BookingScreen() {
   );
 }
 
-// ─── Session card ─────────────────────────────────────────────────────────────
 function SessionCard({ session, onBook }: { session: Session; onBook: () => void }) {
   const { colors } = useTheme();
-  const highlight = session.popular;
 
-  if (highlight) {
+  if (session.popular) {
     return (
       <LinearGradient
-        colors={[COLORS.primaryDeep, COLORS.primaryDark, COLORS.primary]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.sessionCard}
+        colors={['#0A1628', COLORS.primaryDeep ?? '#08226B', COLORS.primaryDark ?? '#0D3AA8', COLORS.primary]}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={[styles.sessionCard, styles.sessionCardPopular]}
       >
-        <View style={styles.popularBadge}>
-          <Text style={styles.popularBadgeText}>Most popular</Text>
+        <View style={styles.popularRibbon}>
+          <Ionicons name="flame" size={11} color="#fff" />
+          <Text style={styles.popularRibbonText}>MOST POPULAR</Text>
         </View>
-        <Text style={[styles.sessionDuration, { color: 'rgba(255,255,255,0.72)' }]}>{session.duration}</Text>
+        <Text style={[styles.sessionDuration, { color: 'rgba(255,255,255,0.78)' }]}>{session.duration}</Text>
         <Text style={[styles.sessionName, { color: '#fff' }]}>{session.name}</Text>
-        <Text style={[styles.sessionPrice, { color: '#fff' }]}>{session.price}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+          <Text style={[styles.sessionPrice, { color: '#fff' }]}>{session.price}</Text>
+        </View>
         <View style={{ height: SPACING.md }} />
         {session.bullets.map((b) => (
           <View key={b} style={styles.bulletRow}>
-            <Ionicons name="checkmark-circle" size={16} color="#fff" style={{ marginRight: 8 }} />
-            <Text style={[styles.bulletText, { color: 'rgba(255,255,255,0.92)' }]}>{b}</Text>
+            <Ionicons name="checkmark-circle" size={16} color="#fff" />
+            <Text style={[styles.bulletText, { color: 'rgba(255,255,255,0.94)' }]}>{b}</Text>
           </View>
         ))}
         <TouchableOpacity style={[styles.sessionBtn, { backgroundColor: '#fff' }]} onPress={onBook} activeOpacity={0.85}>
-          <Ionicons name="calendar" size={16} color={COLORS.primaryDark} style={{ marginRight: 8 }} />
-          <Text style={[styles.sessionBtnText, { color: COLORS.primaryDark }]}>Book this session</Text>
+          <Ionicons name="calendar" size={16} color={COLORS.primaryDark ?? '#0D3AA8'} />
+          <Text style={[styles.sessionBtnText, { color: COLORS.primaryDark ?? '#0D3AA8' }]}>Book this session</Text>
         </TouchableOpacity>
       </LinearGradient>
     );
@@ -211,16 +208,12 @@ function SessionCard({ session, onBook }: { session: Session; onBook: () => void
       <View style={{ height: SPACING.md }} />
       {session.bullets.map((b) => (
         <View key={b} style={styles.bulletRow}>
-          <Ionicons name="checkmark-circle" size={16} color={COLORS.primary} style={{ marginRight: 8 }} />
+          <Ionicons name="checkmark-circle" size={16} color={COLORS.primary} />
           <Text style={[styles.bulletText, { color: colors.textSecondary }]}>{b}</Text>
         </View>
       ))}
-      <TouchableOpacity
-        style={[styles.sessionBtn, { backgroundColor: COLORS.primary }]}
-        onPress={onBook}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="calendar" size={16} color="#fff" style={{ marginRight: 8 }} />
+      <TouchableOpacity style={[styles.sessionBtn, { backgroundColor: COLORS.primary }]} onPress={onBook} activeOpacity={0.85}>
+        <Ionicons name="calendar" size={16} color="#fff" />
         <Text style={[styles.sessionBtnText, { color: '#fff' }]}>Book this session</Text>
       </TouchableOpacity>
     </View>
@@ -233,109 +226,92 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center',
     alignSelf: 'flex-start',
     marginTop: 8, marginLeft: SPACING.md,
-    paddingVertical: 6, paddingHorizontal: 12,
-    borderRadius: BORDER_RADIUS.round, borderWidth: 1,
-    gap: 4,
+    paddingVertical: 8, paddingHorizontal: 14,
+    borderRadius: BORDER_RADIUS.round, borderWidth: 1, gap: 4,
   },
-  backText: { fontSize: FONT_SIZE.sm, fontWeight: '700' },
+  backText: { fontSize: FONT_SIZE.sm, fontWeight: '800' },
 
   content: { padding: SPACING.lg, paddingTop: SPACING.md, paddingBottom: SPACING.xxl },
 
   heroCard: {
-    borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.lg,
-    borderWidth: 1,
-    shadowColor: '#0B5DD1',
-    shadowOpacity: 0.1,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 4,
+    borderRadius: BORDER_RADIUS.xl, padding: SPACING.xl,
+    overflow: 'hidden',
+    shadowColor: COLORS.primary, shadowOpacity: 0.4, shadowRadius: 24,
+    shadowOffset: { width: 0, height: 14 }, elevation: 10,
   },
+  heroOrb: { position: 'absolute', width: 240, height: 240, borderRadius: 120, backgroundColor: 'rgba(56,189,248,0.18)', top: -100, right: -80 },
+  heroIconWrap: {
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.32)',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: SPACING.md,
+  },
+  heroKicker: { color: 'rgba(255,255,255,0.78)', fontSize: FONT_SIZE.xs, fontWeight: '900', letterSpacing: 2.5 },
   heroTitle: {
-    fontSize: FONT_SIZE.hero,
-    fontWeight: '900',
-    lineHeight: 40,
-    marginTop: SPACING.sm,
+    fontSize: 36, fontWeight: '900', color: '#fff',
+    lineHeight: 40, marginTop: 8, letterSpacing: -1,
   },
-  heroBody: {
-    fontSize: FONT_SIZE.md,
-    lineHeight: 22,
-    marginTop: SPACING.md,
-  },
-  chipRow: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: 8,
-    marginTop: SPACING.md,
-  },
-  chip: {
-    flexDirection: 'row', alignItems: 'center',
-    borderRadius: BORDER_RADIUS.round, borderWidth: 1,
-    paddingVertical: 6, paddingHorizontal: 10,
-  },
-  chipText: { fontSize: FONT_SIZE.xs, fontWeight: '700' },
+  heroBody: { fontSize: FONT_SIZE.md, lineHeight: 22, marginTop: SPACING.md, color: 'rgba(255,255,255,0.9)' },
 
-  sectionTitle: {
-    fontSize: FONT_SIZE.xxl,
-    fontWeight: '900',
-    textAlign: 'center',
-    marginBottom: 6,
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: SPACING.lg },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)',
+    borderRadius: 999, paddingVertical: 6, paddingHorizontal: 10,
   },
-  sectionBody: {
-    fontSize: FONT_SIZE.md,
-    textAlign: 'center',
-    marginBottom: SPACING.lg,
-  },
+  chipText: { color: '#fff', fontSize: FONT_SIZE.xs, fontWeight: '800' },
+
+  sectionTitle: { fontSize: 26, fontWeight: '900', textAlign: 'center', marginBottom: 6, letterSpacing: -0.6 },
+  sectionBody:  { fontSize: FONT_SIZE.md, textAlign: 'center', marginBottom: SPACING.lg },
 
   sessionCard: {
-    borderRadius: BORDER_RADIUS.xl,
-    padding: SPACING.lg,
-    marginBottom: SPACING.md,
-    shadowColor: '#0B5DD1',
-    shadowOpacity: 0.1,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 3,
+    borderRadius: BORDER_RADIUS.xl, padding: SPACING.lg,
+    marginBottom: SPACING.md, overflow: 'hidden',
+    shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 }, elevation: 4,
   },
-  popularBadge: {
+  sessionCardPopular: {
+    shadowColor: COLORS.primary, shadowOpacity: 0.5, shadowRadius: 22,
+    shadowOffset: { width: 0, height: 14 }, elevation: 10,
+  },
+  popularRibbon: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.38)',
     paddingHorizontal: 10, paddingVertical: 4,
-    borderRadius: BORDER_RADIUS.round,
-    marginBottom: SPACING.sm,
+    borderRadius: 999, marginBottom: SPACING.sm,
   },
-  popularBadgeText: { color: '#fff', fontSize: FONT_SIZE.xs, fontWeight: '800' },
-  sessionDuration: {
-    fontSize: FONT_SIZE.xs,
-    fontWeight: '800',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  sessionName: { fontSize: FONT_SIZE.xl, fontWeight: '900', marginTop: 4 },
-  sessionPrice: { fontSize: FONT_SIZE.hero, fontWeight: '900', marginTop: 4 },
-  bulletRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 3 },
-  bulletText: { fontSize: FONT_SIZE.sm, flex: 1 },
+  popularRibbonText: { color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  sessionDuration: { fontSize: FONT_SIZE.xs, fontWeight: '900', letterSpacing: 2, textTransform: 'uppercase' },
+  sessionName:     { fontSize: FONT_SIZE.xl, fontWeight: '900', marginTop: 4, letterSpacing: -0.4 },
+  sessionPrice:    { fontSize: 40, fontWeight: '900', marginTop: 4, letterSpacing: -1.5 },
+  bulletRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 4 },
+  bulletText: { fontSize: FONT_SIZE.sm, flex: 1, fontWeight: '600' },
   sessionBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 12, borderRadius: BORDER_RADIUS.round,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 14, borderRadius: BORDER_RADIUS.round,
     marginTop: SPACING.lg,
   },
-  sessionBtnText: { fontSize: FONT_SIZE.md, fontWeight: '800' },
+  sessionBtnText: { fontSize: FONT_SIZE.md, fontWeight: '900' },
 
   coachRow: { flexDirection: 'row', gap: SPACING.sm },
   coachCard: {
-    flex: 1,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md,
-    borderWidth: 1,
-    alignItems: 'center',
+    flex: 1, borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md, borderWidth: 1, alignItems: 'center',
   },
   coachAvatar: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 48, height: 48, borderRadius: 24,
     alignItems: 'center', justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
+    shadowColor: COLORS.primary, shadowOpacity: 0.4, shadowRadius: 8, elevation: 3,
   },
-  coachInitial: { fontSize: FONT_SIZE.md, fontWeight: '900' },
-  coachName: { fontSize: FONT_SIZE.sm, fontWeight: '800' },
-  coachRole: { fontSize: FONT_SIZE.xs, marginTop: 2 },
+  coachInitial: { fontSize: FONT_SIZE.lg, fontWeight: '900', color: '#fff' },
+  coachName:    { fontSize: FONT_SIZE.sm, fontWeight: '900' },
+  coachRole:    { fontSize: 10, fontWeight: '700', marginTop: 2, textAlign: 'center' },
+  coachStars:   { flexDirection: 'row', gap: 1, marginTop: 6 },
 
   modalRoot: { flex: 1 },
   modalHeader: {
@@ -344,5 +320,5 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   modalCloseBtn: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
-  modalTitle: { fontSize: FONT_SIZE.lg, fontWeight: '800' },
+  modalTitle: { fontSize: FONT_SIZE.lg, fontWeight: '900' },
 });
