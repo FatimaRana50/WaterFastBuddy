@@ -37,13 +37,25 @@ const PRESETS = [
 ];
 
 const STAGES = [
-  { minHour: 0,  key: 'fasts.stage0' },
-  { minHour: 8,  key: 'fasts.stage8' },
-  { minHour: 12, key: 'fasts.stage12' },
-  { minHour: 16, key: 'fasts.stage16' },
-  { minHour: 24, key: 'fasts.stage24' },
-  { minHour: 48, key: 'fasts.stage48' },
-  { minHour: 72, key: 'fasts.stage72' },
+  { minHour: 0,   key: 'fasts.stage0' },
+  { minHour: 4,   key: 'fasts.stage4' },
+  { minHour: 8,   key: 'fasts.stage8' },
+  { minHour: 10,  key: 'fasts.stage10' },
+  { minHour: 12,  key: 'fasts.stage12' },
+  { minHour: 14,  key: 'fasts.stage14' },
+  { minHour: 16,  key: 'fasts.stage16' },
+  { minHour: 18,  key: 'fasts.stage18' },
+  { minHour: 20,  key: 'fasts.stage20' },
+  { minHour: 24,  key: 'fasts.stage24' },
+  { minHour: 30,  key: 'fasts.stage30' },
+  { minHour: 36,  key: 'fasts.stage36' },
+  { minHour: 48,  key: 'fasts.stage48' },
+  { minHour: 60,  key: 'fasts.stage60' },
+  { minHour: 72,  key: 'fasts.stage72' },
+  { minHour: 96,  key: 'fasts.stage96' },
+  { minHour: 120, key: 'fasts.stage120' },
+  { minHour: 144, key: 'fasts.stage144' },
+  { minHour: 168, key: 'fasts.stage168' },
 ];
 
 function getStage(h: number) {

@@ -50,7 +50,19 @@
     "stage16": "Comienza la autofagia. Tus celulas se limpian.",
     "stage24": "Renovacion celular profunda. Aumenta la hormona del crecimiento.",
     "stage48": "Regeneracion inmune. Aumenta la produccion de celulas madre.",
-    "stage72": "Autofagia profunda. Reinicio metabolico completo en marcha."
+    "stage72": "Autofagia profunda. Reinicio metabolico completo en marcha.",
+    "stage4": "El azúcar en sangre baja. Las reservas de glucógeno se están agotando.",
+    "stage10": "El metabolismo de grasas se acelera. El hambre puede disminuir al subir las cetonas.",
+    "stage14": "Cetosis leve establecida. La claridad mental puede comenzar a mejorar.",
+    "stage18": "Adaptación profunda a las grasas en marcha. La hormona del crecimiento sube constantemente.",
+    "stage20": "Autofagia mejorada: la reparación celular se intensifica.",
+    "stage30": "Cambio metabólico completo. La función inmune comienza a restablecerse.",
+    "stage36": "Reestructuración del microbioma intestinal. La inflamación disminuye.",
+    "stage60": "Reparación profunda de tejidos en progreso. Las cetonas alimentan completamente tu cerebro.",
+    "stage96": "Neuroplasticidad mejorada. Tu cerebro forma nuevas conexiones.",
+    "stage120": "Reparación celular máxima. El cuerpo se reconstruye en su nivel más profundo.",
+    "stage144": "Adaptación metabólica completa. Todos los sistemas funcionan con combustible limpio.",
+    "stage168": "Logro extraordinario: transformación completa de 7 días."
   },
   "history": {
     "title": "Historial de Ayunos",
@@ -111,6 +123,46 @@
         "readTime": "3 min",
         "accent": "#EC4899",
         "body": "Muchas personas cometen errores comunes en sus primeros ayunos que socavan sus resultados o los hacen sentirse incómodos. El error más grande: no consumir suficientes electrolitos, lo que causa dolores de cabeza y fatiga. Segundo: romper un ayuno demasiado agresivamente con alimentos pesados, causando problemas digestivos. Tercero: saltarse comidas antes de un ayuno sin preparación adecuada: reducir gradualmente las comidas antes de un ayuno ayuda enormemente. Cuarto: ignorar completamente las señales de hambre: algo de hambre es normal, pero el hambre extrema puede significar que necesitas electrolitos o deberías acortar tu próximo ayuno. Quinto: ayunar con demasiada frecuencia sin días de recuperación. Tu cuerpo necesita tiempo para adaptarse. Comienza con ayunos de 16 horas e incrementa gradualmente hacia duraciones más largas. Registra cómo te sientes y ajusta tu enfoque basándote en tu respuesta única."
+      },
+      {
+        "id": "6",
+        "title": "Los Beneficios Mentales del Ayuno de Agua",
+        "category": "Mente y Concentración",
+        "readTime": "4 min",
+        "accent": "#6366F1",
+        "body": "El ayuno de agua no solo transforma tu cuerpo, también afecta profundamente tu mente. Después del período de ajuste inicial (normalmente 12-24 horas), muchas personas reportan un estado de mayor claridad mental y concentración que se siente diferente a cualquier experiencia previa. Esta mejora cognitiva es impulsada en gran parte por las cetonas, que son un combustible más eficiente para el cerebro que la glucosa. Las cetonas reducen el estrés oxidativo y la inflamación en el tejido neuronal, dos grandes causas de la niebla mental. El ayuno también desencadena la liberación de BDNF (Factor Neurotrófico Derivado del Cerebro), una proteína que apoya el crecimiento neuronal. Además, el ayuno promueve la neuroplasticidad. Muchas personas usan ayunos prolongados para romper hábitos mentales, resetear patrones emocionales y ganar perspectiva. La quietud del ayuno puede ser profundamente meditativa."
+      },
+      {
+        "id": "7",
+        "title": "Preparándote para tu Primer Ayuno de 24 Horas",
+        "category": "Preparación",
+        "readTime": "5 min",
+        "accent": "#F97316",
+        "body": "Comenzar un ayuno de agua de 24 horas puede parecer difícil, pero con la preparación adecuada se convierte en una experiencia manejable y gratificante. La preparación más importante ocurre en las 24-48 horas anteriores. Evita comer en exceso: una comida grande justo antes de ayunar suele hacer que las primeras horas sean más incómodas. En cambio, opta por comidas ligeras de alimentos integrales con abundantes verduras, proteínas y grasas saludables. Evita los carbohidratos procesados y el azúcar, que elevan la insulina. Hidrátate bien los días anteriores. Elige un momento de inicio en el que naturalmente no tengas hambre: muchas personas comienzan después de la cena, durmiendo eficazmente las primeras 8 horas. Espera algunas oleadas de hambre, especialmente alrededor de tus horarios habituales de comida. Estas oleadas típicamente duran 15-20 minutos y luego pasan. Tu bienestar siempre tiene prioridad."
+      },
+      {
+        "id": "8",
+        "title": "Entendiendo la Autofagia",
+        "category": "La Ciencia",
+        "readTime": "5 min",
+        "accent": "#A855F7",
+        "body": "La autofagia, del griego 'auto' (propio) y 'fagos' (comer), es el sistema de reciclaje celular del cuerpo. Cuando se activa, el cuerpo comienza a descomponer y eliminar componentes celulares dañados o disfuncionales. Es como una limpieza interna profunda. La autofagia fue tan significativa que el científico Yoshinori Ohsumi recibió el Premio Nobel de Fisiología en 2016 por descubrir sus mecanismos. El ayuno de agua es uno de los activadores más poderosos de la autofagia, que generalmente comienza alrededor de las 16-20 horas de ayuno. Durante la autofagia, las células desmantelan proteínas dañadas, moléculas mal plegadas e incluso orgánulos dañados. Los beneficios incluyen: reducción del riesgo de cáncer, envejecimiento más lento, menor riesgo de enfermedades neurodegenerativas como el Alzheimer y mejor función inmune. Incluso una pequeña cantidad de alimento pausará el proceso."
+      },
+      {
+        "id": "9",
+        "title": "Señales de que Estás en Cetosis",
+        "category": "La Ciencia",
+        "readTime": "3 min",
+        "accent": "#14B8A6",
+        "body": "La cetosis es un estado metabólico en el que tu cuerpo quema principalmente grasa como cetonas en lugar de glucosa. Durante el ayuno de agua, la mayoría de las personas entran en cetosis leve alrededor de las 12-14 horas y en cetosis más profunda entre las 18-24 horas. La señal más común es un cambio en el aliento, a menudo descrito como dulce, afrutado o ligeramente metálico. Este 'aliento cetónico' es causado por la acetona exhalada por los pulmones. El hambre reducida es otro indicador fuerte: las cetonas suprimen la grelina (hormona del hambre). Una mayor energía mental también es típica. Las tiras de prueba de cetonas en orina son baratas y están disponibles en la mayoría de las farmacias para confirmar la cetosis objetivamente."
+      },
+      {
+        "id": "10",
+        "title": "Manejando el Hambre Durante un Ayuno",
+        "category": "Principiante",
+        "readTime": "3 min",
+        "accent": "#F43F5E",
+        "body": "El hambre durante el ayuno es real, pero muy manejable una vez que entiendes cómo funciona. Lo más importante: el hambre viene en oleadas que suelen durar 15-30 minutos. No es continua. Cada vez que superas una oleada sin comer, tu cuerpo se adapta más a la quema de grasa. La herramienta más poderosa es los electrolitos: muchas sensaciones de hambre son en realidad señales de deficiencia de sodio. Una pizca de sal marina de calidad en agua a menudo resuelve el hambre en minutos. Mantenerse bien hidratado también ayuda. Mantener la mente activa es esencial: trabajo, proyectos creativos, movimiento suave o tiempo con otros reducen la percepción del hambre. Un corto paseo es especialmente efectivo. Evita cocinar, ver contenido de comida o desplazarte por redes sociales con comida: son poderosos desencadenantes del hambre no relacionados con las necesidades reales de energía de tu cuerpo."
       }
     ],
     "fallbackTitle": "La hidratacion importa",

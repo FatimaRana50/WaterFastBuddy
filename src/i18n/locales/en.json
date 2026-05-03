@@ -133,7 +133,19 @@
     "stage16": "Autophagy kicks in. Your cells are self-cleaning.",
     "stage24": "Deep cellular renewal. Growth hormone surging.",
     "stage48": "Immune regeneration. Stem cell production rising.",
-    "stage72": "Profound autophagy. Full metabolic reset underway."
+    "stage72": "Profound autophagy. Full metabolic reset underway.",
+    "stage4": "Blood sugar dropping. Glycogen stores are being depleted.",
+    "stage10": "Fat metabolism accelerating. Hunger may ease as ketones rise.",
+    "stage14": "Light ketosis established. Mental clarity may begin to sharpen.",
+    "stage18": "Deep fat adaptation underway. Growth hormone rising steadily.",
+    "stage20": "Enhanced autophagy — cellular repair is intensifying.",
+    "stage30": "Metabolic shift complete. Immune function beginning to reset.",
+    "stage36": "Gut microbiome restructuring. Inflammation decreasing.",
+    "stage60": "Deep tissue repair in progress. Ketones fully fuelling your brain.",
+    "stage96": "Neuroplasticity enhanced. Your brain is forming new pathways.",
+    "stage120": "Maximum cellular repair. Body rebuilding at its deepest level.",
+    "stage144": "Complete metabolic adaptation. Every system running on clean fuel.",
+    "stage168": "Extraordinary achievement — full 7-day transformation complete."
   },
   "history": {
     "title": "Fasting History",
@@ -204,6 +216,46 @@
         "readTime": "3 min",
         "accent": "#EC4899",
         "body": "Many people make common mistakes on their first fasts that undermine their results or make them uncomfortable. The biggest mistake: not consuming enough electrolytes, leading to headaches and fatigue. Second: breaking a fast too aggressively with heavy foods, causing digestive issues. Third: skipping meals leading up to a fast without proper preparation—easing into a fast with lighter meals beforehand helps tremendously. Fourth: ignoring hunger signals entirely—some hunger is normal, but extreme hunger may mean you need electrolytes or should shorten your next fast. Fifth: fasting too frequently without recovery days. Your body needs time to adapt. Start with 16-hour fasts and gradually work toward longer durations. Track how you feel and adjust your approach based on your unique response."
+      },
+      {
+        "id": "6",
+        "title": "The Mental Benefits of Water Fasting",
+        "category": "Mind & Focus",
+        "readTime": "4 min",
+        "accent": "#6366F1",
+        "body": "Water fasting doesn't just transform your body — it profoundly affects your mind. After the initial adjustment period (typically 12-24 hours), many people report a state of heightened mental clarity and focus unlike anything they've experienced before. This cognitive enhancement is largely driven by ketones, which are a more efficient fuel for the brain than glucose. Ketones reduce oxidative stress and inflammation in neural tissue — two major contributors to brain fog. Water fasting also triggers the release of BDNF (Brain-Derived Neurotrophic Factor), a protein that supports the growth of neurons. Additionally, fasting promotes neuroplasticity — the brain's ability to rewire and form new connections. Many people use extended fasts to break mental habits, reset emotional patterns, and gain perspective. The quietude that comes with fasting, free from the usual cycle of eating, can be deeply meditative. Approach this mental shift with curiosity, and you may find the mental benefits of fasting become one of the most compelling reasons to continue."
+      },
+      {
+        "id": "7",
+        "title": "Preparing for Your First 24-Hour Fast",
+        "category": "Preparation",
+        "readTime": "5 min",
+        "accent": "#F97316",
+        "body": "Starting a 24-hour water fast can feel daunting, but with the right preparation it becomes a manageable and rewarding experience. The most important preparation happens in the 24-48 hours before you begin. Avoid overeating — a large meal right before fasting often makes the first hours more uncomfortable. Instead, eat lighter, whole-food meals with plenty of vegetables, protein, and healthy fats. Avoid processed carbohydrates and sugar, which spike insulin and make the transition to fat-burning harder. Hydrate well in the days before. Choose a start time when you're naturally not hungry: many people find it easiest to start after dinner, effectively sleeping through the first 8 hours. Tell someone you trust about your fast for accountability. Stock up on still water and electrolytes. Expect some hunger waves, especially around your usual mealtimes — these waves typically last 15-20 minutes and then pass. If you feel dizzy, extremely weak, or have heart palpitations, end the fast and eat something. Your wellbeing always comes first."
+      },
+      {
+        "id": "8",
+        "title": "Understanding Autophagy",
+        "category": "The Science",
+        "readTime": "5 min",
+        "accent": "#A855F7",
+        "body": "Autophagy — from the Greek for 'self-eating' — is the body's cellular recycling system. When triggered, the body begins breaking down and removing damaged or dysfunctional cell components. Think of it as a deep internal clean. Scientist Yoshinori Ohsumi was awarded the Nobel Prize in Physiology in 2016 for discovering its mechanisms. Water fasting is one of the most powerful known triggers of autophagy, which typically begins around 16-20 hours into a fast and intensifies with duration. During autophagy, cells dismantle damaged proteins, misfolded molecules, and even damaged organelles like mitochondria. These components are recycled for energy or used to build new structures. Health benefits include reduced cancer risk, slower biological aging, lower risk of neurodegenerative diseases like Alzheimer's, and improved immune function. Importantly, autophagy is suppressed whenever insulin is elevated — even a small amount of food will pause the process. This is why water-only fasting triggers significantly deeper autophagy than caloric restriction alone."
+      },
+      {
+        "id": "9",
+        "title": "Signs You're in Ketosis",
+        "category": "The Science",
+        "readTime": "3 min",
+        "accent": "#14B8A6",
+        "body": "Ketosis is a metabolic state where your body primarily burns fat as ketones rather than glucose. During water fasting, most people enter light ketosis around 12-14 hours and deeper ketosis by 18-24 hours. The most common early sign is a change in breath — often described as sweet, fruity, or slightly metallic. This 'keto breath' is caused by acetone exhaled through the lungs. Reduced hunger is another strong indicator: ketones suppress the hunger hormone ghrelin, which is why many people find extended fasts easier after the first 24 hours — hunger paradoxically decreases. Increased mental energy and calm focus is also typical once keto-adapted. You may notice your urine becoming darker — stay well hydrated and maintain your electrolytes. Some initial fatigue or headaches are normal and typically resolve within 12-24 hours once electrolytes are balanced. Urine ketone test strips are inexpensive and available at most pharmacies for objective confirmation."
+      },
+      {
+        "id": "10",
+        "title": "Managing Hunger During a Fast",
+        "category": "Beginner",
+        "readTime": "3 min",
+        "accent": "#F43F5E",
+        "body": "Hunger during fasting is real, but very manageable once you understand how it works. The most important insight: hunger comes in waves, typically lasting 15-30 minutes. It is not continuous. Each time you ride through a wave without eating, your body adapts slightly more toward fat-burning — and the waves become less intense over time. The most powerful tool for managing hunger is electrolytes. Many hunger feelings during fasting are actually a sodium deficiency signal. A pinch of high-quality sea salt in water often resolves hunger within minutes. Staying well hydrated also helps — thirst and hunger signals overlap in the brain, and a large glass of water can silence hunger for 30-60 minutes. Keeping your mind engaged is essential: work, creative projects, gentle movement, or time with others all reduce hunger awareness. A short walk is particularly effective — it shifts metabolism and takes your mind off food. Avoid cooking, watching food content, or scrolling social media showing food — these are powerful hunger triggers unrelated to your body's actual energy needs."
       }
     ],
     "fallbackTitle": "Hydration timing matters",

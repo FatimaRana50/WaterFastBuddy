@@ -66,13 +66,25 @@ async function ensureNotificationsInitialized(): Promise<void> {
 
 // Fasting stage text (kept in code — the client will swap in localised copy later)
 const STAGES = [
-  { minHour: 0,  text: 'Your body is burning stored glucose for energy.' },
-  { minHour: 8,  text: 'Insulin dropping. Fat burning has started.' },
-  { minHour: 12, text: 'Ketosis beginning — your body burns fat for fuel.' },
-  { minHour: 16, text: 'Autophagy kicks in. Your cells are self-cleaning.' },
-  { minHour: 24, text: 'Deep cellular renewal. Growth hormone surging.' },
-  { minHour: 48, text: 'Immune regeneration. Stem cell production rising.' },
-  { minHour: 72, text: 'Profound autophagy. Full metabolic reset underway.' },
+  { minHour: 0,   text: 'Your body is burning stored glucose for energy.' },
+  { minHour: 4,   text: 'Blood sugar dropping. Glycogen stores are being depleted.' },
+  { minHour: 8,   text: 'Insulin dropping. Fat burning has started.' },
+  { minHour: 10,  text: 'Fat metabolism accelerating. Hunger may ease as ketones rise.' },
+  { minHour: 12,  text: 'Ketosis beginning — your body burns fat for fuel.' },
+  { minHour: 14,  text: 'Light ketosis established. Mental clarity may begin to sharpen.' },
+  { minHour: 16,  text: 'Autophagy kicks in. Your cells are self-cleaning.' },
+  { minHour: 18,  text: 'Deep fat adaptation underway. Growth hormone rising steadily.' },
+  { minHour: 20,  text: 'Enhanced autophagy — cellular repair is intensifying.' },
+  { minHour: 24,  text: 'Deep cellular renewal. Growth hormone surging.' },
+  { minHour: 30,  text: 'Metabolic shift complete. Immune function beginning to reset.' },
+  { minHour: 36,  text: 'Gut microbiome restructuring. Inflammation decreasing.' },
+  { minHour: 48,  text: 'Immune regeneration. Stem cell production rising.' },
+  { minHour: 60,  text: 'Deep tissue repair in progress. Ketones fully fuelling your brain.' },
+  { minHour: 72,  text: 'Profound autophagy. Full metabolic reset underway.' },
+  { minHour: 96,  text: 'Neuroplasticity enhanced. Your brain is forming new pathways.' },
+  { minHour: 120, text: 'Maximum cellular repair. Body rebuilding at its deepest level.' },
+  { minHour: 144, text: 'Complete metabolic adaptation. Every system running on clean fuel.' },
+  { minHour: 168, text: 'Extraordinary achievement — full 7-day transformation complete.' },
 ];
 
 function getStageText(hours: number): string {

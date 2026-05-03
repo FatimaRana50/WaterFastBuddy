@@ -50,7 +50,19 @@
     "stage16": "L autophagie commence. Vos cellules se nettoient.",
     "stage24": "Renouvellement cellulaire profond. Hormone de croissance en hausse.",
     "stage48": "Regeneration immunitaire. Production de cellules souches en hausse.",
-    "stage72": "Autophagie profonde. Reinitialisation metabolique complete en cours."
+    "stage72": "Autophagie profonde. Reinitialisation metabolique complete en cours.",
+    "stage4": "La glycémie chute. Les réserves de glycogène s'épuisent.",
+    "stage10": "Le métabolisme des graisses s'accélère. La faim peut s'apaiser avec la montée des cétones.",
+    "stage14": "Légère cétose établie. La clarté mentale peut commencer à s'améliorer.",
+    "stage18": "Adaptation profonde aux graisses en cours. L'hormone de croissance monte régulièrement.",
+    "stage20": "Autophagie renforcée — la réparation cellulaire s'intensifie.",
+    "stage30": "Changement métabolique complet. La fonction immunitaire commence à se réinitialiser.",
+    "stage36": "Restructuration du microbiome intestinal. L'inflammation diminue.",
+    "stage60": "Réparation profonde des tissus en cours. Les cétones alimentent pleinement votre cerveau.",
+    "stage96": "Neuroplasticité améliorée. Votre cerveau crée de nouveaux chemins neuronaux.",
+    "stage120": "Réparation cellulaire maximale. Le corps se reconstruit à son niveau le plus profond.",
+    "stage144": "Adaptation métabolique complète. Tous les systèmes fonctionnent avec un carburant propre.",
+    "stage168": "Exploit extraordinaire — transformation complète de 7 jours accomplie."
   },
   "history": {
     "title": "Historique des Jeûnes",
@@ -111,6 +123,46 @@
         "readTime": "3 min",
         "accent": "#EC4899",
         "body": "De nombreuses personnes font des erreurs courantes lors de leurs premiers jeûnes qui sapent leurs résultats ou les mettent mal à l'aise. La plus grande erreur : ne pas consommer suffisamment d'électrolytes, ce qui entraîne des maux de tête et de la fatigue. Deuxièmement : rompre un jeûne trop agressivement avec des aliments lourds, causant des problèmes digestifs. Troisièmement : sauter des repas avant un jeûne sans préparation adéquate : réduire progressivement les repas avant un jeûne aide énormément. Quatrièmement : ignorer complètement les signaux de faim : une certaine faim est normale, mais une faim extrême peut signifier que vous avez besoin d'électrolytes ou que vous devriez raccourcir votre prochain jeûne. Cinquièmement : jeûner trop fréquemment sans jours de récupération. Votre corps a besoin de temps pour s'adapter. Commencez par des jeûnes de 16 heures et augmentez progressivement vers des durées plus longues. Suivez votre ressenti et ajustez votre approche en fonction de votre réponse unique."
+      },
+      {
+        "id": "6",
+        "title": "Les Bienfaits Mentaux du Jeûne à l'Eau",
+        "category": "Esprit et Concentration",
+        "readTime": "4 min",
+        "accent": "#6366F1",
+        "body": "Le jeûne à l'eau ne transforme pas seulement votre corps — il affecte profondément votre esprit. Après la période d'ajustement initiale (généralement 12-24 heures), beaucoup de gens rapportent un état de clarté mentale et de concentration accrue. Cette amélioration cognitive est largement due aux cétones, un carburant plus efficace pour le cerveau que le glucose. Les cétones réduisent le stress oxydatif et l'inflammation dans les tissus nerveux, deux grandes causes du brouillard mental. Le jeûne déclenche également la libération du BDNF, une protéine soutenant la croissance neuronale. De plus, le jeûne favorise la neuroplasticité. Beaucoup utilisent les jeûnes prolongés pour briser des habitudes mentales, réinitialiser des schémas émotionnels et gagner en perspective. La quiétude du jeûne peut être profondément méditative."
+      },
+      {
+        "id": "7",
+        "title": "Se Préparer pour son Premier Jeûne de 24 Heures",
+        "category": "Préparation",
+        "readTime": "5 min",
+        "accent": "#F97316",
+        "body": "Commencer un jeûne à l'eau de 24 heures peut sembler intimidant, mais avec la bonne préparation, cela devient une expérience gérable et enrichissante. La préparation la plus importante se fait dans les 24-48 heures précédentes. Évitez de trop manger : un grand repas juste avant de jeûner rend souvent les premières heures plus inconfortables. Préférez des repas légers d'aliments complets avec beaucoup de légumes, de protéines et de bonnes graisses. Évitez les glucides transformés et le sucre. Hydratez-vous bien les jours précédents. Choisissez une heure de début où vous n'avez naturellement pas faim : beaucoup trouvent plus facile de commencer après le dîner, en dormant pendant les 8 premières heures. Attendez-vous à des vagues de faim — elles durent généralement 15-20 minutes. Si vous vous sentez très faible ou avez des palpitations, mettez fin au jeûne."
+      },
+      {
+        "id": "8",
+        "title": "Comprendre l'Autophagie",
+        "category": "La Science",
+        "readTime": "5 min",
+        "accent": "#A855F7",
+        "body": "L'autophagie — du grec 'auto' (soi) et 'phagein' (manger) — est le système de recyclage cellulaire du corps. Déclenchée, elle permet de décomposer et d'éliminer les composants cellulaires endommagés ou dysfonctionnels. Yoshinori Ohsumi a reçu le Prix Nobel de Physiologie en 2016 pour en avoir découvert les mécanismes. Le jeûne à l'eau est l'un des déclencheurs les plus puissants de l'autophagie, qui commence généralement vers 16-20 heures de jeûne. Pendant l'autophagie, les cellules démantèlent les protéines endommagées, les molécules mal repliées et des organites abîmés. Les bénéfices incluent : risque réduit de cancer, vieillissement ralenti, risque moindre de maladies neurodégénératives comme Alzheimer, et amélioration de la fonction immunitaire. Même une petite quantité de nourriture suspend le processus."
+      },
+      {
+        "id": "9",
+        "title": "Signes que Vous Êtes en Cétose",
+        "category": "La Science",
+        "readTime": "3 min",
+        "accent": "#14B8A6",
+        "body": "La cétose est un état métabolique où votre corps brûle principalement des graisses sous forme de cétones plutôt que du glucose. Pendant le jeûne à l'eau, la plupart entrent en légère cétose vers 12-14 heures et en cétose plus profonde entre 18-24 heures. Le signe le plus courant est un changement dans l'haleine, souvent décrite comme sucrée, fruitée ou légèrement métallique. Cette 'haleine cétogène' est causée par l'acétone exhalée. La réduction de la faim est un autre indicateur fort : les cétones suppriment la ghréline. Une énergie mentale accrue est également typique. Des bandelettes de test urinaire de cétones sont disponibles en pharmacie pour une confirmation objective."
+      },
+      {
+        "id": "10",
+        "title": "Gérer la Faim Pendant un Jeûne",
+        "category": "Débutant",
+        "readTime": "3 min",
+        "accent": "#F43F5E",
+        "body": "La faim pendant le jeûne est réelle, mais elle se gère très bien une fois qu'on comprend son fonctionnement. L'insight le plus important : la faim vient en vagues, durant généralement 15-30 minutes. Elle n'est pas continue. Chaque fois que vous traversez une vague sans manger, votre corps s'adapte davantage vers la combustion des graisses. L'outil le plus puissant est les électrolytes : beaucoup de sensations de faim sont en réalité des signaux de carence en sodium. Une pincée de sel de mer de qualité dans l'eau résout souvent la faim en quelques minutes. Bien s'hydrater aide également. Garder l'esprit actif est essentiel : travail, projets créatifs, mouvement doux. Une courte marche est particulièrement efficace. Évitez de cuisiner ou de regarder du contenu culinaire — ce sont de puissants déclencheurs de faim sans rapport avec vos besoins énergétiques réels."
       }
     ],
     "fallbackTitle": "Le timing de l'hydratation compte",

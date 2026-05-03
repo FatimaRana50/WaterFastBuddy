@@ -102,6 +102,13 @@ export default function TopBar() {
             <Ionicons name="logo-instagram" size={14} color={colors.text} />
           </TouchableOpacity>
           <TouchableOpacity
+            onPress={() => openUrl(URL_FACEBOOK)}
+            style={[styles.socialBtn, { backgroundColor: colors.cardAlt }]}
+            activeOpacity={0.75}
+          >
+            <Ionicons name="logo-facebook" size={14} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={() => openUrl(URL_YOUTUBE)}
             style={[styles.socialBtn, { backgroundColor: colors.cardAlt }]}
             activeOpacity={0.75}
