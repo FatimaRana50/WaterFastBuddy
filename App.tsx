@@ -12,6 +12,7 @@ import { ThemeProvider, useTheme } from './src/store/ThemeContext';
 import { UserProvider } from './src/store/UserContext';
 import { FastsProvider } from './src/store/FastsContext';
 import { setupNotificationChannel } from './src/utils/notifications';
+import { initRevenueCat } from './src/utils/revenuecat';
 import RootNavigator from './src/navigation/RootNavigator';
 import { COLORS } from './src/constants/theme';
 
@@ -27,7 +28,7 @@ function AppContent() {
   const { theme, colors } = useTheme();
 
   useEffect(() => {
-    // Create Android notification channel on first launch
+    initRevenueCat();
     setupNotificationChannel();
   }, []);
 

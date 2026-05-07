@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Purchases from 'react-native-purchases';
 import { UserProfile } from '../types';
+import { RC_ENTITLEMENT } from '../utils/revenuecat';
 
 const PROFILE_KEY      = 'user_profile';
 const INSTALL_DATE_KEY = 'app_install_date';     // First-install timestamp, used for the 3-day trial
@@ -48,9 +50,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         setInstallDate(now);
       }
     });
-    AsyncStorage.getItem(SUBSCRIPTION_KEY).then((raw) => {
-      setIsSubscribed(raw === '1');
-    });
+    Purchases.getCustomerInfo()
+      .then((info) => setIsSubscribed(!!info.entitlements.active[RC_ENTITLEMENT]))
+      .catch(() => {
+        // Fallback to local flag if RC is unreachable (no network, keys not set yet)
+        AsyncStorage.getItem(SUBSCRIPTION_KEY).then((raw) => setIsSubscribed(raw === '1'));
+      });
   }, []);
 
   const saveProfile = async (p: UserProfile) => {
@@ -64,8 +69,17 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const activateSubscription = async () => {
-    await AsyncStorage.setItem(SUBSCRIPTION_KEY, '1');
-    setIsSubscribed(true);
+    // Called after a successful RC purchase — re-check entitlement from RC
+    try {
+      const info = await Purchases.getCustomerInfo();
+      const active = !!info.entitlements.active[RC_ENTITLEMENT];
+      setIsSubscribed(active);
+      await AsyncStorage.setItem(SUBSCRIPTION_KEY, active ? '1' : '0');
+    } catch {
+      // If RC unreachable, optimistically unlock (purchase already went through)
+      setIsSubscribed(true);
+      await AsyncStorage.setItem(SUBSCRIPTION_KEY, '1');
+    }
   };
 
   const cancelSubscription = async () => {

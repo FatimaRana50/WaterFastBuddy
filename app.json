@@ -38,6 +38,7 @@
       "edgeToEdgeEnabled": true
     },
     "plugins": [
+      "react-native-purchases",
       "@react-native-google-signin/google-signin",
       "expo-notifications",
       "expo-task-manager",
@@ -59,7 +60,7 @@
         "projectId": "3d86fbc7-3dd2-4b7d-a356-f446845a2e99"
       },
       "googleOAuthAndroidClientId": "884105320267-g28cud3na3ni45r5kkc13m1b3hfen281.apps.googleusercontent.com",
-      "googleOAuthIosClientId": "PASTE_YOUR_IOS_CLIENT_ID_HERE",
+      "googleOAuthIosClientId": "884105320267-ca5m82teoeu6muth2rh49o27blrk76ao.apps.googleusercontent.com",
       "googleOAuthWebClientId": "884105320267-f0p1s2qrambjdi5oa3tvdb6loatv38iu.apps.googleusercontent.com"
     },
     "owner": "fatima_farrukh_rana"
