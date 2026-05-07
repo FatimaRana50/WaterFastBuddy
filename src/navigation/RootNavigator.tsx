@@ -39,7 +39,7 @@ export default function RootNavigator() {
     if (!profile?.onboardingComplete || !navRef.current?.isReady()) return;
     const prev = prevTrialRef.current;
     prevTrialRef.current = isTrialExpired;
-    if (prev === null) return; // first observation — don't reset
+    if (prev === null && !isTrialExpired) return; // first observation, trial ok — let Splash handle it
     if (prev === isTrialExpired) return; // no transition
     const target = isTrialExpired ? 'Paywall' : 'Main';
     navRef.current.reset({ index: 0, routes: [{ name: target }] });

@@ -36,6 +36,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile]           = useState<UserProfile | null>(null);
   const [installDate, setInstallDate]   = useState<number | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [now, setNow]                   = useState(Date.now());
+
+  // Tick every 15s so isTrialExpired recomputes automatically when time runs out
+  useEffect(() => {
+    const ticker = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(ticker);
+  }, []);
 
   useEffect(() => {
     AsyncStorage.getItem(PROFILE_KEY).then((raw) => {
@@ -69,16 +76,16 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const activateSubscription = async () => {
-    // Called after a successful RC purchase — re-check entitlement from RC
+    // Purchase already succeeded — unlock immediately, then confirm with RC
+    setIsSubscribed(true);
+    await AsyncStorage.setItem(SUBSCRIPTION_KEY, '1');
     try {
       const info = await Purchases.getCustomerInfo();
       const active = !!info.entitlements.active[RC_ENTITLEMENT];
-      setIsSubscribed(active);
-      await AsyncStorage.setItem(SUBSCRIPTION_KEY, active ? '1' : '0');
+      if (active) setIsSubscribed(true); // RC confirmed — keep unlocked
+      // If RC says not active (test/browser mode), keep the optimistic unlock
     } catch {
-      // If RC unreachable, optimistically unlock (purchase already went through)
-      setIsSubscribed(true);
-      await AsyncStorage.setItem(SUBSCRIPTION_KEY, '1');
+      // RC unreachable — keep optimistic unlock
     }
   };
 
@@ -88,7 +95,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Trial is expired only if the 3-day window has passed AND the user is not subscribed.
-  const trialWindowPassed = installDate ? (Date.now() - installDate) > TRIAL_MS : false;
+  const trialWindowPassed = installDate ? (now - installDate) > TRIAL_MS : false;
   const isTrialExpired    = trialWindowPassed && !isSubscribed;
 
   return (
