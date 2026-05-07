@@ -3,6 +3,10 @@
  * for the WaterFastBuddy "Premium Human Companion" avatar system.
  *
  * BACKWARDS COMPAT: every previously-exported symbol is preserved.
+ *
+ * NEW: image-based avatar system. The SVG character is now replaced by a
+ * pre-rendered 3D PNG selected from `assets/avatars/` based on (gender, mood).
+ * Use `avatarImageFor(gender, mood)` to fetch the require()'d module.
  */
 
 import { UserProfile } from '../../types';
@@ -12,7 +16,7 @@ export const VW = 200;
 export const VH = 360;
 export const CX = VW / 2; // 100
 
-// ─── Types (unchanged) ───────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
 export type MoodState = 'ecstatic' | 'happy' | 'neutral' | 'sad' | 'distressed';
 export type Gender = 'male' | 'female';
 
@@ -21,21 +25,14 @@ export interface WaterColors {
   mid?: string; wave?: string;
 }
 
-// ─── Skin / hair / clothing palette ─────────────────────────────────────────
+// ─── Skin / hair / clothing palette (kept for legacy callers) ───────────────
 export interface SkinPalette {
-  base: string;
-  shadow: string;
-  highlight: string;
-  blush: string;
-  lip: string;
+  base: string; shadow: string; highlight: string; blush: string; lip: string;
 }
 
 export const SKIN: SkinPalette = {
-  base:      '#F4B58A',
-  shadow:    '#C68660',
-  highlight: '#FFD7B5',
-  blush:     '#F87171',
-  lip:       '#C25A6F',
+  base: '#F4B58A', shadow: '#C68660', highlight: '#FFD7B5',
+  blush: '#F87171', lip: '#C25A6F',
 };
 
 export const HAIR = {
@@ -44,11 +41,8 @@ export const HAIR = {
 } as const;
 
 export const CLOTHING = {
-  primary:   '#1A56E8',
-  secondary: '#0EA5E9',
-  shadow:    '#0B2F87',
-  highlight: '#60A5FA',
-  accent:    '#14B8A6',
+  primary: '#1A56E8', secondary: '#0EA5E9', shadow: '#0B2F87',
+  highlight: '#60A5FA', accent: '#14B8A6',
 } as const;
 
 // ─── Purity & Mood ────────────────────────────────────────────────────────────
@@ -106,7 +100,7 @@ export function fillPctToWater(fillPct: number): WaterColors {
   return purityToColors(0.05);
 }
 
-// ─── Wave paths ───────────────────────────────────────────────────────────────
+// ─── Wave paths (kept for legacy callers) ────────────────────────────────────
 export function buildWavePath(offsetX: number, amplitude = 8, period = 30, height = 250, width = 240): string {
   let d = `M ${-offsetX},${height}`;
   for (let x = 0; x <= width; x += 4) {
@@ -127,7 +121,7 @@ export function buildWaveTop(
   return d;
 }
 
-// ─── Geometry ─────────────────────────────────────────────────────────────────
+// ─── Geometry (kept for legacy callers / MorphingAvatar maths) ──────────────
 const BASE = {
   female: {
     headRx: 28, headRy: 34, headCY: 56,
@@ -152,12 +146,10 @@ export function buildBodyPath(gender: Gender, bmi = 22): string {
   const g = BASE[gender];
   const ff = fatF(bmi), tf = thinF(bmi);
   const isF = gender === 'female';
-
   const shW = g.shoulderW + ff * 16 - tf * 8;
   const waW = g.waistW   + ff * 44 - tf * (isF ? 10 : 6);
   const hiW = g.hipW     + ff * 22 - tf * 6;
   const lgW = g.legW     + ff * 10 - tf * 4;
-
   const shL = CX - shW / 2, shR = CX + shW / 2;
   const waL = CX - waW / 2, waR = CX + waW / 2;
   const hiL = CX - hiW / 2, hiR = CX + hiW / 2;
@@ -166,13 +158,11 @@ export function buildBodyPath(gender: Gender, bmi = 22): string {
   const lgLi = CX - g.legGap / 2;
   const lgRi = CX + g.legGap / 2;
   const neckY = g.headCY + g.headRy - 4;
-
   const waistPullF = isF ? 14 - ff * 10 : 4 - ff * 6;
   const lCtrl1x = shL + waistPullF * 0.4;
   const lCtrl2x = waL - 4 + ff * 6;
   const rCtrl1x = shR - waistPullF * 0.4;
   const rCtrl2x = waR + 4 - ff * 6;
-
   return [
     `M ${CX - g.neckW / 2},${neckY}`,
     `L ${shL},${g.shoulderY}`,
@@ -204,17 +194,13 @@ export function buildArmPath(
   const sgn = side === 'left' ? -1 : 1;
   const sX  = CX + sgn * shW / 2;
   const top = g.shoulderY + 6;
-
   const r = Math.max(-1, Math.min(1, raise));
   const handX = sX + sgn * (32 + ff * 6) - sgn * r * 18;
   const handY = top + 110 - r * 130;
-
   const elbowX = (sX + handX) / 2 + sgn * (8 - r * 6);
   const elbowY = (top + handY) / 2 + 10;
-
   const oX = sX + sgn * aw * 0.55;
   const iX = sX + sgn * aw * 0.05;
-
   return [
     `M ${sX},${top}`,
     `Q ${oX},${top + 14} ${elbowX + sgn * aw / 2},${elbowY}`,
@@ -226,8 +212,7 @@ export function buildArmPath(
   ].join(' ');
 }
 
-// ─── Hair ─────────────────────────────────────────────────────────────────────
-
+// ─── Hair (legacy) ───────────────────────────────────────────────────────────
 export function buildFemaleHairPaths(cx: number, headCY: number, headRx: number, headRy: number): string[] {
   const topY = headCY - headRy;
   return [
@@ -259,36 +244,91 @@ export function buildMaleHairPath(cx: number, headCY: number, headRx: number, he
   ].join(' ');
 }
 
-// ─── Mood face descriptor ─────────────────────────────────────────────────────
-
+// ─── Mood face descriptor (legacy) ───────────────────────────────────────────
 export interface MoodFace {
-  eyeOpen: number;
-  browTilt: number;
-  browLift: number;
-  mouthCurve: number;
-  mouthOpen: number;
-  blush: number;
-  tears: 0 | 1 | 2;
-  auraColor: string;
-  sparkles: boolean;
+  eyeOpen: number; browTilt: number; browLift: number;
+  mouthCurve: number; mouthOpen: number;
+  blush: number; tears: 0 | 1 | 2;
+  auraColor: string; sparkles: boolean;
 }
 
 export function moodToFace(mood: MoodState): MoodFace {
   switch (mood) {
-    case 'ecstatic':
-      return { eyeOpen: 0.35, browTilt: 0, browLift: 4, mouthCurve: 1, mouthOpen: 0.9, blush: 0.85, tears: 0, auraColor: '#FACC15', sparkles: true };
-    case 'happy':
-      return { eyeOpen: 0.85, browTilt: 0, browLift: 2, mouthCurve: 0.7, mouthOpen: 0.25, blush: 0.45, tears: 0, auraColor: '#38BDF8', sparkles: false };
-    case 'neutral':
-      return { eyeOpen: 1.0, browTilt: 0, browLift: 0, mouthCurve: 0.2, mouthOpen: 0, blush: 0.15, tears: 0, auraColor: '#60A5FA', sparkles: false };
-    case 'sad':
-      return { eyeOpen: 0.55, browTilt: 0.6, browLift: -1, mouthCurve: -0.6, mouthOpen: 0, blush: 0.05, tears: 1, auraColor: '#64748B', sparkles: false };
+    case 'ecstatic':   return { eyeOpen: 0.35, browTilt: 0,   browLift: 4,  mouthCurve: 1,    mouthOpen: 0.9, blush: 0.85, tears: 0, auraColor: '#FACC15', sparkles: true };
+    case 'happy':      return { eyeOpen: 0.85, browTilt: 0,   browLift: 2,  mouthCurve: 0.7,  mouthOpen: 0.25, blush: 0.45, tears: 0, auraColor: '#38BDF8', sparkles: false };
+    case 'neutral':    return { eyeOpen: 1.0,  browTilt: 0,   browLift: 0,  mouthCurve: 0.2,  mouthOpen: 0,    blush: 0.15, tears: 0, auraColor: '#60A5FA', sparkles: false };
+    case 'sad':        return { eyeOpen: 0.55, browTilt: 0.6, browLift: -1, mouthCurve: -0.6, mouthOpen: 0,    blush: 0.05, tears: 1, auraColor: '#64748B', sparkles: false };
     case 'distressed':
-    default:
-      return { eyeOpen: 0.45, browTilt: 1.0, browLift: -2, mouthCurve: -0.9, mouthOpen: 0.2, blush: 0.0, tears: 2, auraColor: '#FB923C', sparkles: false };
+    default:           return { eyeOpen: 0.45, browTilt: 1.0, browLift: -2, mouthCurve: -0.9, mouthOpen: 0.2,  blush: 0.0,  tears: 2, auraColor: '#FB923C', sparkles: false };
   }
 }
 
 // ─── Backwards-compat stubs ───────────────────────────────────────────────────
 export function bmiToScale(_bmi: number) { return 1; }
 export function heightToScale(_h: number) { return 1; }
+
+// ============================================================================
+// NEW: Image-based avatar lookup
+// ============================================================================
+//
+// 10 hand-rendered 3D portraits live in `assets/avatars/`. Selection is driven
+// purely by (gender, mood). Body-shape variation by BMI is encoded into the
+// art direction itself (lean/athletic/fuller silhouettes are blended across
+// the moods); fillPct / fasting state drives the mood, which drives the asset.
+//
+// Paths are relative to this file (src/components/Avatar/avatarUtils.ts):
+//   ../../../assets/avatars/avatar_<gender>_<mood>.png
+//
+// All assets must use require() so Metro bundles them.
+
+export type AvatarImage = number; // require() returns a numeric module id in RN
+
+// Wrapped in an IIFE so a missing/unresolved image can't crash the whole module.
+// If any require() fails (e.g. stale Metro cache before images were added),
+// avatarImageFor() returns undefined safely rather than throwing.
+const AVATAR_IMAGES: Partial<Record<Gender, Partial<Record<MoodState, AvatarImage>>>> = (() => {
+  try {
+    return {
+      female: {
+        happy:      require('../../../assets/avatars/avatar_female_happy.png'),
+        ecstatic:   require('../../../assets/avatars/avatar_female_ecstatic.png'),
+        neutral:    require('../../../assets/avatars/avatar_female_neutral.png'),
+        sad:        require('../../../assets/avatars/avatar_female_sad.png'),
+        distressed: require('../../../assets/avatars/avatar_female_distressed.png'),
+      },
+      male: {
+        happy:      require('../../../assets/avatars/avatar_male_happy.png'),
+        ecstatic:   require('../../../assets/avatars/avatar_male_ecstatic.png'),
+        neutral:    require('../../../assets/avatars/avatar_male_neutral.png'),
+        sad:        require('../../../assets/avatars/avatar_male_sad.png'),
+        distressed: require('../../../assets/avatars/avatar_male_distressed.png'),
+      },
+    };
+  } catch (e) {
+    console.warn('WaterFastBuddy: avatar images failed to load. Run: npx expo start --clear');
+    return {};
+  }
+})();
+
+/**
+ * Returns the require()'d PNG module for the given gender + mood.
+ * Falls back to neutral if anything is off.
+ */
+export function avatarImageFor(gender: Gender, mood: MoodState): AvatarImage {
+  return AVATAR_IMAGES[gender]?.[mood] ?? AVATAR_IMAGES[gender]?.neutral ?? AVATAR_IMAGES.female.neutral;
+}
+
+/**
+ * Convenience: derive (gender, mood) → image directly from a profile +
+ * fasting state + hydration fill, using the existing purity/mood pipeline.
+ */
+export function avatarImageForProfile(
+  profile: UserProfile,
+  fastingHours = 0,
+  fillPct = 0.6,
+): AvatarImage {
+  // Blend hydration fill into purity so low fill drags mood down.
+  const purity = calcPurity(profile, fastingHours) * 0.6 + Math.max(0, Math.min(1, fillPct)) * 0.4;
+  const mood = calcMood(purity, fastingHours);
+  return avatarImageFor(profile.gender, mood);
+}

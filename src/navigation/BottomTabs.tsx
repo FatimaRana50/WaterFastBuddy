@@ -13,7 +13,7 @@ import TopBar from '../components/TopBar';
 import FastsScreen from '../screens/Fasts/FastsScreen';
 import HistoryScreen from '../screens/History/HistoryScreen';
 import TipsScreen from '../screens/Tips/TipsScreen';
-import CaloriesScreen from '../screens/Calories/CaloriesScreen';
+import TrackerScreen from '../screens/Tracker/TrackerScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
@@ -23,7 +23,7 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
     Fasts: 'water-outline',
     History: 'calendar-outline',
     Tips: 'library-outline',
-    Calories: 'flash-outline',
+    Tracker: 'stats-chart-outline',
     Profile: 'person-circle-outline',
   };
 
@@ -86,7 +86,7 @@ export default function BottomTabs() {
       <Tab.Screen name="Fasts" component={FastsScreen} options={{ title: i18n.t('tabs.fasts') }} />
       <Tab.Screen name="History" component={HistoryScreen} options={{ title: i18n.t('tabs.history') }} />
       <Tab.Screen name="Tips" component={TipsScreen} options={{ title: i18n.t('tabs.tips') }} />
-      <Tab.Screen name="Calories" component={CaloriesScreen} options={{ title: i18n.t('tabs.calories') }} />
+      <Tab.Screen name="Tracker" component={TrackerScreen} options={{ title: i18n.t('tabs.tracker') }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: i18n.t('tabs.profile') }} />
     </Tab.Navigator>
   );

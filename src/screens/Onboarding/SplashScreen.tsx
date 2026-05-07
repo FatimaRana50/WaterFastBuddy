@@ -1,300 +1,200 @@
+/**
+ * SplashScreen — first screen on app open.
+ * Dark navy background, animated water-drop logo, wordmark fade-in,
+ * tagline + 3 pulsing status pills.
+ *
+ * Required image assets: none.
+ */
+
 import React, { useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, Animated, Dimensions,
+  View, Text, StyleSheet, Animated, Easing, Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../../store/LanguageContext';
 import { useUser } from '../../store/UserContext';
 import { COLORS, FONT_SIZE, SPACING, BORDER_RADIUS } from '../../constants/theme';
+import WaterDrop from '../../components/Avatar/WaterDrop';
 import i18n from '../../i18n';
 
 const { width, height } = Dimensions.get('window');
+const NAVY = '#060E1E';
 
-// Water ripple ring component — expands outward and fades
 function RippleRing({ delay, size }: { delay: number; size: number }) {
-  const scale = useRef(new Animated.Value(0.4)).current;
-  const opacity = useRef(new Animated.Value(0.6)).current;
-
+  const sc = useRef(new Animated.Value(0.4)).current;
+  const op = useRef(new Animated.Value(0.6)).current;
   useEffect(() => {
-    const loop = Animated.loop(
+    Animated.loop(
       Animated.sequence([
         Animated.delay(delay),
         Animated.parallel([
-          Animated.timing(scale,   { toValue: 1.8, duration: 2200, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 0,   duration: 2200, useNativeDriver: true }),
+          Animated.timing(sc, { toValue: 1.9, duration: 2400, useNativeDriver: true }),
+          Animated.timing(op, { toValue: 0,   duration: 2400, useNativeDriver: true }),
         ]),
         Animated.parallel([
-          Animated.timing(scale,   { toValue: 0.4, duration: 0, useNativeDriver: true }),
-          Animated.timing(opacity, { toValue: 0.6, duration: 0, useNativeDriver: true }),
+          Animated.timing(sc, { toValue: 0.4, duration: 0, useNativeDriver: true }),
+          Animated.timing(op, { toValue: 0.6, duration: 0, useNativeDriver: true }),
         ]),
       ]),
-    );
-    loop.start();
-    return () => loop.stop();
+    ).start();
   }, []);
-
   return (
     <Animated.View
       style={{
         position: 'absolute',
-        width: size, height: size,
-        borderRadius: size / 2,
-        borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.4)',
-        transform: [{ scale }],
-        opacity,
+        width: size, height: size, borderRadius: size / 2,
+        borderWidth: 1.5, borderColor: 'rgba(33,199,255,0.45)',
+        transform: [{ scale: sc }], opacity: op,
       }}
     />
   );
 }
 
-// Water drop avatar — bobs up and down gently
-function WaterAvatar({ gender }: { gender?: 'male' | 'female' }) {
-  const bob = useRef(new Animated.Value(0)).current;
-
+function PulsingDot() {
+  const a = useRef(new Animated.Value(0.4)).current;
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(bob, { toValue: -12, duration: 900, useNativeDriver: true }),
-        Animated.timing(bob, { toValue: 0,   duration: 900, useNativeDriver: true }),
+        Animated.timing(a, { toValue: 1,   duration: 700, useNativeDriver: true }),
+        Animated.timing(a, { toValue: 0.4, duration: 700, useNativeDriver: true }),
       ]),
     ).start();
   }, []);
-
-  return (
-    <Animated.View style={{ transform: [{ translateY: bob }], alignItems: 'center' }}>
-      <Text style={{ fontSize: 90 }}>{gender === 'female' ? '👩' : '🧑'}</Text>
-    </Animated.View>
-  );
+  return <Animated.View style={[styles.statusDot, { opacity: a }]} />;
 }
 
 export default function SplashScreen() {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const { profile } = useUser();
   useLanguage();
 
-  // Animation values
-  const logoScale   = useRef(new Animated.Value(0.3)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const textOpacity = useRef(new Animated.Value(0)).current;
-  const avatarOpacity = useRef(new Animated.Value(0)).current;
+  const dropScale  = useRef(new Animated.Value(0)).current;
+  const dropFloat  = useRef(new Animated.Value(0)).current;
+  const wordOp     = useRef(new Animated.Value(0)).current;
+  const wordY      = useRef(new Animated.Value(14)).current;
+  const tagOp      = useRef(new Animated.Value(0)).current;
+  const dotsOp     = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Entrance sequence
     Animated.sequence([
-      // Logo pops in
+      Animated.spring(dropScale, { toValue: 1, tension: 60, friction: 7, useNativeDriver: true }),
       Animated.parallel([
-        Animated.spring(logoScale,   { toValue: 1, useNativeDriver: true, tension: 60, friction: 6 }),
-        Animated.timing(logoOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
+        Animated.timing(wordOp, { toValue: 1, duration: 450, useNativeDriver: true }),
+        Animated.timing(wordY,  { toValue: 0, duration: 450, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       ]),
-      // Greeting fades in
-      Animated.timing(textOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
-      // Avatar fades in
-      Animated.timing(avatarOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-      // Hold for 1 second
-      Animated.delay(900),
-    ]).start(() => {
-      // Navigate once animation is done
-      if (profile?.onboardingComplete) {
-        navigation.replace('Main');
-      } else {
-        navigation.replace('Onboarding');
-      }
-    });
-  }, [profile]);
+      Animated.timing(tagOp,  { toValue: 1, duration: 350, useNativeDriver: true }),
+      Animated.timing(dotsOp, { toValue: 1, duration: 350, useNativeDriver: true }),
+    ]).start();
 
-  const onboardingDone = profile?.onboardingComplete === true;
-
-  return (
-    <LinearGradient
-      colors={[COLORS.primaryDark, COLORS.primary, COLORS.gradientEnd]}
-      style={styles.container}
-      start={{ x: 0.12, y: 0 }}
-      end={{ x: 0.9, y: 1 }}
-    >
-      <View style={styles.orbLarge} />
-      <View style={styles.orbSmall} />
-
-      {/* Ripple rings behind everything */}
-      <View style={styles.rippleContainer}>
-        <RippleRing delay={0}    size={180} />
-        <RippleRing delay={600}  size={180} />
-        <RippleRing delay={1200} size={180} />
-      </View>
-
-      <Animated.View style={[styles.panel, { opacity: textOpacity }]}> 
-        <Animated.View
-          style={[styles.logoWrapper, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}
-        >
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoMono}>WF</Text>
-          </View>
-        </Animated.View>
-
-        <Animated.View style={{ opacity: logoOpacity, alignItems: 'center' }}>
-          <Text style={styles.brandName}>WaterFastBuddy</Text>
-        </Animated.View>
-
-        <Animated.View style={{ opacity: textOpacity, alignItems: 'center', marginTop: SPACING.md }}>
-          {onboardingDone ? (
-            <Text style={styles.greeting}>{i18n.t('splash.greeting', { name: profile!.name })}</Text>
-          ) : (
-            <Text style={styles.tagline}>{i18n.t('splash.tagline')}</Text>
-          )}
-          <Text style={styles.subline}>{i18n.t('splash.subline')}</Text>
-        </Animated.View>
-
-        <View style={styles.statusRow}>
-          <View style={styles.statusPill}><Text style={styles.statusText}>{i18n.t('splash.statusHydration')}</Text></View>
-          <View style={styles.statusPill}><Text style={styles.statusText}>{i18n.t('splash.statusStreaks')}</Text></View>
-          <View style={styles.statusPill}><Text style={styles.statusText}>{i18n.t('splash.statusProgress')}</Text></View>
-        </View>
-
-        {onboardingDone && (
-          <Animated.View style={[styles.avatarWrapper, { opacity: avatarOpacity }]}> 
-            <WaterAvatar gender={profile?.gender} />
-          </Animated.View>
-        )}
-
-        {!onboardingDone && (
-          <Animated.View style={[styles.loadingDots, { opacity: textOpacity }]}> 
-            {[0, 1, 2].map((i) => (
-              <LoadingDot key={i} delay={i * 200} />
-            ))}
-          </Animated.View>
-        )}
-      </Animated.View>
-    </LinearGradient>
-  );
-}
-
-function LoadingDot({ delay }: { delay: number }) {
-  const anim = useRef(new Animated.Value(0.3)).current;
-  useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.delay(delay),
-        Animated.timing(anim, { toValue: 1,   duration: 400, useNativeDriver: true }),
-        Animated.timing(anim, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+        Animated.timing(dropFloat, { toValue: -8, duration: 1300, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(dropFloat, { toValue:  0, duration: 1300, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
       ]),
     ).start();
-  }, []);
+
+    const t = setTimeout(() => {
+      if (profile?.onboardingComplete) navigation.replace('Main');
+      else navigation.replace('Onboarding');
+    }, 2200);
+    return () => clearTimeout(t);
+  }, [profile]);
+
   return (
-    <Animated.View style={[styles.loadingDot, { opacity: anim }]} />
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + 24 }]}>
+      {/* Deep navy with very subtle blue radial glow at top */}
+      <View style={StyleSheet.absoluteFill}>
+        <LinearGradient
+          colors={['#0A1736', NAVY, NAVY]}
+          style={StyleSheet.absoluteFill}
+          start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }}
+        />
+      </View>
+
+      {/* Ambient orbs */}
+      <View style={[styles.orb, { top: -60, left: -40, backgroundColor: 'rgba(27,140,255,0.18)' }]} />
+      <View style={[styles.orb, { bottom: 80, right: -50, width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(33,199,255,0.10)' }]} />
+
+      {/* Centre stack */}
+      <View style={styles.center}>
+        <View style={styles.dropWrap}>
+          <RippleRing delay={0}    size={210} />
+          <RippleRing delay={700}  size={210} />
+          <RippleRing delay={1400} size={210} />
+
+          <Animated.View style={{ transform: [{ scale: dropScale }, { translateY: dropFloat }] }}>
+            <WaterDrop size={160} fillPct={0.65} happy />
+          </Animated.View>
+        </View>
+
+        <Animated.Text
+          style={[styles.wordmark, { opacity: wordOp, transform: [{ translateY: wordY }] }]}
+        >
+          WaterFastBuddy
+        </Animated.Text>
+
+        <Animated.Text style={[styles.tagline, { opacity: tagOp }]}>
+          Your water fasting companion
+        </Animated.Text>
+      </View>
+
+      {/* Status pills */}
+      <Animated.View style={[styles.statusRow, { opacity: dotsOp, bottom: insets.bottom + 48 }]}>
+        {['Hydration', 'Streaks', 'Progress'].map((label, i) => (
+          <View key={i} style={styles.statusPill}>
+            <PulsingDot />
+            <Text style={styles.statusText}>{label}</Text>
+          </View>
+        ))}
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  orbLarge: {
+  container: { flex: 1, backgroundColor: NAVY },
+  orb: {
     position: 'absolute',
-    top: 90,
-    left: -40,
-    width: 190,
-    height: 190,
-    borderRadius: 95,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    width: 260, height: 260, borderRadius: 130,
   },
-  orbSmall: {
-    position: 'absolute',
-    bottom: 120,
-    right: -30,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+  center: {
+    flex: 1, alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: SPACING.xl,
   },
-
-  rippleContainer: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 180, height: 180,
+  dropWrap: {
+    width: 240, height: 240,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: SPACING.xl,
   },
-
-  avatarWrapper: {
-    marginBottom: SPACING.lg,
-  },
-
-  panel: {
-    width: '100%',
-    maxWidth: 420,
-    marginHorizontal: SPACING.lg,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.xl,
-    borderRadius: 36,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-    alignItems: 'center',
-  },
-
-  logoWrapper: {
-    marginBottom: SPACING.md,
-  },
-  logoCircle: {
-    width: 92, height: 92,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.4)',
-  },
-  logoMono: { fontSize: 24, fontWeight: '900', color: '#FFFFFF', letterSpacing: 1.5 },
-
-  brandName: {
-    fontSize: FONT_SIZE.xxl,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
-  },
-  greeting: {
-    fontSize: FONT_SIZE.xl,
-    color: 'rgba(255,255,255,0.9)',
-    fontWeight: '600',
+  wordmark: {
+    fontSize: 30, fontWeight: '900',
+    color: '#FFFFFF', letterSpacing: 0.4,
   },
   tagline: {
+    marginTop: 10,
     fontSize: FONT_SIZE.md,
-    color: 'rgba(255,255,255,0.82)',
+    color: 'rgba(191,227,255,0.75)',
     letterSpacing: 0.3,
   },
-  subline: {
-    fontSize: FONT_SIZE.sm,
-    color: 'rgba(255,255,255,0.68)',
-    marginTop: 8,
-    textAlign: 'center',
-    lineHeight: 20,
-    maxWidth: 280,
-  },
   statusRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: SPACING.lg,
-    marginBottom: SPACING.lg,
+    position: 'absolute', left: 0, right: 0,
+    flexDirection: 'row', justifyContent: 'center',
+    gap: 10,
   },
   statusPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: 14, paddingVertical: 9,
     borderRadius: BORDER_RADIUS.round,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(27,140,255,0.12)',
+    borderWidth: 1, borderColor: 'rgba(33,199,255,0.25)',
   },
-  statusText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
-
-  loadingDots: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: SPACING.sm,
+  statusDot: {
+    width: 7, height: 7, borderRadius: 4,
+    backgroundColor: '#21C7FF',
+    shadowColor: '#21C7FF', shadowOpacity: 0.9, shadowRadius: 6,
   },
-  loadingDot: {
-    width: 8, height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.8)',
-  },
+  statusText: { color: '#E0F0FF', fontSize: 12, fontWeight: '700', letterSpacing: 0.4 },
 });

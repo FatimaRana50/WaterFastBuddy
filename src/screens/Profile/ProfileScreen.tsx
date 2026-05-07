@@ -9,7 +9,7 @@ import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { useUser } from '../../store/UserContext';
 import { useFasts } from '../../store/FastsContext';
-import { calculateBmi, calculateTDEE, goalWeightForBmi } from '../../utils/bmi';
+import { calculateBmi, calculateTDEE, goalWeightForBmi, calculateBodyFatPercentage } from '../../utils/bmi';
 import { COLORS, FONT_SIZE, SPACING, BORDER_RADIUS } from '../../constants/theme';
 import WaterBodyAvatar from '../../components/Avatar/WaterBodyAvatar';
 import MorphingAvatar from '../../components/Avatar/MorphingAvatar';
@@ -55,6 +55,57 @@ function InfoRow({ label, value, last = false }: { label: string; value: string;
     <View style={[styles.infoRow, !last && { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
       <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>{label}</Text>
       <Text style={[styles.infoValue, { color: colors.text }]}>{value}</Text>
+    </View>
+  );
+}
+
+function BodyFatGauge({ value, category, gender }: { value: number; category: string; gender: Gender }) {
+  // Bands map (male / female reference ranges, %)
+  const bands = gender === 'male'
+    ? [['#60A5FA', 0,  6],   ['#10B981', 6,  14], ['#34D399', 14, 18], ['#F59E0B', 18, 25], ['#EF4444', 25, 40]]
+    : [['#60A5FA', 0,  14],  ['#10B981', 14, 21], ['#34D399', 21, 25], ['#F59E0B', 25, 32], ['#EF4444', 32, 50]];
+
+  const max = bands[bands.length - 1][2] as number;
+  const pct = Math.min(Math.max(value / max, 0), 1);
+
+  // Color matches the category
+  const colorMap: Record<string, string> = {
+    essential: '#60A5FA',
+    athletic:  '#10B981',
+    fit:       '#34D399',
+    average:   '#F59E0B',
+    high:      '#EF4444',
+  };
+  const color = colorMap[category] ?? COLORS.primary;
+  const labelKey = `calories.bodyFatCategories.${category}`;
+
+  return (
+    <View style={styles.bmiGaugeWrap}>
+      <View style={styles.bmiGaugeTrack}>
+        {bands.map(([c, lo, hi]) => {
+          const left  = ((lo as number) / max) * 100;
+          const width = (((hi as number) - (lo as number)) / max) * 100;
+          return (
+            <View
+              key={String(lo)}
+              style={[styles.bmiSegment, { backgroundColor: String(c), left: `${left}%` as any, width: `${width}%` as any }]}
+            />
+          );
+        })}
+        <View style={[styles.bmiThumb, { left: `${pct * 100}%` as any }]} />
+      </View>
+      <View style={styles.bmiLabels}>
+        {bands.map((b) => (
+          <Text key={String(b[1])} style={styles.bmiTick}>{b[1]}%</Text>
+        ))}
+        <Text style={styles.bmiTick}>{max}%</Text>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: SPACING.sm, gap: 8 }}>
+        <View style={[styles.bmiDot, { backgroundColor: color }]} />
+        <Text style={[styles.bmiVal, { color }]}>
+          {value}% — {i18n.t(labelKey)}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -365,6 +416,18 @@ export default function ProfileScreen() {
   const chartData     = chartEntries.map((e) => e.weightKg);
   const showChart     = chartEntries.length >= 2;
 
+  // ── Body fat ─────────────────────────────────────────────────────────────────
+  const bodyFat       = calculateBodyFatPercentage(bmi.value, profile.age, profile.gender);
+  // Project body fat % across each weight entry — same height/age/gender, only weight changes.
+  const bodyFatSeries = chartEntries.map((e) => {
+    const bmiAt = calculateBmi(e.weightKg, profile.heightCm).value;
+    return calculateBodyFatPercentage(bmiAt, profile.age, profile.gender).value;
+  });
+  const showBodyFatChart = bodyFatSeries.length >= 2;
+  const bodyFatTrend = showBodyFatChart
+    ? +(bodyFatSeries[bodyFatSeries.length - 1] - bodyFatSeries[0]).toFixed(1)
+    : 0;
+
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -391,7 +454,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
           <View style={styles.heroAvatarHalo}>
-            <WaterBodyAvatar profile={profile} size={104} />
+            <WaterBodyAvatar profile={profile} size={136} />
           </View>
         </View>
 
@@ -435,6 +498,68 @@ export default function ProfileScreen() {
           <BmiGauge bmi={bmi.value} />
         </View>
 
+        {/* ── Body Fat ── */}
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Body Fat</Text>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {/* Hero number */}
+          <View style={styles.bfHeader}>
+            <View>
+              <Text style={[styles.bfHeaderLabel, { color: colors.textSecondary }]}>Current</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+                <Text style={[styles.bfHeaderVal, { color: colors.text }]}>{bodyFat.value}</Text>
+                <Text style={[styles.bfHeaderUnit, { color: colors.textSecondary }]}>%</Text>
+              </View>
+              <Text style={[styles.bfHeaderCat, { color: COLORS.primary }]}>
+                {i18n.t(`calories.bodyFatCategories.${bodyFat.category}`)}
+              </Text>
+            </View>
+
+            {showBodyFatChart && (
+              <View style={[
+                styles.bfTrendChip,
+                {
+                  backgroundColor: (bodyFatTrend < 0 ? COLORS.success : bodyFatTrend > 0 ? COLORS.danger : colors.textSecondary) + '18',
+                  borderColor:     (bodyFatTrend < 0 ? COLORS.success : bodyFatTrend > 0 ? COLORS.danger : colors.textSecondary) + '40',
+                },
+              ]}>
+                <Text style={[
+                  styles.bfTrendText,
+                  { color: bodyFatTrend < 0 ? COLORS.success : bodyFatTrend > 0 ? COLORS.danger : colors.textSecondary },
+                ]}>
+                  {bodyFatTrend < 0 ? '▼' : bodyFatTrend > 0 ? '▲' : '—'} {Math.abs(bodyFatTrend)}%
+                </Text>
+                <Text style={[styles.bfTrendSub, { color: colors.textSecondary }]}>
+                  over last {bodyFatSeries.length} logs
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Gauge */}
+          <View style={{ marginTop: SPACING.md }}>
+            <BodyFatGauge value={bodyFat.value} category={bodyFat.category} gender={profile.gender} />
+          </View>
+
+          {/* Chart — body fat history */}
+          <View style={{ marginTop: SPACING.lg }}>
+            {showBodyFatChart ? (
+              <>
+                <Text style={[styles.bfChartTitle, { color: colors.textSecondary }]}>Progress over time</Text>
+                <WeightChart
+                  data={bodyFatSeries}
+                  labels={chartLabels}
+                  width={CHART_W}
+                  height={180}
+                />
+              </>
+            ) : (
+              <Text style={[styles.chartPlaceholder, { color: colors.textSecondary }]}>
+                {i18n.t('profile.logAtLeastTwoWeights')}
+              </Text>
+            )}
+          </View>
+        </View>
+
         {/* ── Goal Avatar Morph ── */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('profile.transformation')}</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -456,7 +581,7 @@ export default function ProfileScreen() {
           <View style={styles.morphRow}>
             {/* Current avatar */}
             <View style={styles.morphAvatarWrap}>
-              <WaterBodyAvatar profile={profile} size={80} />
+              <WaterBodyAvatar profile={profile} size={100} />
               <Text style={[styles.morphLabel, { color: COLORS.primary }]}>{i18n.t('ui.now')}</Text>
               <Text style={[styles.morphWeight, { color: colors.text }]}>{profile.weightKg} {i18n.t('ui.kg')}</Text>
               <Text style={[styles.morphBmi, { color: colors.textSecondary }]}>
@@ -476,7 +601,7 @@ export default function ProfileScreen() {
 
             {/* Goal avatar */}
             <View style={styles.morphAvatarWrap}>
-              <WaterBodyAvatar profile={{ ...profile, weightKg: goalWeight }} size={80} />
+              <WaterBodyAvatar profile={{ ...profile, weightKg: goalWeight }} size={100} />
               <Text style={[styles.morphLabel, { color: COLORS.success }]}>{i18n.t('ui.goal')}</Text>
               <Text style={[styles.morphWeight, { color: colors.text }]}>{goalWeight} {i18n.t('ui.kg')}</Text>
               <Text style={[styles.morphBmi, { color: colors.textSecondary }]}>
@@ -651,7 +776,7 @@ export default function ProfileScreen() {
             <View style={styles.modalAvatar}>
               <WaterBodyAvatar
                 profile={{ ...profile, weightKg: editWeight, heightCm: editHeight, gender: editGender, activityLevel: editActivity }}
-                size={70}
+                size={90}
               />
             </View>
 
@@ -895,15 +1020,15 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   heroAvatarHalo: {
-    width: 132,
-    height: 132,
+    width: 160,
+    height: 175,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
   heroHaloRing: {
     position: 'absolute',
-    width: 132,
+    width: 160,
     height: 132,
     borderRadius: 66,
     borderWidth: 1.5,
@@ -979,6 +1104,23 @@ const styles = StyleSheet.create({
   bmiTick:       { fontSize: 10, color: '#94A3B8' },
   bmiDot:        { width: 10, height: 10, borderRadius: 5 },
   bmiVal:        { fontSize: FONT_SIZE.md, fontWeight: '700' },
+
+  // Body fat
+  bfHeader:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  bfHeaderLabel:  { fontSize: FONT_SIZE.xs, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
+  bfHeaderVal:    { fontSize: 44, fontWeight: '900', lineHeight: 50 },
+  bfHeaderUnit:   { fontSize: FONT_SIZE.lg, fontWeight: '700' },
+  bfHeaderCat:    { fontSize: FONT_SIZE.sm, fontWeight: '800', marginTop: 2 },
+  bfTrendChip:    {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs + 2,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  bfTrendText:    { fontSize: FONT_SIZE.md, fontWeight: '900' },
+  bfTrendSub:     { fontSize: 10, fontWeight: '600', marginTop: 2 },
+  bfChartTitle:   { fontSize: FONT_SIZE.xs, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginBottom: SPACING.xs },
 
   // Goal avatar morph section
   morphRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', marginBottom: SPACING.md },

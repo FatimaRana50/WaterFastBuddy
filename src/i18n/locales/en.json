@@ -22,20 +22,20 @@
   },
   "onboarding": {
     "slide1": {
-      "headline": "Start Your Fasting Journey",
-      "body": "WaterFastBuddy guides you through every stage of your water fast with real-time insights."
+      "headline": "The fast that actually changes things",
+      "body": "Built by a water fasting enthusiast who's done the research — and lived it. WaterFastBuddy keeps you focused, informed, and motivated from hour one to the end."
     },
     "slide2": {
-      "headline": "Track Your Progress",
-      "body": "Watch your body transform as you fast. Log your weight and see your journey unfold."
+      "headline": "Know exactly what your body is doing",
+      "body": "Every hour of your fast is tracked in real time. Watch your weight drop, your energy shift, and your clarity improve — all in one place."
     },
     "slide3": {
-      "headline": "Stay Informed",
-      "body": "Learn what's happening inside your body at every hour of your fast."
+      "headline": "Earn it. Own it. Keep going.",
+      "body": "Badges, trophies, and streaks that reward consistency. Staying on track has never felt this good."
     },
     "slide4": {
-      "headline": "Your Personal Coach",
-      "body": "Book 1-on-1 sessions with our fasting expert for personalised guidance."
+      "headline": "Stuck? Talk to a real human.",
+      "body": "Water fasting can feel overwhelming at first. Book a free 1-1 video call with an experienced fasting coach — a real person, ready to help."
     },
     "setup": {
       "title": "Set Up Your Profile",
@@ -102,7 +102,7 @@
     "fasts": "Fasts",
     "history": "History",
     "tips": "Tips",
-    "calories": "Calories",
+    "tracker": "Tracker",
     "profile": "Profile"
   },
   "fasts": {
@@ -396,9 +396,9 @@
     "blueWater": "Blue water"
   },
   "topBar": {
-    "book": "Book",
+    "book": "Book 1-1",
     "buyFastingSalts": "Buy Salts",
-    "shop": "Shop"
+    "shop": "Buy Salts"
   },
   "paywall": {
     "title": "Unlock Full Access",

@@ -1,275 +1,248 @@
-import React, { useRef, useState, useEffect } from 'react';
+/**
+ * WelcomeSlides — premium 4-slide onboarding.
+ * Slide 1: human silhouette + water-droplet motif transformation.
+ * Slide 2: timeline/clock with fasting stage milestones (0h/8h/16h/24h).
+ * Slide 3: trophy + confetti celebration.
+ * Slide 4: warm coach card, star rating, "Free to book" chip.
+ *
+ * Required image assets (already in repo):
+ *   assets/avatars/d1.jpg   (used as the friendly coach photo on slide 4)
+ * No new image assets required — all illustrations are vector / RN primitives.
+ */
+
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity,
-  Dimensions, Animated, FlatList,
+  View, Text, StyleSheet, TouchableOpacity, Animated, Easing,
+  Dimensions, Image, FlatList,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path, Circle, Defs, LinearGradient as SvgGrad, Stop } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
-import WaterDrop from '../../components/Avatar/WaterDrop';
 import { useLanguage } from '../../store/LanguageContext';
 import i18n from '../../i18n';
 
 const { width, height } = Dimensions.get('window');
 
-// ─── Floating particle ────────────────────────────────────────────────────────
-function Particle({ x, size, color, delay }: { x: number; size: number; color: string; delay: number }) {
-  const y   = useRef(new Animated.Value(height * 0.6)).current;
-  const op  = useRef(new Animated.Value(0)).current;
-  const sc  = useRef(new Animated.Value(0.4)).current;
+const BLUE       = '#1B8CFF';
+const CYAN       = '#21C7FF';
+const NAVY       = '#0B5DD1';
+const NAVY_DEEP  = '#082C6B';
 
+/* ─── Floating particles overlay (whole screen) ──────────────────── */
+function Particle({ x, size, color, delay }: { x: number; size: number; color: string; delay: number }) {
+  const y  = useRef(new Animated.Value(height * 0.6)).current;
+  const op = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
         Animated.delay(delay),
         Animated.parallel([
-          Animated.timing(y,  { toValue: height * 0.1, duration: 3500, useNativeDriver: true }),
+          Animated.timing(y,  { toValue: height * 0.05, duration: 4200, useNativeDriver: true }),
           Animated.sequence([
-            Animated.timing(op, { toValue: 0.8, duration: 600, useNativeDriver: true }),
-            Animated.timing(op, { toValue: 0,   duration: 2900, useNativeDriver: true }),
+            Animated.timing(op, { toValue: 0.7, duration: 700,  useNativeDriver: true }),
+            Animated.timing(op, { toValue: 0,   duration: 3500, useNativeDriver: true }),
           ]),
-          Animated.spring(sc, { toValue: 1, useNativeDriver: true }),
         ]),
         Animated.parallel([
           Animated.timing(y,  { toValue: height * 0.6, duration: 0, useNativeDriver: true }),
           Animated.timing(op, { toValue: 0,            duration: 0, useNativeDriver: true }),
-          Animated.timing(sc, { toValue: 0.4,          duration: 0, useNativeDriver: true }),
         ]),
       ]),
     ).start();
   }, []);
-
   return (
     <Animated.View
+      pointerEvents="none"
       style={{
-        position: 'absolute',
-        left: x,
+        position: 'absolute', left: x,
         width: size, height: size, borderRadius: size / 2,
-        backgroundColor: color,
-        opacity: op,
-        transform: [{ translateY: y }, { scale: sc }],
+        backgroundColor: color, opacity: op,
+        transform: [{ translateY: y }],
       }}
     />
   );
 }
 
-// ─── Ripple ring (for slide 1) ────────────────────────────────────────────────
-function RippleRing({ delay, size }: { delay: number; size: number }) {
-  const sc = useRef(new Animated.Value(0.3)).current;
-  const op = useRef(new Animated.Value(0.7)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.parallel([
-          Animated.timing(sc, { toValue: 1.6, duration: 2000, useNativeDriver: true }),
-          Animated.timing(op, { toValue: 0,   duration: 2000, useNativeDriver: true }),
-        ]),
-        Animated.parallel([
-          Animated.timing(sc, { toValue: 0.3, duration: 0, useNativeDriver: true }),
-          Animated.timing(op, { toValue: 0.7, duration: 0, useNativeDriver: true }),
-        ]),
-      ]),
-    ).start();
-  }, []);
-  return (
-    <Animated.View style={{
-      position: 'absolute',
-      width: size, height: size, borderRadius: size / 2,
-      borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
-      transform: [{ scale: sc }], opacity: op,
-    }} />
-  );
-}
-
-// ─── Slide 1: Hero drop ───────────────────────────────────────────────────────
-function Slide1Illustration() {
-  useLanguage();
+/* ─── SLIDE 1: human silhouette + droplet ────────────────────────── */
+function Slide1() {
   const float = useRef(new Animated.Value(0)).current;
+  const drop  = useRef(new Animated.Value(0)).current;
+  const ring  = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(float, { toValue: -14, duration: 1200, useNativeDriver: true }),
-        Animated.timing(float, { toValue: 0,   duration: 1200, useNativeDriver: true }),
+        Animated.timing(float, { toValue: -8, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(float, { toValue:  0, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ]),
+    ).start();
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(drop, { toValue: 1, duration: 1600, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(drop, { toValue: 0, duration: 0, useNativeDriver: true }),
+        Animated.delay(600),
+      ]),
+    ).start();
+    Animated.loop(
+      Animated.timing(ring, { toValue: 1, duration: 2400, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+    ).start();
+  }, []);
+
+  const dropY     = drop.interpolate({ inputRange: [0, 1], outputRange: [-60, 90] });
+  const dropOp    = drop.interpolate({ inputRange: [0, 0.1, 0.85, 1], outputRange: [0, 1, 1, 0] });
+  const ringScale = ring.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1.6] });
+  const ringOp    = ring.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] });
+
+  return (
+    <View style={s.illustration}>
+      <Animated.View style={{
+        position: 'absolute', top: 100,
+        width: 230, height: 230, borderRadius: 115,
+        borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)',
+        transform: [{ scale: ringScale }], opacity: ringOp,
+      }} />
+
+      <Animated.View style={{ transform: [{ translateY: float }] }}>
+        <Svg width={180} height={300} viewBox="0 0 180 300">
+          <Defs>
+            <SvgGrad id="silh" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.95" />
+              <Stop offset="100%" stopColor="#BFE3FF" stopOpacity="0.85" />
+            </SvgGrad>
+          </Defs>
+          {/* Head */}
+          <Circle cx={90} cy={36} r={26} fill="url(#silh)" />
+          {/* Body */}
+          <Path
+            d="M 64 70
+               Q 50 78 46 110
+               L 42 170
+               Q 40 200 56 200
+               L 60 270 Q 60 290 76 290
+               L 86 290 Q 90 250 90 220
+               Q 90 250 94 290
+               L 104 290 Q 120 290 120 270
+               L 124 200 Q 140 200 138 170
+               L 134 110 Q 130 78 116 70 Z"
+            fill="url(#silh)"
+          />
+        </Svg>
+      </Animated.View>
+
+      {/* Falling droplet onto the figure */}
+      <Animated.View style={{
+        position: 'absolute', top: 30,
+        opacity: dropOp, transform: [{ translateY: dropY }],
+      }}>
+        <Svg width={28} height={36} viewBox="0 0 28 36">
+          <Path
+            d="M 14 2 C 18 12, 26 18, 26 26 C 26 32, 20 34, 14 34 C 8 34, 2 32, 2 26 C 2 18, 10 12, 14 2 Z"
+            fill={CYAN}
+          />
+        </Svg>
+      </Animated.View>
+    </View>
+  );
+}
+
+/* ─── SLIDE 2: clock with fasting stages ─────────────────────────── */
+function Slide2() {
+  const sweep = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(sweep, { toValue: 1, duration: 4500, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+    ).start();
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0, duration: 900, useNativeDriver: true }),
       ]),
     ).start();
   }, []);
 
+  const rot = sweep.interpolate({ inputRange: [0, 1], outputRange: ['-90deg', '270deg'] });
+  const dotScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.35] });
+
+  const stages = [
+    { h: '0h',  label: 'Start',    angle: -90,  color: '#7DD3FC' },
+    { h: '8h',  label: 'Glycogen', angle: 0,    color: '#60A5FA' },
+    { h: '16h', label: 'Fat burn', angle: 90,   color: '#34D399' },
+    { h: '24h', label: 'Autophagy',angle: 180,  color: '#F472B6' },
+  ];
+  const R = 110;
+
   return (
-    <View style={styles.illustrationBox}>
-      {/* Ripples */}
-      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <RippleRing delay={0}    size={220} />
-        <RippleRing delay={700}  size={220} />
-        <RippleRing delay={1400} size={220} />
-        <Animated.View style={{ transform: [{ translateY: float }] }}>
-          <WaterDrop size={160} fillPct={0.6} happy />
+    <View style={s.illustration}>
+      <View style={{ width: 260, height: 260, alignItems: 'center', justifyContent: 'center' }}>
+        {/* Outer ring */}
+        <View style={{
+          position: 'absolute', width: 240, height: 240, borderRadius: 120,
+          borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.18)', borderStyle: 'dashed',
+        }} />
+
+        {/* Sweep hand */}
+        <Animated.View style={{
+          position: 'absolute', width: 240, height: 240,
+          alignItems: 'flex-end', justifyContent: 'center',
+          transform: [{ rotate: rot }],
+        }}>
+          <View style={{
+            width: 110, height: 3, borderRadius: 2, backgroundColor: CYAN,
+            shadowColor: CYAN, shadowOpacity: 1, shadowRadius: 6,
+          }} />
         </Animated.View>
-      </View>
 
-      {/* Floating stat badges */}
-      <Animated.View style={[styles.badge, styles.badge1]}>
-        <Text style={styles.badgeEmoji}>•</Text>
-        <Text style={styles.badgeText}>{i18n.t('onboarding.fatBurning')}</Text>
-      </Animated.View>
-      <Animated.View style={[styles.badge, styles.badge2]}>
-        <Text style={styles.badgeEmoji}>•</Text>
-        <Text style={styles.badgeText}>{i18n.t('onboarding.autophagy')}</Text>
-      </Animated.View>
-      <Animated.View style={[styles.badge, styles.badge3]}>
-        <Text style={styles.badgeEmoji}>•</Text>
-        <Text style={styles.badgeText}>{i18n.t('onboarding.cellRenewal')}</Text>
-      </Animated.View>
-    </View>
-  );
-}
+        {/* Stage markers */}
+        {stages.map((st) => {
+          const rad = (st.angle * Math.PI) / 180;
+          const x = Math.cos(rad) * R;
+          const y = Math.sin(rad) * R;
+          return (
+            <Animated.View
+              key={st.h}
+              style={{
+                position: 'absolute',
+                transform: [{ translateX: x }, { translateY: y }, { scale: dotScale }],
+                alignItems: 'center',
+              }}
+            >
+              <View style={{
+                width: 14, height: 14, borderRadius: 7,
+                backgroundColor: st.color, borderWidth: 2, borderColor: '#FFFFFF',
+                shadowColor: st.color, shadowOpacity: 0.9, shadowRadius: 8,
+              }} />
+            </Animated.View>
+          );
+        })}
 
-// ─── Slide 2: Timer visualization ─────────────────────────────────────────────
-function Slide2Illustration() {
-  useLanguage();
-  const progress = useRef(new Animated.Value(0)).current;
-  const spin     = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(progress, { toValue: 1, duration: 2500, useNativeDriver: true }),
-        Animated.timing(progress, { toValue: 0, duration: 800,  useNativeDriver: true }),
-      ]),
-    ).start();
-    Animated.loop(
-      Animated.timing(spin, { toValue: 1, duration: 6000, useNativeDriver: true }),
-    ).start();
-  }, []);
-
-  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
-
-  return (
-    <View style={styles.illustrationBox}>
-      {/* Spinning orbit ring */}
-      <Animated.View style={[styles.orbitRing, { transform: [{ rotate }] }]}>
-        <View style={styles.orbitDot} />
-      </Animated.View>
-
-      {/* Central timer circle */}
-      <View style={styles.timerCircle}>
-        <View style={[styles.timerCircleInner, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
-          <Text style={styles.timerDisplay}>16:00:00</Text>
-          <Text style={styles.timerSub}>{i18n.t('ui.elapsed')}</Text>
+        {/* Centre */}
+        <View style={{
+          width: 120, height: 120, borderRadius: 60,
+          backgroundColor: 'rgba(255,255,255,0.10)',
+          borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Text style={{ fontSize: 28, fontWeight: '900', color: '#FFFFFF', letterSpacing: 1 }}>16:00</Text>
+          <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2, letterSpacing: 1 }}>FASTING</Text>
         </View>
       </View>
 
-      {/* Stage pills */}
-      {[
-        { label: i18n.t('onboarding.hour0to8'),  desc: i18n.t('onboarding.bloodSugarDrops'), color: '#60A5FA' },
-        { label: i18n.t('onboarding.hour8to16'), desc: i18n.t('onboarding.fatBurningBegins'), color: '#34D399' },
-        { label: i18n.t('onboarding.hour16plus'),  desc: i18n.t('onboarding.autophagyKicksIn'), color: '#F472B6' },
-      ].map((s, i) => (
-        <View key={i} style={[styles.stagePill, { top: 40 + i * 52, backgroundColor: s.color + '30', borderColor: s.color + '60' }]}>
-          <View style={[styles.stageDot, { backgroundColor: s.color }]} />
-          <View>
-            <Text style={styles.stagePillLabel}>{s.label}</Text>
-            <Text style={styles.stagePillDesc}>{s.desc}</Text>
-          </View>
-        </View>
-      ))}
-    </View>
-  );
-}
-
-// ─── Slide 3: Transformation ──────────────────────────────────────────────────
-function Slide3Illustration() {
-  useLanguage();
-  const slideAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(slideAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
-        Animated.delay(1000),
-        Animated.timing(slideAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
-        Animated.delay(1000),
-      ]),
-    ).start();
-  }, []);
-
-  const arrowScale = slideAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.3, 1] });
-
-  return (
-    <View style={styles.illustrationBox}>
-      {/* Before / After drops */}
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.xl, marginBottom: SPACING.lg }}>
-        {/* Before — fuller */}
-        <View style={{ alignItems: 'center' }}>
-          <WaterDrop size={100} fillPct={0.85} happy={false} />
-          <View style={styles.beforeAfterLabel}>
-            <Text style={styles.beforeAfterText}>{i18n.t('ui.now')}</Text>
-          </View>
-        </View>
-
-        {/* Arrow */}
-        <Animated.Text style={[styles.transformArrow, { transform: [{ scale: arrowScale }] }]}>
-          →
-        </Animated.Text>
-
-        {/* After — slimmer / full happy */}
-        <View style={{ alignItems: 'center' }}>
-          <WaterDrop size={100} fillPct={0.35} happy />
-          <View style={[styles.beforeAfterLabel, { backgroundColor: '#10B981' }]}>
-            <Text style={styles.beforeAfterText}>{i18n.t('ui.goal')}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Progress bars */}
-      {[
-        { label: i18n.t('onboarding.weightLost'),    pct: 0.72, color: '#3B82F6' },
-        { label: i18n.t('onboarding.energyGained'),  pct: 0.88, color: '#10B981' },
-        { label: i18n.t('onboarding.mentalClarity'), pct: 0.65, color: '#0F7AB8' },
-      ].map((b) => (
-        <View key={b.label} style={styles.progressRow}>
-          <Text style={styles.progressLabel}>{b.label}</Text>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${b.pct * 100}%` as any, backgroundColor: b.color }]} />
-          </View>
-          <Text style={[styles.progressPct, { color: b.color }]}>{Math.round(b.pct * 100)}%</Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-
-// ─── Slide 4: Coach ───────────────────────────────────────────────────────────
-function Slide4Illustration() {
-  useLanguage();
-  const pulse = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.08, duration: 800, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 1,    duration: 800, useNativeDriver: true }),
-      ]),
-    ).start();
-  }, []);
-
-  return (
-    <View style={styles.illustrationBox}>
-      {/* Coach avatar */}
-      <Animated.View style={[styles.coachCircle, { transform: [{ scale: pulse }] }]}>
-        <Text style={{ fontSize: 46, color: '#fff', fontWeight: '900' }}>WF</Text>
-      </Animated.View>
-
-      {/* Stars */}
-      <View style={styles.starsRow}>
-        {[1,2,3,4,5].map(i => <Text key={i} style={styles.star}>•</Text>)}
-      </View>
-      <Text style={styles.coachTagline}>{i18n.t('onboarding.fastingCoach')}</Text>
-
-      {/* Feature chips */}
-      <View style={styles.chipsRow}>
-        {[i18n.t('onboarding.oneOnOneSessions'), i18n.t('onboarding.freeToBook'), i18n.t('onboarding.personalisedPlan'), i18n.t('onboarding.directSupport')].map((c) => (
-          <View key={c} style={styles.featureChip}>
-            <Text style={styles.featureChipText}>{c}</Text>
+      {/* Stage labels */}
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: SPACING.lg, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {stages.map((st) => (
+          <View key={st.h} style={{
+            flexDirection: 'row', alignItems: 'center', gap: 6,
+            paddingHorizontal: 10, paddingVertical: 6,
+            borderRadius: 999,
+            backgroundColor: 'rgba(255,255,255,0.10)',
+            borderWidth: 1, borderColor: st.color + '60',
+          }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: st.color }} />
+            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700' }}>{st.h} · {st.label}</Text>
           </View>
         ))}
       </View>
@@ -277,143 +250,297 @@ function Slide4Illustration() {
   );
 }
 
-// ─── Slide data ───────────────────────────────────────────────────────────────
-// ─── Main component ───────────────────────────────────────────────────────────
+/* ─── SLIDE 3: trophy + confetti ─────────────────────────────────── */
+function Confetti({ x, color, delay, rotate }: { x: number; color: string; delay: number; rotate: string }) {
+  const t = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(t, { toValue: 1, duration: 2600, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(t, { toValue: 0, duration: 0, useNativeDriver: true }),
+        Animated.delay(800),
+      ]),
+    ).start();
+  }, []);
+  const ty = t.interpolate({ inputRange: [0, 1], outputRange: [-20, 220] });
+  const op = t.interpolate({ inputRange: [0, 0.1, 0.8, 1], outputRange: [0, 1, 1, 0] });
+  return (
+    <Animated.View style={{
+      position: 'absolute', left: x, top: 30,
+      width: 8, height: 12, borderRadius: 2,
+      backgroundColor: color, opacity: op,
+      transform: [{ translateY: ty }, { rotate }],
+    }} />
+  );
+}
+
+function Slide3() {
+  const bounce = useRef(new Animated.Value(0)).current;
+  const glow   = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounce, { toValue: -10, duration: 700, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(bounce, { toValue:  0,  duration: 700, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+      ]),
+    ).start();
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glow, { toValue: 1, duration: 1200, useNativeDriver: true }),
+        Animated.timing(glow, { toValue: 0, duration: 1200, useNativeDriver: true }),
+      ]),
+    ).start();
+  }, []);
+
+  const glowScale = glow.interpolate({ inputRange: [0, 1], outputRange: [1, 1.15] });
+  const glowOp    = glow.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.7] });
+
+  const colors = [CYAN, '#FDE047', '#34D399', '#F472B6', '#FFFFFF', BLUE];
+
+  return (
+    <View style={s.illustration}>
+      {/* Confetti */}
+      {Array.from({ length: 14 }).map((_, i) => (
+        <Confetti
+          key={i}
+          x={20 + i * 22}
+          color={colors[i % colors.length]}
+          delay={i * 180}
+          rotate={`${(i * 37) % 360}deg`}
+        />
+      ))}
+
+      {/* Glow */}
+      <Animated.View style={{
+        position: 'absolute',
+        width: 220, height: 220, borderRadius: 110,
+        backgroundColor: 'rgba(253,224,71,0.28)',
+        opacity: glowOp, transform: [{ scale: glowScale }],
+      }} />
+
+      {/* Trophy */}
+      <Animated.View style={{ transform: [{ translateY: bounce }], alignItems: 'center' }}>
+        <View style={{
+          width: 130, height: 130, borderRadius: 28,
+          backgroundColor: 'rgba(255,255,255,0.12)',
+          borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)',
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Ionicons name="trophy" size={78} color="#FDE047" />
+        </View>
+
+        <View style={{
+          marginTop: SPACING.lg,
+          paddingHorizontal: 18, paddingVertical: 10,
+          borderRadius: 999,
+          backgroundColor: 'rgba(253,224,71,0.18)',
+          borderWidth: 1, borderColor: 'rgba(253,224,71,0.55)',
+          flexDirection: 'row', alignItems: 'center', gap: 8,
+        }}>
+          <Ionicons name="flame" size={16} color="#FDE047" />
+          <Text style={{ color: '#FDE047', fontWeight: '900', fontSize: 14, letterSpacing: 0.5 }}>
+            7-DAY STREAK
+          </Text>
+        </View>
+      </Animated.View>
+    </View>
+  );
+}
+
+/* ─── SLIDE 4: coach card ────────────────────────────────────────── */
+function Slide4() {
+  const float = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(float, { toValue: -6, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(float, { toValue:  0, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ]),
+    ).start();
+  }, []);
+
+  let coachImg: any = null;
+  try { coachImg = require('../../../assets/avatars/d1.jpg'); } catch {}
+
+  return (
+    <View style={s.illustration}>
+      <Animated.View style={{
+        transform: [{ translateY: float }],
+        width: width - SPACING.xl * 2,
+        maxWidth: 360,
+        backgroundColor: 'rgba(255,255,255,0.10)',
+        borderRadius: 28,
+        borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)',
+        padding: SPACING.lg,
+        alignItems: 'center',
+      }}>
+        {/* Avatar with online dot */}
+        <View style={{ alignItems: 'center', marginBottom: SPACING.md }}>
+          <View style={{
+            width: 110, height: 110, borderRadius: 55,
+            borderWidth: 3, borderColor: '#FFFFFF',
+            backgroundColor: 'rgba(255,255,255,0.15)',
+            overflow: 'hidden',
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            {coachImg
+              ? <Image source={coachImg} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+              : <Ionicons name="person" size={56} color="#FFFFFF" />}
+          </View>
+          <View style={{
+            position: 'absolute', bottom: 4, right: 4,
+            width: 18, height: 18, borderRadius: 9,
+            backgroundColor: '#10B981', borderWidth: 2.5, borderColor: '#FFFFFF',
+          }} />
+        </View>
+
+        <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '900' }}>Coach Krish</Text>
+        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 2, fontWeight: '600' }}>
+          Certified fasting coach · 6 yrs
+        </Text>
+
+        {/* Stars */}
+        <View style={{ flexDirection: 'row', gap: 4, marginTop: 10 }}>
+          {[1,2,3,4,5].map(i => (
+            <Ionicons key={i} name="star" size={16} color="#FDE047" />
+          ))}
+          <Text style={{ color: '#FFFFFF', fontWeight: '800', marginLeft: 6, fontSize: 13 }}>4.9</Text>
+        </View>
+
+        {/* Free to book chip */}
+        <View style={{
+          marginTop: SPACING.md,
+          flexDirection: 'row', alignItems: 'center', gap: 6,
+          paddingHorizontal: 14, paddingVertical: 8,
+          borderRadius: 999,
+          backgroundColor: 'rgba(16,185,129,0.18)',
+          borderWidth: 1, borderColor: 'rgba(16,185,129,0.55)',
+        }}>
+          <Ionicons name="checkmark-circle" size={14} color="#34D399" />
+          <Text style={{ color: '#A7F3D0', fontWeight: '900', fontSize: 12, letterSpacing: 0.5 }}>
+            FREE TO BOOK
+          </Text>
+        </View>
+      </Animated.View>
+    </View>
+  );
+}
+
+/* ─── Main component ─────────────────────────────────────────────── */
 export default function WelcomeSlides() {
   useLanguage();
+  const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
 
   const slides = [
     {
       key: '1',
-      gradient: [COLORS.primaryDark, COLORS.primary, COLORS.gradientEnd] as [string, string, string],
-      headline: i18n.t('onboarding.slide1.headline') as string,
-      body: i18n.t('onboarding.slide1.body') as string,
-      Illustration: Slide1Illustration,
-      btnLabel: i18n.t('common.next') as string,
+      gradient: [NAVY_DEEP, NAVY, BLUE] as [string, string, string],
+      headline: 'The fast that\nchanges things',
+      body: 'A simple, guided water fast — built around your body, not someone else\'s rules.',
+      Illustration: Slide1,
     },
     {
       key: '2',
-      gradient: [COLORS.primaryDark, '#1646AF', COLORS.primary] as [string, string, string],
-      headline: i18n.t('onboarding.slide2.headline') as string,
-      body: i18n.t('onboarding.slide2.body') as string,
-      Illustration: Slide2Illustration,
-      btnLabel: i18n.t('common.next') as string,
+      gradient: ['#062456', NAVY, '#1672D8'] as [string, string, string],
+      headline: 'Know what your\nbody is doing',
+      body: 'See live fasting stages — from glycogen to fat burn to autophagy — as they happen.',
+      Illustration: Slide2,
     },
     {
       key: '3',
-      gradient: [COLORS.primaryDark, '#0F5B8D', COLORS.gradientEnd] as [string, string, string],
-      headline: i18n.t('onboarding.slide3.headline') as string,
-      body: i18n.t('onboarding.slide3.body') as string,
-      Illustration: Slide3Illustration,
-      btnLabel: i18n.t('common.next') as string,
+      gradient: ['#082C6B', '#0F5BCB', BLUE] as [string, string, string],
+      headline: 'Earn it.\nOwn it.',
+      body: 'Streaks, badges, and milestones that actually mean something. Real progress, not vanity.',
+      Illustration: Slide3,
     },
     {
       key: '4',
-      gradient: [COLORS.primaryDark, COLORS.primary, '#0D9488'] as [string, string, string],
-      headline: i18n.t('onboarding.slide4.headline') as string,
-      body: i18n.t('onboarding.slide4.body') as string,
-      Illustration: Slide4Illustration,
-      btnLabel: i18n.t('common.done') as string,
+      gradient: [NAVY_DEEP, NAVY, '#0D9488'] as [string, string, string],
+      headline: 'Stuck? Talk to\na real human.',
+      body: 'Book a free 1-on-1 with a certified fasting coach — no bots, no scripts.',
+      Illustration: Slide4,
     },
   ];
 
-  const [activeIndex, setActiveIndex] = useState(0);
-  const flatListRef  = useRef<FlatList>(null);
-  const navigation   = useNavigation<any>();
-  const textOpacity  = useRef(new Animated.Value(1)).current;
-  const contentScale = useRef(new Animated.Value(1)).current;
+  const [active, setActive] = useState(0);
+  const flatRef = useRef<FlatList>(null);
+  const fade    = useRef(new Animated.Value(1)).current;
 
-  const goTo = (index: number) => {
-    // Fade out → scroll → fade in
-    Animated.parallel([
-      Animated.timing(textOpacity,  { toValue: 0, duration: 180, useNativeDriver: true }),
-      Animated.timing(contentScale, { toValue: 0.95, duration: 180, useNativeDriver: true }),
-    ]).start(() => {
-      flatListRef.current?.scrollToIndex({ index, animated: false });
-      setActiveIndex(index);
-      Animated.parallel([
-        Animated.timing(textOpacity,  { toValue: 1, duration: 300, useNativeDriver: true }),
-        Animated.spring(contentScale, { toValue: 1, useNativeDriver: true }),
-      ]).start();
+  const goTo = (i: number) => {
+    Animated.timing(fade, { toValue: 0, duration: 160, useNativeDriver: true }).start(() => {
+      flatRef.current?.scrollToIndex({ index: i, animated: false });
+      setActive(i);
+      Animated.timing(fade, { toValue: 1, duration: 320, useNativeDriver: true }).start();
     });
   };
 
-  const handleNext = () => {
-    if (activeIndex === slides.length - 1) {
-      navigation.navigate('ProfileSetupName');
-    } else {
-      goTo(activeIndex + 1);
-    }
+  const onNext = () => {
+    if (active === slides.length - 1) navigation.navigate('ProfileSetupName');
+    else goTo(active + 1);
   };
 
-  const slide = slides[activeIndex];
+  const slide = slides[active];
   const { Illustration } = slide;
 
   return (
-    <View style={styles.screen}>
-      {/* Full-screen gradient — changes per slide */}
+    <View style={s.screen}>
       <LinearGradient colors={slide.gradient} style={StyleSheet.absoluteFill} />
 
       {/* Floating particles */}
-      {[0.1, 0.25, 0.4, 0.55, 0.7, 0.85].map((x, i) => (
-        <Particle
-          key={i}
-          x={width * x}
-          size={8 + (i % 3) * 6}
-          color="rgba(255,255,255,0.18)"
-          delay={i * 500}
-        />
+      {[0.08, 0.22, 0.38, 0.55, 0.72, 0.88].map((x, i) => (
+        <Particle key={i} x={width * x} size={6 + (i % 3) * 5}
+                  color="rgba(255,255,255,0.18)" delay={i * 600} />
       ))}
 
-      {/* Hidden FlatList — used only for index tracking, not rendering */}
       <FlatList
-        ref={flatListRef}
+        ref={flatRef}
         data={slides}
-        keyExtractor={(s) => s.key}
-        horizontal pagingEnabled
-        scrollEnabled={false}
+        keyExtractor={(it) => it.key}
+        horizontal pagingEnabled scrollEnabled={false}
         style={{ height: 0, position: 'absolute' }}
         renderItem={() => null}
       />
 
-      {/* Illustration area */}
-      <Animated.View style={[styles.illustrationArea, { opacity: textOpacity, transform: [{ scale: contentScale }] }]}>
+      {/* Top half: illustration */}
+      <Animated.View style={[s.top, { paddingTop: insets.top + 16, opacity: fade }]}>
         <Illustration />
       </Animated.View>
 
-      {/* Bottom sheet */}
-      <View style={styles.bottomSheet}>
-        {/* Slide headline */}
-        <Animated.View style={{ opacity: textOpacity, transform: [{ scale: contentScale }] }}>
-          <Text style={styles.headline}>{slide.headline}</Text>
-          <Text style={styles.body}>{slide.body}</Text>
+      {/* Bottom frosted sheet */}
+      <View style={[s.sheet, { paddingBottom: insets.bottom + 24 }]}>
+        <View style={s.sheetGlass} />
+        <Animated.View style={{ opacity: fade }}>
+          <Text style={s.headline}>{slide.headline}</Text>
+          <Text style={s.body}>{slide.body}</Text>
         </Animated.View>
 
-        {/* Dot indicators */}
-        <View style={styles.dotsRow}>
+        <View style={s.dotsRow}>
           {slides.map((_, i) => (
-            <TouchableOpacity key={i} onPress={() => goTo(i)}>
-              <Animated.View style={[styles.dot, i === activeIndex && styles.dotActive]} />
+            <TouchableOpacity key={i} onPress={() => goTo(i)} hitSlop={8}>
+              <View style={[s.dot, i === active && s.dotActive]} />
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Next button */}
-        <TouchableOpacity style={styles.nextBtn} onPress={handleNext} activeOpacity={0.85}>
+        <TouchableOpacity onPress={onNext} activeOpacity={0.85} style={s.cta}>
           <LinearGradient
-            colors={[COLORS.primary, COLORS.accent]}
+            colors={[CYAN, BLUE]}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-            style={styles.nextBtnGrad}
+            style={s.ctaGrad}
           >
-            <Text style={styles.nextBtnText}>{slide.btnLabel}</Text>
-            <Text style={styles.nextBtnArrow}>→</Text>
+            <Text style={s.ctaText}>{active === slides.length - 1 ? 'Get started' : 'Next'}</Text>
+            <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* Skip */}
-        {activeIndex < slides.length - 1 && (
-          <TouchableOpacity onPress={() => navigation.navigate('ProfileSetupName')} style={styles.skipBtn}>
-            <Text style={styles.skipText}>{i18n.t('onboarding.skipForNow')}</Text>
+        {active < slides.length - 1 && (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ProfileSetupName')}
+            style={{ alignSelf: 'center', paddingVertical: 8, marginTop: 6 }}
+          >
+            <Text style={s.skip}>Skip</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -421,165 +548,57 @@ export default function WelcomeSlides() {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   screen: { flex: 1 },
-
-  illustrationArea: {
+  top: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 60,
+    alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: SPACING.lg,
   },
-
-  illustrationBox: {
-    width: width,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: SPACING.lg,
-    position: 'relative',
+  illustration: {
+    width: '100%',
     minHeight: height * 0.42,
+    alignItems: 'center', justifyContent: 'center',
+    position: 'relative',
   },
-
-  // Bottom sheet
-  bottomSheet: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderTopLeftRadius: 36,
-    borderTopRightRadius: 36,
-    padding: SPACING.xl,
-    paddingBottom: 44,
+  sheet: {
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.xl,
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    overflow: 'hidden',
+  },
+  sheetGlass: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(8,30,80,0.35)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.18)',
   },
   headline: {
-    fontSize: 30,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    lineHeight: 38,
+    fontSize: 32, fontWeight: '900',
+    color: '#FFFFFF', lineHeight: 38,
     marginBottom: SPACING.sm,
+    letterSpacing: -0.3,
   },
   body: {
     fontSize: FONT_SIZE.md,
-    color: 'rgba(255,255,255,0.72)',
+    color: 'rgba(255,255,255,0.78)',
     lineHeight: 24,
     marginBottom: SPACING.lg,
   },
-
-  dotsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: SPACING.lg,
-  },
+  dotsRow: { flexDirection: 'row', gap: 8, marginBottom: SPACING.lg },
   dot: {
     width: 8, height: 8, borderRadius: 4,
     backgroundColor: 'rgba(255,255,255,0.3)',
   },
   dotActive: {
-    width: 28, borderRadius: 4,
-    backgroundColor: '#FFFFFF',
+    width: 28, borderRadius: 4, backgroundColor: '#FFFFFF',
   },
-
-  nextBtn: { borderRadius: BORDER_RADIUS.round, overflow: 'hidden', marginBottom: SPACING.md },
-  nextBtnGrad: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    gap: SPACING.sm,
+  cta: { borderRadius: 999, overflow: 'hidden' },
+  ctaGrad: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 18, gap: 10,
   },
-  nextBtnText:  { color: '#fff', fontSize: FONT_SIZE.lg, fontWeight: '800' },
-  nextBtnArrow: { color: '#fff', fontSize: FONT_SIZE.xl, fontWeight: '800' },
-
-  skipBtn: { alignItems: 'center' },
-  skipText: { color: 'rgba(255,255,255,0.5)', fontSize: FONT_SIZE.sm },
-
-  // Badges (slide 1)
-  badge: {
-    position: 'absolute',
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: BORDER_RADIUS.round,
-    paddingHorizontal: 12, paddingVertical: 6,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
-  },
-  badge1: { top: 10,  left: 20 },
-  badge2: { top: 10,  right: 20 },
-  badge3: { bottom: 10, left: width * 0.25 },
-  badgeEmoji: { fontSize: 14, color: 'rgba(255,255,255,0.8)' },
-  badgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-
-  // Slide 2
-  orbitRing: {
-    position: 'absolute',
-    width: 220, height: 220, borderRadius: 110,
-    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.2)',
-    borderStyle: 'dashed',
-    alignItems: 'flex-start', justifyContent: 'center',
-  },
-  orbitDot: {
-    width: 14, height: 14, borderRadius: 7,
-    backgroundColor: '#60A5FA',
-    marginLeft: -7,
-    shadowColor: '#60A5FA', shadowOpacity: 0.8, shadowRadius: 6, elevation: 4,
-  },
-  timerCircle: {
-    width: 170, height: 170, borderRadius: 85,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)',
-  },
-  timerCircleInner: {
-    width: 140, height: 140, borderRadius: 70,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  timerDisplay: { color: '#fff', fontSize: 22, fontWeight: '800', letterSpacing: 1 },
-  timerSub:     { color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 4 },
-
-  stagePill: {
-    position: 'absolute',
-    right: 12,
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    borderRadius: 12, borderWidth: 1,
-    paddingHorizontal: 10, paddingVertical: 6,
-  },
-  stageDot:      { width: 8, height: 8, borderRadius: 4 },
-  stagePillLabel:{ color: '#fff', fontSize: 11, fontWeight: '700' },
-  stagePillDesc: { color: 'rgba(255,255,255,0.65)', fontSize: 10 },
-
-  // Slide 3
-  beforeAfterLabel: {
-    marginTop: 8, backgroundColor: '#3B82F6',
-    borderRadius: BORDER_RADIUS.round,
-    paddingHorizontal: 12, paddingVertical: 3,
-  },
-  beforeAfterText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  transformArrow:  { fontSize: 36, color: '#fff', fontWeight: '900', marginBottom: 20 },
-
-  progressRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    width: width * 0.82, marginBottom: 10,
-  },
-  progressLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 11, width: 100 },
-  progressTrack: { flex: 1, height: 7, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 4, overflow: 'hidden' },
-  progressFill:  { height: '100%', borderRadius: 4 },
-  progressPct:   { fontSize: 11, fontWeight: '800', width: 32, textAlign: 'right' },
-
-  // Slide 4
-  coachCircle: {
-    width: 120, height: 120, borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)',
-    marginBottom: SPACING.sm,
-    shadowColor: '#fff', shadowOpacity: 0.2, shadowRadius: 20, elevation: 6,
-  },
-  starsRow:      { flexDirection: 'row', gap: 4, marginBottom: 6 },
-  star:          { fontSize: 18 },
-  coachTagline:  { color: '#fff', fontSize: FONT_SIZE.md, fontWeight: '700', marginBottom: SPACING.md },
-  chipsRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' },
-  featureChip:   {
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    borderRadius: BORDER_RADIUS.round,
-    paddingHorizontal: 12, paddingVertical: 6,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
-  },
-  featureChipText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  ctaText: { color: '#FFFFFF', fontSize: 17, fontWeight: '900', letterSpacing: 0.3 },
+  skip: { color: 'rgba(255,255,255,0.55)', fontSize: 13, fontWeight: '600' },
 });

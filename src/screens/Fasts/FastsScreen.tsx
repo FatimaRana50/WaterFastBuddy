@@ -185,27 +185,37 @@ function FloatingOrb({ size, top, left, delay, opacity }: {
   );
 }
 
-// ─── Preset row ───────────────────────────────────────────────────────────────
+// ─── Preset card (reference-style) ───────────────────────────────────────────
 function PlanRow({ preset, onPress }: { preset: typeof PRESETS[0]; onPress: () => void }) {
+  const { colors } = useTheme();
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={styles.planRow}>
-      <View style={[styles.planIconBubble, { backgroundColor: preset.bg, borderColor: preset.color + '22' }]}>
-        <Text style={[styles.planIconLabel, { color: preset.color }]}>{preset.shortLabel}</Text>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.88}
+      style={[styles.planCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+    >
+      {/* Left: duration bubble */}
+      <View style={[styles.planBubble, { backgroundColor: preset.bg, borderColor: preset.color + '30' }]}>
+        <Text style={[styles.planBubbleLabel, { color: preset.color }]}>{preset.shortLabel}</Text>
       </View>
-      <View style={styles.planRowText}>
-        <View style={styles.planRowTop}>
-          <Text style={styles.planRowName}>{preset.name}</Text>
-          <Text style={[styles.planRowHours, { color: preset.color }]}>{preset.hours}h</Text>
+
+      {/* Middle: name + description + tag */}
+      <View style={styles.planMid}>
+        <View style={styles.planTitleRow}>
+          <Text style={[styles.planName, { color: colors.text }]}>{preset.name}</Text>
+          <Text style={[styles.planHoursLabel, { color: preset.color }]}>{preset.hours}h</Text>
         </View>
-        <Text style={styles.planRowDescription}>{preset.description}</Text>
-        <View style={styles.planMetaRow}>
-          <View style={[styles.planTagPill, { backgroundColor: preset.color + '14' }]}>
-            <Text style={[styles.planRowTag, { color: preset.color }]}>{preset.tag}</Text>
-          </View>
+        <Text style={[styles.planDesc, { color: colors.textSecondary }]} numberOfLines={1}>
+          {preset.description}
+        </Text>
+        <View style={[styles.planTag, { backgroundColor: preset.color + '15' }]}>
+          <Text style={[styles.planTagText, { color: preset.color }]}>{preset.tag}</Text>
         </View>
       </View>
-      <View style={[styles.planArrow, { backgroundColor: preset.color + '12' }]}>
-        <Text style={[styles.planArrowText, { color: preset.color }]}>›</Text>
+
+      {/* Right: chevron */}
+      <View style={[styles.planChevron, { backgroundColor: preset.color + '12' }]}>
+        <Text style={[styles.planChevronText, { color: preset.color }]}>›</Text>
       </View>
     </TouchableOpacity>
   );
@@ -410,85 +420,111 @@ export default function FastsScreen() {
   // ── Plan selection ─────────────────────────────────────────────────────────────
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <Starfield />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
-        {/* Editorial hero — kicker + two-tone headline + avatar aside */}
-        <Animated.View style={[styles.heroEditorial, { transform: [{ translateY: heroLift }] }]}>
+
+        {/* ── Hero: greeting + headline + avatar ── */}
+        <Animated.View
+          style={[
+            styles.heroEditorial,
+            { transform: [{ translateY: heroLift }], opacity: heroGlow },
+          ]}
+        >
+          {/* Left text column */}
           <View style={{ flex: 1, paddingRight: SPACING.sm }}>
-            <Kicker>{profile ? `Hello, ${profile.name}` : 'WaterFastBuddy'}</Kicker>
-            <View style={{ marginTop: 10 }}>
-              <Headline line1="Fast smarter." line2="Become fluid." size={34} />
-            </View>
+            <Text style={[styles.helloKicker, { color: COLORS.primary }]}>
+              {profile ? `HELLO, ${profile.name.toUpperCase()}` : 'WATERFASTBUDDY'}
+            </Text>
+            <Text style={[styles.heroHeadline, { color: colors.text }]}>
+              {'Fast\nsmarter.'}
+            </Text>
+            <Text style={[styles.heroAccent, { color: COLORS.primary }]}>
+              Become fluid.
+            </Text>
             <Text style={[styles.heroLead, { color: colors.textSecondary }]}>
               {i18n.t('fasts.consistentPlanHint')}
             </Text>
           </View>
+
+          {/* Right avatar */}
           <View style={styles.heroAvatarHalo}>
-            {profile && <WaterBodyAvatar profile={profile} size={110} fastingHours={0} />}
+            {profile && (
+              <WaterBodyAvatar profile={profile} size={138} fastingHours={0} />
+            )}
           </View>
         </Animated.View>
 
-        {/* Week strip */}
+        {/* ── Week strip ── */}
         <View style={[styles.weekCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {weekDays.map((d) => (
             <View key={d.date} style={[styles.dayItem, d.isToday && styles.dayItemActive]}>
-              <Text style={[styles.dayLabel, d.isToday && styles.dayLabelActive]}>{d.day}</Text>
-              <Text style={[styles.dayNum,   d.isToday && styles.dayNumActive]}>{d.date}</Text>
+              <Text style={[styles.dayLabel, d.isToday && styles.dayLabelActive]}>
+                {d.day.toUpperCase()}
+              </Text>
+              <Text style={[styles.dayNum, d.isToday && styles.dayNumActive]}>
+                {d.date}
+              </Text>
               {d.isToday && <View style={styles.dayDot} />}
             </View>
           ))}
         </View>
 
-        <View style={[styles.plansSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.sectionHeader}>
-            <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('fasts.title')}</Text>
-              <Text style={[styles.sectionSubTitle, { color: colors.textSecondary }]}>{i18n.t('ui.start')}</Text>
-            </View>
-            <TouchableOpacity onPress={() => setShowModal(true)} style={[styles.customBtn, { backgroundColor: colors.cardAlt }]}>
-              <Text style={[styles.customBtnText, { color: COLORS.primary }]}>{i18n.t('fasts.customFast')}</Text>
-            </TouchableOpacity>
+        {/* ── Plans section header ── */}
+        <View style={styles.plansHeader}>
+          <View>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {i18n.t('fasts.title')}
+            </Text>
+            <Text style={[styles.sectionSubTitle, { color: colors.textSecondary }]}>
+              {i18n.t('ui.start')}
+            </Text>
           </View>
-
-          <View style={styles.plansList}>
-            {PRESETS.map((p, i) => (
-              <React.Fragment key={p.id}>
-                <PlanRow preset={p} onPress={() => handleStartFast(p)} />
-                {i < PRESETS.length - 1 && <View style={[styles.planDivider, { backgroundColor: colors.border }]} />}
-              </React.Fragment>
-            ))}
-          </View>
+          <TouchableOpacity
+            onPress={() => setShowModal(true)}
+            style={[styles.customBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          >
+            <Text style={[styles.customBtnText, { color: COLORS.primary }]}>
+              {i18n.t('fasts.customFast')}
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Saved / favourite custom plans */}
+        {/* ── Plan cards ── */}
+        <View style={styles.plansList}>
+          {PRESETS.map((p) => (
+            <PlanRow key={p.id} preset={p} onPress={() => handleStartFast(p)} />
+          ))}
+        </View>
+
+        {/* ── Saved / favourite plans ── */}
         {savedFasts.length > 0 && (
-          <View style={[styles.plansSection, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: 0 }]}>
-            <View style={styles.sectionHeader}>
-              <View>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('fasts.savedFasts')}</Text>
-                <Text style={[styles.sectionSubTitle, { color: colors.textSecondary }]}>{i18n.t('fasts.saveFast')}</Text>
-              </View>
+          <>
+            <View style={[styles.plansHeader, { marginTop: SPACING.sm }]}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {i18n.t('fasts.savedFasts')}
+              </Text>
             </View>
-            <View style={[styles.plansList, { borderColor: colors.border }]}>
-              {savedFasts.map((sf, i) => (
-                <View key={sf.id}>
-                  <SavedFastRow
-                    fast={sf}
-                    onPress={() => startFast({ hours: sf.targetHours, name: sf.name, color: COLORS.primary })}
-                    onDelete={() => removeSavedFast(sf.id)}
-                  />
-                  {i < savedFasts.length - 1 && <View style={[styles.planDivider, { backgroundColor: colors.border }]} />}
-                </View>
+            <View style={styles.plansList}>
+              {savedFasts.map((sf) => (
+                <SavedFastRow
+                  key={sf.id}
+                  fast={sf}
+                  onPress={() => startFast({ hours: sf.targetHours, name: sf.name, color: COLORS.primary })}
+                  onDelete={() => removeSavedFast(sf.id)}
+                />
               ))}
             </View>
-          </View>
+          </>
         )}
 
-        <View style={[styles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={[styles.infoDot, { backgroundColor: COLORS.primary }]} />
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>{i18n.t('fasts.activeFast')}</Text>
+        {/* ── Tip chip ── */}
+        <View style={[styles.tipChip, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={[styles.tipDot, { backgroundColor: COLORS.primary }]} />
+          <Text style={[styles.tipText, { color: colors.textSecondary }]}>
+            {i18n.t('fasts.activeFast')}
+          </Text>
         </View>
+
       </ScrollView>
 
       {/* Custom fast modal */}
@@ -566,33 +602,51 @@ export default function FastsScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   screen:     { flex: 1 },
-  scrollBody: { paddingTop: 8, paddingBottom: 112 },
+  scrollBody: { paddingTop: 4, paddingBottom: 120 },
 
-  // New editorial hero (two-tone headline + avatar halo)
+  // ── Hero ──────────────────────────────────────────────────────────────────────
   heroEditorial: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: SPACING.lg,
     marginTop: SPACING.md,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
+  },
+  helloKicker: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.6,
+    marginBottom: 6,
+  },
+  heroHeadline: {
+    fontSize: 34,
+    fontWeight: '900',
+    lineHeight: 40,
+    letterSpacing: -0.5,
+  },
+  heroAccent: {
+    fontSize: 34,
+    fontWeight: '900',
+    lineHeight: 40,
+    letterSpacing: -0.5,
+    marginBottom: SPACING.sm,
   },
   heroLead: {
     fontSize: FONT_SIZE.sm,
     lineHeight: 20,
-    marginTop: SPACING.md,
-    maxWidth: 240,
+    marginTop: 4,
+    maxWidth: 200,
   },
   heroAvatarHalo: {
-    width: 140,
-    height: 140,
+    width: 152,
+    height: 178,
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
   },
   heroHaloRing: {
     position: 'absolute',
-    width: 140,
-    height: 140,
+    width: 152,
+    height: 152,
     borderRadius: 70,
     borderWidth: 1.5,
   },
@@ -617,12 +671,38 @@ const styles = StyleSheet.create({
   heroChipLabel:  { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.7 },
   heroChipValue:  { color: '#fff', fontSize: FONT_SIZE.md, fontWeight: '700', marginTop: 4 },
 
-  weekCard: { marginHorizontal: SPACING.lg, marginBottom: SPACING.lg, flexDirection: 'row', justifyContent: 'space-between', borderRadius: BORDER_RADIUS.lg, paddingVertical: SPACING.md, paddingHorizontal: SPACING.sm, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
-  dayItem:       { alignItems: 'center', paddingVertical: 8, paddingHorizontal: 10, borderRadius: 16, minWidth: 52 },
-  dayItemActive: { backgroundColor: COLORS.primary },
-  dayLabel:      { fontSize: 10, color: '#7A8CA8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
-  dayLabelActive:{ color: 'rgba(255,255,255,0.78)' },
-  dayNum:        { fontSize: FONT_SIZE.lg, fontWeight: '800', color: '#0F172A', marginTop: 2 },
+  // ── Week strip ────────────────────────────────────────────────────────────────
+  weekCard: {
+    marginHorizontal: SPACING.lg,
+    marginBottom: SPACING.lg,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderRadius: BORDER_RADIUS.lg,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
+    borderWidth: 1,
+    shadowColor: '#1B8CFF',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  dayItem: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 16,
+    minWidth: 56,
+  },
+  dayItemActive: {
+    backgroundColor: COLORS.primary,
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  dayLabel:      { fontSize: 10, color: '#7A8CA8', fontWeight: '800', letterSpacing: 0.6 },
+  dayLabelActive:{ color: 'rgba(255,255,255,0.82)' },
+  dayNum:        { fontSize: FONT_SIZE.xl, fontWeight: '900', color: '#0F172A', marginTop: 2 },
   dayNumActive:  { color: '#fff' },
   dayDot:        { width: 5, height: 5, borderRadius: 3, backgroundColor: '#fff', marginTop: 4 },
 
@@ -633,32 +713,78 @@ const styles = StyleSheet.create({
   heroBubbleText: { fontSize: FONT_SIZE.xl, fontWeight: '800', lineHeight: 28 },
   heroSubtle:     { marginTop: 8, fontSize: FONT_SIZE.sm, lineHeight: 20 },
 
-  plansSection:   { marginHorizontal: SPACING.lg, marginBottom: SPACING.md, padding: SPACING.md, borderRadius: BORDER_RADIUS.xl, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 12, elevation: 2 },
-  customBtn:      { borderRadius: BORDER_RADIUS.round, paddingHorizontal: 14, paddingVertical: 10 },
-  customBtnText:  { fontSize: FONT_SIZE.sm, fontWeight: '800' },
-  sectionHeader:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: SPACING.md },
-  sectionTitle:   { fontSize: FONT_SIZE.lg, fontWeight: '800' },
-  sectionSubTitle:{ fontSize: FONT_SIZE.sm, marginTop: 4 },
+  // ── Section header ────────────────────────────────────────────────────────────
+  plansHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginHorizontal: SPACING.lg,
+    marginBottom: SPACING.sm,
+  },
+  sectionTitle:    { fontSize: FONT_SIZE.lg, fontWeight: '900' },
+  sectionSubTitle: { fontSize: FONT_SIZE.xs, marginTop: 3, fontWeight: '600' },
+  customBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: BORDER_RADIUS.round,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    shadowColor: '#1B8CFF',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  customBtnText: { fontSize: FONT_SIZE.sm, fontWeight: '800' },
 
-  plansList:    { borderRadius: BORDER_RADIUS.lg, overflow: 'hidden', borderWidth: 1, borderColor: 'transparent' },
-  planRow:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: SPACING.md, paddingVertical: SPACING.md },
-  planIconBubble:{ width: 52, height: 52, borderRadius: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  planIconLabel: { fontSize: FONT_SIZE.sm, fontWeight: '800', letterSpacing: 0.2 },
-  planRowText:   { flex: 1, marginLeft: SPACING.md },
-  planRowTop:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  planRowName:   { fontSize: FONT_SIZE.md, fontWeight: '800', color: '#0F172A' },
-  planRowHours:  { fontSize: FONT_SIZE.sm, fontWeight: '800' },
-  planRowDescription: { fontSize: FONT_SIZE.sm, color: '#71839D', marginTop: 4, lineHeight: 19 },
-  planMetaRow:   { marginTop: 8, flexDirection: 'row', alignItems: 'center' },
-  planTagPill:   { borderRadius: BORDER_RADIUS.round, paddingHorizontal: 10, paddingVertical: 4 },
-  planRowTag:    { fontSize: FONT_SIZE.xs, fontWeight: '700' },
-  planArrow:     { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  planArrowText: { fontSize: 20, fontWeight: '700', lineHeight: 24 },
-  planDivider:   { height: 1, marginLeft: 78 },
+  // ── Plan cards ────────────────────────────────────────────────────────────────
+  plansList: {
+    marginHorizontal: SPACING.lg,
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  planCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 14,
+    shadowColor: '#1B8CFF',
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
+  planBubble: {
+    width: 56, height: 56,
+    borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1,
+    marginRight: SPACING.md,
+  },
+  planBubbleLabel: { fontSize: 13, fontWeight: '900', letterSpacing: 0.2 },
+  planMid:         { flex: 1 },
+  planTitleRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  planName:        { fontSize: FONT_SIZE.md, fontWeight: '800' },
+  planHoursLabel:  { fontSize: FONT_SIZE.sm, fontWeight: '800' },
+  planDesc:        { fontSize: 12, marginTop: 3, lineHeight: 17 },
+  planTag:         { alignSelf: 'flex-start', borderRadius: BORDER_RADIUS.round, paddingHorizontal: 10, paddingVertical: 3, marginTop: 6 },
+  planTagText:     { fontSize: 11, fontWeight: '700' },
+  planChevron:     { width: 30, height: 30, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginLeft: SPACING.sm },
+  planChevronText: { fontSize: 20, fontWeight: '700', lineHeight: 24 },
 
-  infoCard: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginHorizontal: SPACING.lg, borderRadius: BORDER_RADIUS.lg, padding: SPACING.md, borderWidth: 1, marginTop: SPACING.xs },
-  infoDot:  { width: 10, height: 10, borderRadius: 5 },
-  infoText: { flex: 1, fontSize: FONT_SIZE.sm, lineHeight: 20, fontWeight: '500' },
+  // ── Tip chip ──────────────────────────────────────────────────────────────────
+  tipChip: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
+    marginHorizontal: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    borderWidth: 1,
+    marginTop: SPACING.xs,
+  },
+  tipDot:  { width: 8, height: 8, borderRadius: 4 },
+  tipText: { flex: 1, fontSize: FONT_SIZE.sm, lineHeight: 20, fontWeight: '500' },
 
   // ── Active fast ──────────────────────────────────────────────────────────────
   activeScroll:        { paddingTop: 8, paddingBottom: 118 },

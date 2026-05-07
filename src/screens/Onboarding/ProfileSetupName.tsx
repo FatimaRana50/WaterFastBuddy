@@ -1,167 +1,385 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, Dimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  Animated, Easing, KeyboardAvoidingView, Platform,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path, Circle, Defs, LinearGradient as SvgGrad, Stop } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
 import { useLanguage } from '../../store/LanguageContext';
 import i18n from '../../i18n';
 
-const { width } = Dimensions.get('window');
+const BLUE      = '#1B8CFF';
+const CYAN      = '#21C7FF';
+const NAVY      = '#0B5DD1';
+const NAVY_DEEP = '#082C6B';
 
+/* ── Floating particle ─────────────────────────────────────────── */
+function Particle({ x, size, delay }: { x: number; size: number; delay: number }) {
+  const y  = useRef(new Animated.Value(700)).current;
+  const op = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.parallel([
+          Animated.timing(y,  { toValue: 40,  duration: 4000, useNativeDriver: true }),
+          Animated.sequence([
+            Animated.timing(op, { toValue: 0.5, duration: 600,  useNativeDriver: true }),
+            Animated.timing(op, { toValue: 0,   duration: 3400, useNativeDriver: true }),
+          ]),
+        ]),
+        Animated.parallel([
+          Animated.timing(y,  { toValue: 700, duration: 0, useNativeDriver: true }),
+          Animated.timing(op, { toValue: 0,   duration: 0, useNativeDriver: true }),
+        ]),
+      ]),
+    ).start();
+  }, []);
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute', left: x,
+        width: size, height: size, borderRadius: size / 2,
+        backgroundColor: 'rgba(255,255,255,0.55)',
+        opacity: op, transform: [{ translateY: y }],
+      }}
+    />
+  );
+}
+
+/* ── Male silhouette SVG ───────────────────────────────────────── */
+function MaleSVG({ active }: { active: boolean }) {
+  const fill = active ? '#fff' : 'rgba(255,255,255,0.55)';
+  return (
+    <Svg width={52} height={80} viewBox="0 0 52 80">
+      <Defs>
+        <SvgGrad id="m" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0%" stopColor={active ? CYAN : 'rgba(255,255,255,0.6)'} />
+          <Stop offset="100%" stopColor={active ? BLUE : 'rgba(255,255,255,0.3)'} />
+        </SvgGrad>
+      </Defs>
+      {/* Head */}
+      <Circle cx={26} cy={11} r={9} fill="url(#m)" />
+      {/* Shoulders + torso (broader) */}
+      <Path
+        d="M 10 26 Q 8 32 8 44 L 10 62 Q 10 68 17 68 L 17 76 Q 17 80 22 80 L 24 80 Q 26 70 26 60 Q 26 70 28 80 L 30 80 Q 35 80 35 76 L 35 68 Q 42 68 42 62 L 44 44 Q 44 32 42 26 Q 36 22 26 22 Q 16 22 10 26 Z"
+        fill="url(#m)"
+      />
+    </Svg>
+  );
+}
+
+/* ── Female silhouette SVG ─────────────────────────────────────── */
+function FemaleSVG({ active }: { active: boolean }) {
+  return (
+    <Svg width={52} height={80} viewBox="0 0 52 80">
+      <Defs>
+        <SvgGrad id="f" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0%" stopColor={active ? CYAN : 'rgba(255,255,255,0.6)'} />
+          <Stop offset="100%" stopColor={active ? BLUE : 'rgba(255,255,255,0.3)'} />
+        </SvgGrad>
+      </Defs>
+      {/* Head */}
+      <Circle cx={26} cy={11} r={9} fill="url(#f)" />
+      {/* Body — narrower waist, wider hips */}
+      <Path
+        d="M 14 26 Q 10 32 12 40 Q 8 48 8 58 Q 8 68 16 68 L 16 76 Q 16 80 21 80 L 24 80 Q 26 70 26 62 Q 26 70 28 80 L 31 80 Q 36 80 36 76 L 36 68 Q 44 68 44 58 Q 44 48 40 40 Q 42 32 38 26 Q 32 22 26 22 Q 20 22 14 26 Z"
+        fill="url(#f)"
+      />
+    </Svg>
+  );
+}
+
+/* ── Gender card ───────────────────────────────────────────────── */
+function GenderCard({
+  type, label, desc, selected, onPress,
+}: {
+  type: 'male' | 'female';
+  label: string;
+  desc: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePress = () => {
+    Animated.sequence([
+      Animated.timing(scale, { toValue: 0.95, duration: 80, useNativeDriver: true }),
+      Animated.spring(scale,  { toValue: 1,    useNativeDriver: true }),
+    ]).start();
+    onPress();
+  };
+
+  return (
+    <Animated.View style={{ flex: 1, transform: [{ scale }] }}>
+      <TouchableOpacity
+        style={[s.gCard, selected && s.gCardActive]}
+        onPress={handlePress}
+        activeOpacity={1}
+      >
+        {selected && (
+          <View style={s.gCheckBadge}>
+            <Ionicons name="checkmark" size={11} color="#fff" />
+          </View>
+        )}
+        <View style={s.gIconWrap}>
+          {type === 'male' ? <MaleSVG active={selected} /> : <FemaleSVG active={selected} />}
+        </View>
+        <Text style={[s.gLabel, selected && s.gLabelActive]}>{label}</Text>
+        <Text style={s.gDesc}>{desc}</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+/* ── Screen ────────────────────────────────────────────────────── */
 export default function ProfileSetupName() {
   const [name,   setName]   = useState('');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
   const navigation = useNavigation<any>();
+  const insets     = useSafeAreaInsets();
   useLanguage();
 
-  const fadeIn = useRef(new Animated.Value(0)).current;
-  const slideY = useRef(new Animated.Value(30)).current;
+  const fade  = useRef(new Animated.Value(0)).current;
+  const slide = useRef(new Animated.Value(28)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeIn, { toValue: 1, duration: 500, useNativeDriver: true }),
-      Animated.spring(slideY, { toValue: 0, useNativeDriver: true }),
+      Animated.timing(fade,  { toValue: 1, duration: 520, useNativeDriver: true }),
+      Animated.timing(slide, { toValue: 0, duration: 520, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
   }, []);
 
   const canProceed = name.trim().length > 0 && gender !== null;
 
   return (
-    <View style={styles.screen}>
-      <LinearGradient colors={['#0F172A', '#1D4ED8', '#06B6D4']} style={StyleSheet.absoluteFill} />
+    <KeyboardAvoidingView
+      style={s.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      {/* Background */}
+      <LinearGradient
+        colors={[NAVY_DEEP, NAVY, BLUE]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      />
+
+      {/* Particles */}
+      {[0.1, 0.28, 0.5, 0.68, 0.85].map((xPct, i) => (
+        <Particle key={i} x={xPct * 375} size={5 + (i % 3) * 4} delay={i * 700} />
+      ))}
 
       {/* Step indicator */}
-      <View style={styles.stepRow}>
-        {[1,2,3].map(i => (
-          <View key={i} style={[styles.stepDot, i === 1 && styles.stepDotActive]} />
+      <View style={[s.dotsRow, { marginTop: insets.top + 18 }]}>
+        {[1, 2, 3].map(i => (
+          <View
+            key={i}
+            style={[
+              s.dot,
+              i === 1 && s.dotActive,
+            ]}
+          />
         ))}
       </View>
 
-      <Animated.View style={[styles.content, { opacity: fadeIn, transform: [{ translateY: slideY }] }]}>
-        <Text style={styles.stepLabel}>{i18n.t('onboarding.step1')}</Text>
-        <Text style={styles.title}>{i18n.t('onboarding.setup.name')}</Text>
-        <Text style={styles.subtitle}>{i18n.t('onboarding.setup.nameSubtitle')}</Text>
+      {/* Content */}
+      <Animated.View
+        style={[s.content, { opacity: fade, transform: [{ translateY: slide }] }]}
+      >
+        <Text style={s.eyebrow}>STEP 1 OF 3</Text>
+        <Text style={s.title}>Let's get{'\n'}to know you.</Text>
+        <Text style={s.subtitle}>
+          We'll build your personal fasting plan around your body and goals.
+        </Text>
 
         {/* Name input */}
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputLabel}>{i18n.t('ui.fullName')}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={i18n.t('onboarding.setup.namePlaceholder')}
-            placeholderTextColor="rgba(255,255,255,0.35)"
-            value={name}
-            onChangeText={setName}
-            autoFocus
-            returnKeyType="next"
-          />
-          {name.length > 0 && (
-            <View style={styles.inputCheck}>
-              <Text style={{ color: '#10B981', fontSize: 16 }}>✓</Text>
-            </View>
-          )}
+        <View style={s.inputBlock}>
+          <Text style={s.fieldLabel}>Your first name</Text>
+          <View style={s.inputWrap}>
+            <Ionicons name="person-outline" size={18} color="rgba(255,255,255,0.5)" style={{ marginRight: 10 }} />
+            <TextInput
+              style={s.input}
+              placeholder="e.g. Alex"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              value={name}
+              onChangeText={setName}
+              autoFocus
+              returnKeyType="done"
+              autoCapitalize="words"
+            />
+            {name.trim().length > 0 && (
+              <View style={s.checkDot}>
+                <Ionicons name="checkmark" size={12} color="#fff" />
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Gender */}
-        <Text style={styles.inputLabel}>{i18n.t('onboarding.setup.gender')}</Text>
-        <View style={styles.genderRow}>
-          {([
-            { key: 'male',   emoji: '🧑', label: i18n.t('onboarding.setup.male'),   desc: i18n.t('onboarding.setup.maleJourney') },
-            { key: 'female', emoji: '👩', label: i18n.t('onboarding.setup.female'), desc: i18n.t('onboarding.setup.femaleJourney') },
-          ] as const).map((g) => (
-            <TouchableOpacity
-              key={g.key}
-              style={[styles.genderCard, gender === g.key && styles.genderCardActive]}
-              onPress={() => setGender(g.key)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.genderEmoji}>{g.emoji}</Text>
-              <Text style={[styles.genderLabel, gender === g.key && styles.genderLabelActive]}>{g.label}</Text>
-              <Text style={styles.genderDesc}>{g.desc}</Text>
-              {gender === g.key && (
-                <View style={styles.checkBadge}>
-                  <Text style={{ color: '#fff', fontSize: 10, fontWeight: '900' }}>✓</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
+        <Text style={s.fieldLabel}>I identify as</Text>
+        <View style={s.gRow}>
+          <GenderCard
+            type="male"
+            label={i18n.t('onboarding.setup.male')}
+            desc="His journey"
+            selected={gender === 'male'}
+            onPress={() => setGender('male')}
+          />
+          <GenderCard
+            type="female"
+            label={i18n.t('onboarding.setup.female')}
+            desc="Her journey"
+            selected={gender === 'female'}
+            onPress={() => setGender('female')}
+          />
         </View>
       </Animated.View>
 
-      {/* Continue button */}
-      <View style={styles.footer}>
+      {/* Footer CTA */}
+      <View style={[s.footer, { paddingBottom: insets.bottom + 24 }]}>
+        <LinearGradient
+          colors={['rgba(8,30,80,0)', 'rgba(8,44,107,0.92)']}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
         <TouchableOpacity
           disabled={!canProceed}
-          onPress={() => navigation.navigate('ProfileSetupBody', { name, gender })}
+          onPress={() => navigation.navigate('ProfileSetupBody', { name: name.trim(), gender })}
           activeOpacity={0.85}
-          style={{ opacity: canProceed ? 1 : 0.4 }}
+          style={{ opacity: canProceed ? 1 : 0.38 }}
         >
           <LinearGradient
-            colors={[COLORS.primary, COLORS.accent]}
+            colors={[CYAN, BLUE]}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-            style={styles.continueBtn}
+            style={s.cta}
           >
-            <Text style={styles.continueBtnText}>{i18n.t('common.next')}</Text>
+            <Text style={s.ctaText}>Continue</Text>
+            <Ionicons name="arrow-forward" size={18} color="#fff" />
           </LinearGradient>
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
+/* ── Styles ────────────────────────────────────────────────────── */
+const s = StyleSheet.create({
   screen: { flex: 1 },
-  stepRow: {
-    flexDirection: 'row', gap: 8, alignSelf: 'center',
-    marginTop: 60, marginBottom: SPACING.lg,
+
+  dotsRow: {
+    flexDirection: 'row', gap: 8,
+    alignSelf: 'center', marginBottom: SPACING.lg,
   },
-  stepDot:       { width: 28, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.2)' },
-  stepDotActive: { backgroundColor: '#fff' },
+  dot:       { width: 30, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.22)' },
+  dotActive: { backgroundColor: '#fff' },
 
-  content: { flex: 1, paddingHorizontal: SPACING.xl },
-  stepLabel: { color: 'rgba(255,255,255,0.55)', fontSize: FONT_SIZE.sm, fontWeight: '600', marginBottom: 6 },
-  title:    { fontSize: 34, fontWeight: '900', color: '#fff', lineHeight: 42, marginBottom: SPACING.sm },
-  subtitle: { fontSize: FONT_SIZE.md, color: 'rgba(255,255,255,0.65)', marginBottom: SPACING.xl, lineHeight: 22 },
+  content: {
+    flex: 1,
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.sm,
+  },
 
-  inputLabel:  { color: 'rgba(255,255,255,0.7)', fontSize: FONT_SIZE.sm, fontWeight: '600', marginBottom: SPACING.sm },
-  inputWrapper: { marginBottom: SPACING.xl, position: 'relative' },
-  input: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: BORDER_RADIUS.md, borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.25)',
-    padding: SPACING.md, fontSize: FONT_SIZE.lg,
+  eyebrow: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.8,
+    marginBottom: SPACING.sm,
+  },
+  title: {
+    fontSize: 36,
+    fontWeight: '900',
     color: '#fff',
+    lineHeight: 44,
+    marginBottom: SPACING.sm,
   },
-  inputCheck: {
-    position: 'absolute', right: SPACING.md,
-    top: 0, bottom: 0, justifyContent: 'center',
+  subtitle: {
+    fontSize: FONT_SIZE.md,
+    color: 'rgba(255,255,255,0.6)',
+    lineHeight: 22,
+    marginBottom: SPACING.xl,
   },
 
-  genderRow: { flexDirection: 'row', gap: SPACING.md },
-  genderCard: {
-    flex: 1, alignItems: 'center', paddingVertical: SPACING.lg,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: BORDER_RADIUS.lg, borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.15)', position: 'relative',
+  // Name input
+  inputBlock: { marginBottom: SPACING.xl },
+  fieldLabel: {
+    color: 'rgba(255,255,255,0.65)',
+    fontSize: FONT_SIZE.sm,
+    fontWeight: '700',
+    marginBottom: SPACING.sm,
+    letterSpacing: 0.3,
   },
-  genderCardActive: {
-    backgroundColor: 'rgba(59,130,246,0.3)',
-    borderColor: COLORS.primary,
+  inputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.22)',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 14,
   },
-  genderEmoji: { fontSize: 44, marginBottom: 8 },
-  genderLabel: { fontSize: FONT_SIZE.md, fontWeight: '700', color: 'rgba(255,255,255,0.7)' },
-  genderLabelActive: { color: '#fff' },
-  genderDesc:  { fontSize: FONT_SIZE.xs, color: 'rgba(255,255,255,0.4)', marginTop: 3 },
-  checkBadge: {
-    position: 'absolute', top: 8, right: 8,
-    width: 20, height: 20, borderRadius: 10,
-    backgroundColor: COLORS.primary,
+  input: {
+    flex: 1,
+    color: '#fff',
+    fontSize: FONT_SIZE.lg,
+    fontWeight: '700',
+  },
+  checkDot: {
+    width: 22, height: 22, borderRadius: 11,
+    backgroundColor: '#10B981',
     alignItems: 'center', justifyContent: 'center',
   },
 
-  footer: { paddingHorizontal: SPACING.xl, paddingBottom: 44 },
-  continueBtn: {
-    borderRadius: BORDER_RADIUS.round,
-    paddingVertical: 18, alignItems: 'center',
+  // Gender cards
+  gRow: { flexDirection: 'row', gap: SPACING.md },
+  gCard: {
+    alignItems: 'center',
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.md,
+    backgroundColor: 'rgba(255,255,255,0.09)',
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.18)',
+    position: 'relative',
   },
-  continueBtnText: { color: '#fff', fontSize: FONT_SIZE.lg, fontWeight: '800' },
+  gCardActive: {
+    backgroundColor: 'rgba(27,140,255,0.22)',
+    borderColor: BLUE,
+    shadowColor: BLUE,
+    shadowOpacity: 0.4,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  gCheckBadge: {
+    position: 'absolute', top: 10, right: 10,
+    width: 20, height: 20, borderRadius: 10,
+    backgroundColor: BLUE,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  gIconWrap:   { marginBottom: 10 },
+  gLabel:      { color: 'rgba(255,255,255,0.7)', fontSize: FONT_SIZE.md, fontWeight: '800' },
+  gLabelActive:{ color: '#fff' },
+  gDesc:       { color: 'rgba(255,255,255,0.38)', fontSize: 11, marginTop: 4, fontWeight: '600' },
+
+  // Footer
+  footer: {
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.lg,
+  },
+  cta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 17,
+    borderRadius: BORDER_RADIUS.round,
+  },
+  ctaText: { color: '#fff', fontSize: FONT_SIZE.lg, fontWeight: '800' },
 });
