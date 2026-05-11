@@ -186,58 +186,75 @@ function FloatingOrb({ size, top, left, delay, opacity }: {
 }
 
 // ─── Preset card (reference-style) ───────────────────────────────────────────
-function PlanRow({ preset, onPress }: { preset: typeof PRESETS[0]; onPress: () => void }) {
+function PlanRow({ preset, onPress, delay = 0 }: { preset: typeof PRESETS[0]; onPress: () => void; delay?: number }) {
   const { colors } = useTheme();
+  
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.88}
-      style={[styles.planCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-    >
-      {/* Left: duration bubble */}
-      <View style={[styles.planBubble, { backgroundColor: preset.bg, borderColor: preset.color + '30' }]}>
-        <Text style={[styles.planBubbleLabel, { color: preset.color }]}>{preset.shortLabel}</Text>
-      </View>
+    <View>
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.85}
+      >
+        <View
+          style={[styles.planCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        >
+          {/* Left: duration bubble */}
+          <View style={[styles.planBubble, { backgroundColor: preset.bg, borderColor: preset.color + '30' }]}>
+            <Text style={[styles.planBubbleLabel, { color: preset.color }]}>{preset.shortLabel}</Text>
+          </View>
 
-      {/* Middle: name + description + tag */}
-      <View style={styles.planMid}>
-        <View style={styles.planTitleRow}>
-          <Text style={[styles.planName, { color: colors.text }]}>{preset.name}</Text>
-          <Text style={[styles.planHoursLabel, { color: preset.color }]}>{preset.hours}h</Text>
-        </View>
-        <Text style={[styles.planDesc, { color: colors.textSecondary }]} numberOfLines={1}>
-          {preset.description}
-        </Text>
-        <View style={[styles.planTag, { backgroundColor: preset.color + '15' }]}>
-          <Text style={[styles.planTagText, { color: preset.color }]}>{preset.tag}</Text>
-        </View>
-      </View>
+          {/* Middle: name + description + tag */}
+          <View style={styles.planMid}>
+            <View style={styles.planTitleRow}>
+              <Text style={[styles.planName, { color: colors.text }]}>{preset.name}</Text>
+              <Text style={[styles.planHoursLabel, { color: preset.color }]}>{preset.hours}h</Text>
+            </View>
+            <Text style={[styles.planDesc, { color: colors.textSecondary }]} numberOfLines={1}>
+              {preset.description}
+            </Text>
+            <View style={[styles.planTag, { backgroundColor: preset.color + '15' }]}>
+              <Text style={[styles.planTagText, { color: preset.color }]}>{preset.tag}</Text>
+            </View>
+          </View>
 
-      {/* Right: chevron */}
-      <View style={[styles.planChevron, { backgroundColor: preset.color + '12' }]}>
-        <Text style={[styles.planChevronText, { color: preset.color }]}>›</Text>
-      </View>
-    </TouchableOpacity>
+          {/* Right: chevron */}
+          <View style={[styles.planChevron, { backgroundColor: preset.color + '12' }]}>
+            <Text style={[styles.planChevronText, { color: preset.color }]}>›</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 // ─── Saved fast row ────────────────────────────────────────────────────────────
-function SavedFastRow({ fast, onPress, onDelete }: { fast: SavedFast; onPress: () => void; onDelete: () => void }) {
+function SavedFastRow({ fast, onPress, onDelete, delay = 0 }: { fast: SavedFast; onPress: () => void; onDelete: () => void; delay?: number }) {
   return (
     <View style={styles.savedRow}>
-      <TouchableOpacity style={styles.savedMain} onPress={onPress} activeOpacity={0.8}>
-        <View style={styles.savedBubble}>
-          <Text style={styles.savedBubbleText}>{fast.targetHours}h</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.savedName}>{fast.name}</Text>
-          <Text style={styles.savedSub}>{`${fast.targetHours} ${i18n.t('history.hours')} · ${i18n.t('fasts.tapToStart')}`}</Text>
-        </View>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={onDelete} style={styles.savedDelete} activeOpacity={0.7}>
-        <Text style={styles.savedDeleteText}>✕</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity 
+          style={{ flex: 1 }}
+          onPress={onPress}
+          activeOpacity={0.8}
+        >
+          <View style={styles.savedMain}>
+            <View style={styles.savedBubble}>
+              <Text style={styles.savedBubbleText}>{fast.targetHours}h</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.savedName}>{fast.name}</Text>
+              <Text style={styles.savedSub}>{`${fast.targetHours} ${i18n.t('history.hours')} · ${i18n.t('fasts.tapToStart')}`}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          onPress={onDelete}
+          activeOpacity={0.7}
+        >
+          <View style={styles.savedDelete}>
+            <Text style={styles.savedDeleteText}>✕</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
   );
 }
 
@@ -340,6 +357,16 @@ export default function FastsScreen() {
     const fmtHM   = (d: Date) =>
       d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    // Entrance animations for active fast components
+    const ringAnim = useRef(new Animated.Value(0)).current;
+    const bodyAnim = useRef(new Animated.Value(0)).current;
+    const endBtnScale = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+      Animated.timing(ringAnim, { toValue: 1, duration: 500, delay: 80, useNativeDriver: true }).start();
+      Animated.timing(bodyAnim, { toValue: 1, duration: 420, delay: 160, useNativeDriver: true }).start();
+    }, []);
+
     return (
       <View style={[styles.screen, { backgroundColor: colors.background }]}>
         <Starfield density={0.08} />
@@ -355,30 +382,31 @@ export default function FastsScreen() {
 
           {/* Current fasting info pill */}
           <View style={[styles.currentPill, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={[styles.currentDot, { backgroundColor: activeFast.color }]} />
-            <Text style={[styles.currentText, { color: colors.text }]}>
-              Current: <Text style={{ color: activeFast.color }}>{activeFast.name}</Text>
-            </Text>
+              <View style={[styles.currentDot, { backgroundColor: activeFast.color }]} />
+              <Text style={[styles.currentText, { color: colors.text }]}>
+                Current: <Text style={{ color: activeFast.color }}>{activeFast.name}</Text>
+              </Text>
           </View>
 
           {/* Circular ring */}
-          <View style={[styles.ringCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Animated.View style={[styles.ringCard, { backgroundColor: colors.surface, borderColor: colors.border, opacity: ringAnim, transform: [{ translateY: ringAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }]}>
             <RingTimer
               progress={Math.min(elapsed / targetSec, 1)}
               color={activeFast.color}
               elapsedLabel={formatTime(elapsed)}
               percent={progressPct}
             />
-
-            <TouchableOpacity activeOpacity={0.9} onPress={handleEndFast} style={styles.endInline}>
-              <LinearGradient
-                colors={[COLORS.primaryDeep, COLORS.primaryDark]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.endInlineGrad}
-              >
-                <Text style={styles.endInlineText}>End fasting</Text>
-              </LinearGradient>
+            <TouchableOpacity onPress={endFast} onPressIn={() => Animated.spring(endBtnScale, { toValue: 0.96, useNativeDriver: true }).start()} onPressOut={() => Animated.spring(endBtnScale, { toValue: 1, useNativeDriver: true }).start()}>
+              <Animated.View style={[styles.endInline, { transform: [{ scale: endBtnScale }] }]}>
+                <LinearGradient
+                  colors={[COLORS.primaryDeep, COLORS.primaryDark]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.endInlineGrad}
+                >
+                  <Text style={styles.endInlineText}>End fasting</Text>
+                </LinearGradient>
+              </Animated.View>
             </TouchableOpacity>
 
             {/* Start / End row */}
@@ -395,10 +423,10 @@ export default function FastsScreen() {
                 </Text>
               </View>
             </View>
-          </View>
+            </Animated.View>
 
           {/* Body status card */}
-          <View style={[styles.bodyStatusCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Animated.View style={[styles.bodyStatusCard, { backgroundColor: colors.surface, borderColor: colors.border, opacity: bodyAnim, transform: [{ translateY: bodyAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }]}>
             <View style={[styles.bodyIconBubble, { backgroundColor: activeFast.color + '1E' }]}>
               <Text style={{ fontSize: 18 }}>💧</Text>
             </View>
@@ -411,7 +439,7 @@ export default function FastsScreen() {
             <View style={[styles.bodyLevelPill, { backgroundColor: activeFast.color + '1E' }]}>
               <Text style={[styles.bodyLevelText, { color: activeFast.color }]}>Lv.{Math.min(Math.floor(elapsedH / 8) + 1, 6)}</Text>
             </View>
-          </View>
+          </Animated.View>
         </ScrollView>
       </View>
     );
@@ -430,29 +458,29 @@ export default function FastsScreen() {
             { transform: [{ translateY: heroLift }], opacity: heroGlow },
           ]}
         >
-          {/* Left text column */}
-          <View style={{ flex: 1, paddingRight: SPACING.sm }}>
-            <Text style={[styles.helloKicker, { color: COLORS.primary }]}>
-              {profile ? `HELLO, ${profile.name.toUpperCase()}` : 'WATERFASTBUDDY'}
-            </Text>
-            <Text style={[styles.heroHeadline, { color: colors.text }]}>
-              {'Fast\nsmarter.'}
-            </Text>
-            <Text style={[styles.heroAccent, { color: COLORS.primary }]}>
-              Become fluid.
-            </Text>
-            <Text style={[styles.heroLead, { color: colors.textSecondary }]}>
-              {i18n.t('fasts.consistentPlanHint')}
-            </Text>
-          </View>
+            {/* Left text column */}
+            <View style={{ flex: 1, paddingRight: SPACING.sm }}>
+              <Text style={[styles.helloKicker, { color: COLORS.primary }]}>
+                {profile ? `HELLO, ${profile.name.toUpperCase()}` : 'WATERFASTBUDDY'}
+              </Text>
+              <Text style={[styles.heroHeadline, { color: colors.text }]}>
+                {'Fast\nsmarter.'}
+              </Text>
+              <Text style={[styles.heroAccent, { color: COLORS.primary }]}>
+                Become fluid.
+              </Text>
+              <Text style={[styles.heroLead, { color: colors.textSecondary }]}>
+                {i18n.t('fasts.consistentPlanHint')}
+              </Text>
+            </View>
 
-          {/* Right avatar */}
-          <View style={styles.heroAvatarHalo}>
-            {profile && (
-              <WaterBodyAvatar profile={profile} size={138} fastingHours={0} />
-            )}
-          </View>
-        </Animated.View>
+            {/* Right avatar */}
+            <View style={styles.heroAvatarHalo}>
+              {profile && (
+                <WaterBodyAvatar profile={profile} size={138} fastingHours={0} />
+              )}
+            </View>
+          </Animated.View>
 
         {/* ── Week strip ── */}
         <View style={[styles.weekCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -481,11 +509,12 @@ export default function FastsScreen() {
           </View>
           <TouchableOpacity
             onPress={() => setShowModal(true)}
-            style={[styles.customBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
           >
-            <Text style={[styles.customBtnText, { color: COLORS.primary }]}>
-              {i18n.t('fasts.customFast')}
-            </Text>
+            <View style={[styles.customBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.customBtnText, { color: COLORS.primary }]}>
+                  {i18n.t('fasts.customFast')}
+                </Text>
+              </View>
           </TouchableOpacity>
         </View>
 
@@ -531,69 +560,71 @@ export default function FastsScreen() {
       <Modal visible={showModal} transparent animationType="slide">
         <View style={styles.overlay}>
           <View style={[styles.sheet, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>{i18n.t('fasts.customFast')}</Text>
-            <Text style={styles.sheetSub}>{i18n.t('fasts.customHours')}</Text>
-            <TextInput
-              style={[styles.sheetInput, { backgroundColor: colors.cardAlt, color: colors.text, borderColor: colors.border }]}
-              keyboardType="numeric"
-              placeholder={i18n.t('fasts.exampleHours')}
-              placeholderTextColor={colors.textSecondary}
-              value={customHours}
-              onChangeText={setCustomHours}
-              autoFocus
-            />
-            {/* Save-to-favourites toggle */}
-            <View style={[styles.saveRow, { borderColor: colors.border }]}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.saveRowLabel, { color: colors.text }]}>{i18n.t('fasts.saveFast')}</Text>
-                <Text style={[styles.saveRowSub, { color: colors.textSecondary }]}>{i18n.t('fasts.savedFasts')}</Text>
+                <View style={styles.sheetHandle} />
+                <Text style={styles.sheetTitle}>{i18n.t('fasts.customFast')}</Text>
+                <Text style={styles.sheetSub}>{i18n.t('fasts.customHours')}</Text>
+                <TextInput
+                  style={[styles.sheetInput, { backgroundColor: colors.cardAlt, color: colors.text, borderColor: colors.border }]}
+                  keyboardType="numeric"
+                  placeholder={i18n.t('fasts.exampleHours')}
+                  placeholderTextColor={colors.textSecondary}
+                  value={customHours}
+                  onChangeText={setCustomHours}
+                  autoFocus
+                />
+                {/* Save-to-favourites toggle */}
+                <View style={[styles.saveRow, { borderColor: colors.border }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.saveRowLabel, { color: colors.text }]}>{i18n.t('fasts.saveFast')}</Text>
+                    <Text style={[styles.saveRowSub, { color: colors.textSecondary }]}>{i18n.t('fasts.savedFasts')}</Text>
+                  </View>
+                  <Switch
+                    value={shouldSave}
+                    onValueChange={setShouldSave}
+                    trackColor={{ true: COLORS.primary, false: colors.border }}
+                    thumbColor="#fff"
+                  />
+                </View>
+                {shouldSave && (
+                  <TextInput
+                    style={[styles.sheetInput, { marginBottom: SPACING.sm, fontSize: FONT_SIZE.md, backgroundColor: colors.cardAlt, color: colors.text, borderColor: colors.border }]}
+                    placeholder={i18n.t('fasts.planNameOptional')}
+                    placeholderTextColor={colors.textSecondary}
+                    value={customName}
+                    onChangeText={setCustomName}
+                  />
+                )}
+                <View style={styles.sheetBtns}>
+                  <TouchableOpacity
+                    onPress={() => { setShowModal(false); setCustomHours(''); setCustomName(''); setShouldSave(false); }}
+                  >
+                    <View style={[styles.sheetCancel, { borderColor: colors.border, backgroundColor: colors.cardAlt }]}>
+                      <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{i18n.t('common.cancel')}</Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={async () => {
+                      const h = parseFloat(customHours);
+                      if (h > 0) {
+                        const label = customName.trim() || `${h}h ${i18n.t('fasts.customFast')}`;
+                        setShowModal(false);
+                        setCustomHours('');
+                        setCustomName('');
+                        if (shouldSave) await saveCustomFast(label, h);
+                        setShouldSave(false);
+                        await startFast({ hours: h, name: label, color: COLORS.primary });
+                      }
+                    }}
+                  >
+                    <View style={styles.sheetStartWrap}>
+                      <LinearGradient colors={[COLORS.primaryDark, COLORS.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.sheetStart}>
+                        <Text style={{ color: '#fff', fontWeight: '700', fontSize: FONT_SIZE.md }}>{i18n.t('fasts.startFast')}</Text>
+                      </LinearGradient>
+                    </View>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <Switch
-                value={shouldSave}
-                onValueChange={setShouldSave}
-                trackColor={{ true: COLORS.primary, false: colors.border }}
-                thumbColor="#fff"
-              />
             </View>
-            {shouldSave && (
-              <TextInput
-                style={[styles.sheetInput, { marginBottom: SPACING.sm, fontSize: FONT_SIZE.md, backgroundColor: colors.cardAlt, color: colors.text, borderColor: colors.border }]}
-                placeholder={i18n.t('fasts.planNameOptional')}
-                placeholderTextColor={colors.textSecondary}
-                value={customName}
-                onChangeText={setCustomName}
-              />
-            )}
-            <View style={styles.sheetBtns}>
-              <TouchableOpacity
-                style={[styles.sheetCancel, { borderColor: colors.border, backgroundColor: colors.cardAlt }]}
-                onPress={() => { setShowModal(false); setCustomHours(''); setCustomName(''); setShouldSave(false); }}
-              >
-                  <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{i18n.t('common.cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.sheetStartWrap}
-                onPress={async () => {
-                  const h = parseFloat(customHours);
-                  if (h > 0) {
-                    const label = customName.trim() || `${h}h ${i18n.t('fasts.customFast')}`;
-                    setShowModal(false);
-                    setCustomHours('');
-                    setCustomName('');
-                    if (shouldSave) await saveCustomFast(label, h);
-                    setShouldSave(false);
-                    await startFast({ hours: h, name: label, color: COLORS.primary });
-                  }
-                }}
-              >
-                <LinearGradient colors={[COLORS.primaryDark, COLORS.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.sheetStart}>
-                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: FONT_SIZE.md }}>{i18n.t('fasts.startFast')}</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
       </Modal>
     </View>
   );

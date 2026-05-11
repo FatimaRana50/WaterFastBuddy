@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useMemo, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import Svg, { Polyline, Circle, Line } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../store/ThemeContext';
@@ -86,6 +87,19 @@ export default function HistoryScreen() {
   const today = new Date();
   const monthLabel = `${MONTH_LABELS[today.getMonth()]} ${today.getFullYear()}`;
 
+  // Entrance animation for list
+  const listAnim = useRef(new Animated.Value(0)).current;
+  const itemScales = useRef(Array.from({ length: 20 }, () => new Animated.Value(1))).current;
+  useEffect(() => {
+    Animated.timing(listAnim, { toValue: 1, duration: 420, useNativeDriver: true }).start();
+  }, []);
+
+  // Top-5 performance bars
+  const top5 = useMemo(() => {
+    return [...fasts].sort((a, b) => b.actualHours - a.actualHours).slice(0, 5);
+  }, [fasts]);
+  const topMax = Math.max(1, ...(top5.map(f => f.actualHours)));
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Starfield density={0.08} />
@@ -109,6 +123,12 @@ export default function HistoryScreen() {
           <StatTile icon="flame-outline"      value={`${stats.streak}d`} label="Streak"    style={{ flex: 1 }} />
           <StatTile icon="trophy-outline"     value={stats.longest}      label="Longest"   accent={COLORS.accent}  style={{ flex: 1 }} />
           <StatTile icon="checkmark-outline"  value={stats.total}        label="Completed" accent={COLORS.success} style={{ flex: 1 }} />
+        </View>
+
+        {/* Performance graph: recent fast durations */}
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Performance</Text>
+          <PerformanceGraph fasts={fasts} accent={COLORS.primary} textColor={colors.textSecondary} />
         </View>
 
         {/* Calendar */}
@@ -145,34 +165,107 @@ export default function HistoryScreen() {
         {/* Fast list */}
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('history.listView')}</Text>
+
+          {/* Top-5 bar graph */}
+          {top5.length > 0 && (
+            <View style={{ marginBottom: SPACING.md }}>
+              <Text style={[styles.sectionSub, { color: colors.textSecondary, marginBottom: 8 }]}>Top 5 longest fasts</Text>
+              <View style={styles.barChartRow}>
+                {top5.map((f, i) => {
+                  const h = Math.round((f.actualHours / topMax) * 120);
+                  const label = fmtHours(f.actualHours);
+                  const date = new Date(f.startTime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                  return (
+                    <TouchableOpacity key={f.id} style={styles.barCol} onPress={() => navigation.navigate('FastDetail', { record: f })} activeOpacity={0.85}>
+                      <Text style={[styles.barTopLabel, { color: colors.text }]}>{label}</Text>
+                      <View style={styles.barWrap}>
+                        <View style={[styles.barFill, { height: h, backgroundColor: COLORS.primary }]} />
+                      </View>
+                      <Text style={[styles.barBottomLabel, { color: colors.textSecondary }]}>{date}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
           {fasts.length === 0 ? (
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{i18n.t('history.noHistory')}</Text>
           ) : (
-            fasts.slice(0, 20).map((fast) => (
-              <TouchableOpacity
+            fasts.slice(0, 20).map((fast, idx) => (
+              <Animated.View
                 key={fast.id}
-                style={[styles.fastRow, { borderBottomColor: colors.border }]}
-                onPress={() => navigation.navigate('FastDetail', { record: fast })}
+                style={{
+                  opacity: listAnim,
+                  transform: [{ translateY: listAnim.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }],
+                }}
               >
-                <View>
-                  <Text style={[styles.fastTitle, { color: colors.text }]}>{fast.name ?? `${fast.targetHours}h Fast`}</Text>
-                  <Text style={[styles.fastSub, { color: colors.textSecondary }]}>
-                    {new Date(fast.startTime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                  </Text>
-                </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={[styles.fastValue, { color: fast.completed ? COLORS.success : COLORS.warning }]}>
-                    {fmtHours(fast.actualHours)}
-                  </Text>
-                  <Text style={[styles.fastSub, { color: colors.textSecondary }]}>
-                    {fast.completed ? `${i18n.t('history.targetMet')} ✓` : i18n.t('history.targetNotMet')}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.fastRow, { borderBottomColor: colors.border }]}
+                  onPress={() => navigation.navigate('FastDetail', { record: fast })}
+                  onPressIn={() => Animated.spring(itemScales[idx], { toValue: 0.96, useNativeDriver: true }).start()}
+                  onPressOut={() => Animated.spring(itemScales[idx], { toValue: 1, useNativeDriver: true }).start()}
+                >
+                  <Animated.View style={{ transform: [{ scale: itemScales[idx] }] , flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View>
+                      <Text style={[styles.fastTitle, { color: colors.text }]}>{fast.name ?? `${fast.targetHours}h Fast`}</Text>
+                      <Text style={[styles.fastSub, { color: colors.textSecondary }]}>
+                        {new Date(fast.startTime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={[styles.fastValue, { color: fast.completed ? COLORS.success : COLORS.warning }]}>
+                        {fmtHours(fast.actualHours)}
+                      </Text>
+                      <Text style={[styles.fastSub, { color: colors.textSecondary }]}>
+                        {fast.completed ? `${i18n.t('history.targetMet')} ✓` : i18n.t('history.targetNotMet')}
+                      </Text>
+                    </View>
+                  </Animated.View>
+                </TouchableOpacity>
+              </Animated.View>
             ))
           )}
         </View>
       </ScrollView>
+    </View>
+  );
+}
+
+function PerformanceGraph({ fasts, accent, textColor }: { fasts: FastRecord[]; accent: string; textColor: string }) {
+  const recent = fasts.slice(-12);
+  if (!recent.length) {
+    return <Text style={{ color: textColor, paddingVertical: 12 }}>{'No data yet'}</Text>;
+  }
+
+  const values = recent.map((f) => f.actualHours);
+  const maxV = Math.max(...values);
+  const minV = Math.min(...values);
+  const range = Math.max(0.1, maxV - minV);
+  const width = 300;
+  const height = 80;
+  const padX = 12;
+  const step = (width - padX * 2) / Math.max(1, values.length - 1);
+
+  const points = values.map((v, i) => {
+    const x = padX + i * step;
+    const y = height - ((v - minV) / range) * (height - 12) - 6;
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <View style={{ paddingVertical: 8 }}>
+      <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
+        {/* baseline grid */}
+        <Line x1={padX} y1={height - 6} x2={width - padX} y2={height - 6} stroke={textColor} strokeOpacity={0.06} strokeWidth={1} />
+        {/* polyline */}
+        <Polyline points={points} fill="none" stroke={accent} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
+        {/* dots */}
+        {values.map((v, i) => {
+          const x = padX + i * step;
+          const y = height - ((v - minV) / range) * (height - 12) - 6;
+          return <Circle key={i} cx={x} cy={y} r={2.8} fill={accent} />;
+        })}
+      </Svg>
     </View>
   );
 }
@@ -216,4 +309,13 @@ const styles = StyleSheet.create({
   fastSub:   { fontSize: FONT_SIZE.sm, marginTop: 4 },
   fastValue: { fontSize: FONT_SIZE.lg, fontWeight: '800' },
   emptyText: { fontSize: FONT_SIZE.md, textAlign: 'center', paddingVertical: SPACING.lg, lineHeight: 24 },
+  sectionSub: { fontSize: FONT_SIZE.sm, marginBottom: 6 },
+
+  /* Bar chart */
+  barChartRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  barCol: { width: 52, alignItems: 'center' },
+  barWrap: { width: 36, height: 120, borderRadius: 8, backgroundColor: 'transparent', justifyContent: 'flex-end', overflow: 'hidden' },
+  barFill: { width: 36, borderRadius: 8 },
+  barTopLabel: { fontSize: 12, fontWeight: '700', marginBottom: 6 },
+  barBottomLabel: { fontSize: 11, marginTop: 8 },
 });

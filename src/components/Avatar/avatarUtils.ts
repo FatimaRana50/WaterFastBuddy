@@ -315,7 +315,25 @@ const AVATAR_IMAGES: Partial<Record<Gender, Partial<Record<MoodState, AvatarImag
  * Falls back to neutral if anything is off.
  */
 export function avatarImageFor(gender: Gender, mood: MoodState): AvatarImage {
-  return AVATAR_IMAGES[gender]?.[mood] ?? AVATAR_IMAGES[gender]?.neutral ?? AVATAR_IMAGES.female.neutral;
+  // Prefer exact match
+  const bucket = AVATAR_IMAGES[gender] ?? AVATAR_IMAGES.female ?? Object.values(AVATAR_IMAGES)[0] ?? {};
+  const byMood = (bucket as Partial<Record<MoodState, AvatarImage>>)[mood] ?? (bucket as any).neutral;
+  if (typeof byMood === 'number') return byMood as AvatarImage;
+
+  // Try female neutral as a known-good fallback
+  const femaleNeutral = AVATAR_IMAGES.female?.neutral;
+  if (typeof femaleNeutral === 'number') return femaleNeutral;
+
+  // Pick any available image from the map
+  for (const g of Object.keys(AVATAR_IMAGES) as Gender[]) {
+    const b = AVATAR_IMAGES[g];
+    if (!b) continue;
+    const anyImg = b.neutral ?? Object.values(b)[0];
+    if (typeof anyImg === 'number') return anyImg as AvatarImage;
+  }
+
+  // Last resort: return 0 to satisfy the type system (shouldn't happen in normal builds)
+  return 0 as AvatarImage;
 }
 
 /**

@@ -3,8 +3,8 @@
 //  • Hero card with gradient + status chip
 //  • Stat tiles (duration, target, status) in a 3-up grid
 //  • Notes card with leading quote mark
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -28,6 +28,14 @@ export default function FastDetailScreen({ route }: any) {
   const dateLine = `${start.toLocaleDateString(i18n.locale as string, { month: 'short', day: 'numeric' })} → ${end.toLocaleDateString(i18n.locale as string, { month: 'short', day: 'numeric' })}`;
   const statusColor = record.completed ? COLORS.success : COLORS.warning ?? '#F59E0B';
 
+  // Entrance animations
+  const heroAnim = useRef(new Animated.Value(0)).current;
+  const notesAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(heroAnim, { toValue: 1, duration: 480, useNativeDriver: true }).start();
+    Animated.timing(notesAnim, { toValue: 1, duration: 380, delay: 140, useNativeDriver: true }).start();
+  }, []);
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -35,22 +43,24 @@ export default function FastDetailScreen({ route }: any) {
       showsVerticalScrollIndicator={false}
     >
       {/* Hero gradient card */}
-      <LinearGradient
-        colors={['#0A1628', COLORS.primaryDark ?? '#0D3AA8', COLORS.primary]}
-        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-        style={styles.hero}
-      >
-        <Text style={styles.heroKicker}>{i18n.t('history.fastDetails')}</Text>
-        <Text style={styles.heroTitle}>{record.actualHours.toFixed(1)}<Text style={styles.heroUnit}>h</Text></Text>
-        <Text style={styles.heroSub}>{dateLine}</Text>
+      <Animated.View style={{ opacity: heroAnim, transform: [{ translateY: heroAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }}>
+        <LinearGradient
+          colors={['#0A1628', COLORS.primaryDark ?? '#0D3AA8', COLORS.primary]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
+          <Text style={styles.heroKicker}>{i18n.t('history.fastDetails')}</Text>
+          <Text style={styles.heroTitle}>{record.actualHours.toFixed(1)}<Text style={styles.heroUnit}>h</Text></Text>
+          <Text style={styles.heroSub}>{dateLine}</Text>
 
-        <View style={styles.statusChip}>
-          <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-          <Text style={styles.statusText}>
-            {record.completed ? i18n.t('history.targetMet') : i18n.t('history.targetNotMet')}
-          </Text>
-        </View>
-      </LinearGradient>
+          <View style={styles.statusChip}>
+            <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+            <Text style={styles.statusText}>
+              {record.completed ? i18n.t('history.targetMet') : i18n.t('history.targetNotMet')}
+            </Text>
+          </View>
+        </LinearGradient>
+      </Animated.View>
 
       {/* Stat tiles */}
       <View style={styles.tileRow}>
@@ -60,13 +70,15 @@ export default function FastDetailScreen({ route }: any) {
       </View>
 
       {/* Notes card */}
-      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Text style={[styles.cardKicker, { color: colors.textSecondary }]}>{i18n.t('history.notes')}</Text>
-        <Text style={[styles.quoteMark, { color: COLORS.primary + '60' }]}>“</Text>
-        <Text style={[styles.notesText, { color: colors.text }]}>
-          {record.notes ?? i18n.t('history.noNotes')}
-        </Text>
-      </View>
+      <Animated.View style={{ opacity: notesAnim, transform: [{ translateY: notesAnim.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] }}>
+        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.cardKicker, { color: colors.textSecondary }]}>{i18n.t('history.notes')}</Text>
+          <Text style={[styles.quoteMark, { color: COLORS.primary + '60' }]}>“</Text>
+          <Text style={[styles.notesText, { color: colors.text }]}>
+            {record.notes ?? i18n.t('history.noNotes')}
+          </Text>
+        </View>
+      </Animated.View>
     </ScrollView>
   );
 }

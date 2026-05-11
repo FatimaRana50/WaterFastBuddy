@@ -1,11 +1,12 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated,
   Modal, TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../store/ThemeContext';
 import { useUser } from '../../store/UserContext';
@@ -57,16 +58,31 @@ export default function TrackerScreen() {
 
   useFocusEffect(useCallback(() => { loadData(); }, []));
 
+  const [streak, setStreak] = useState(0);
+  const [showConfetti, setShowConfetti] = useState(false);
+
   const addGlass = async () => {
     const next = Math.min(glasses + 1, MAX_GLASSES);
     setGlasses(next);
     await AsyncStorage.setItem(WATER_KEY_PREFIX + todayKey(), next.toString());
+    Haptics.selectionAsync();
+    computeStreak();
   };
 
   const removeGlass = async () => {
     const next = Math.max(glasses - 1, 0);
     setGlasses(next);
     await AsyncStorage.setItem(WATER_KEY_PREFIX + todayKey(), next.toString());
+    Haptics.selectionAsync();
+    computeStreak();
+  };
+
+  const addPreset = async (qty: number) => {
+    const next = Math.min(glasses + qty, MAX_GLASSES);
+    setGlasses(next);
+    await AsyncStorage.setItem(WATER_KEY_PREFIX + todayKey(), next.toString());
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    computeStreak();
   };
 
   const openWeightModal = () => {
@@ -97,6 +113,40 @@ export default function TrackerScreen() {
   const gridCount = Math.min(MAX_GLASSES, Math.max(GOAL_GLASSES, glasses < MAX_GLASSES ? glasses + 1 : MAX_GLASSES));
   const last7     = weightLog.slice(-7);
 
+  // compute hydration streak: consecutive days (including today) where glasses >= GOAL_GLASSES
+  const computeStreak = async () => {
+    try {
+      let s = 0;
+      for (let i = 0; i < 30; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        const raw = await AsyncStorage.getItem(WATER_KEY_PREFIX + key);
+        const count = raw ? parseInt(raw, 10) : 0;
+        if (count >= GOAL_GLASSES) s++; else break;
+      }
+      setStreak(s);
+      if (s > 0 && [3,7,14,30].includes(s)) {
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 2200);
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  useEffect(() => { computeStreak(); }, []);
+
+  // Entrance animations
+  const waterAnim = useRef(new Animated.Value(0)).current;
+  const weightAnim = useRef(new Animated.Value(0)).current;
+  const iconScales = useRef(Array.from({ length: MAX_GLASSES }, () => new Animated.Value(1))).current;
+
+  useEffect(() => {
+    Animated.timing(waterAnim, { toValue: 1, duration: 450, useNativeDriver: true }).start();
+    Animated.timing(weightAnim, { toValue: 1, duration: 450, delay: 120, useNativeDriver: true }).start();
+  }, []);
+
   if (!profile) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
@@ -122,9 +172,9 @@ export default function TrackerScreen() {
         </View>
 
         {/* ── Water tracker ─────────────────────────────────────────── */}
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.iconBadge, { backgroundColor: COLORS.accent + '22' }]}>
+        <Animated.View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, opacity: waterAnim, transform: [{ translateY: waterAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] }]}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.iconBadge, { backgroundColor: COLORS.accent + '22' }]}>
               <Ionicons name="water" size={18} color={COLORS.accent} />
             </View>
             <View style={{ flex: 1, marginLeft: SPACING.sm }}>
@@ -157,22 +207,57 @@ export default function TrackerScreen() {
             />
           </View>
 
-          {/* Dynamic glasses grid */}
-          <View style={styles.glassGrid}>
-            {Array.from({ length: gridCount }).map((_, i) => (
-              <TouchableOpacity key={i} onPress={i < glasses ? removeGlass : addGlass} activeOpacity={0.7}>
-                <View style={[
-                  styles.glassIcon,
-                  i < glasses && styles.glassIconFull,
-                  i === GOAL_GLASSES - 1 && styles.glassIconGoal,
-                ]}>
-                  <Ionicons
-                    name={i < glasses ? 'water' : 'water-outline'}
-                    size={22}
-                    color={i < glasses ? COLORS.accent : (isDark ? 'rgba(255,255,255,0.2)' : '#C5D8EE')}
-                  />
-                </View>
-              </TouchableOpacity>
+          {/* Quick-add presets + streak */}
+          <View style={styles.quickAddRow}>
+            <TouchableOpacity style={[styles.presetBtn, { borderColor: colors.border }]} onPress={() => addPreset(1)} activeOpacity={0.85}>
+              <Text style={[styles.presetLabel, { color: colors.text }]}>250ml</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.presetBtn, { borderColor: colors.border }]} onPress={() => addPreset(2)} activeOpacity={0.85}>
+              <Text style={[styles.presetLabel, { color: colors.text }]}>500ml</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.presetBtn, { borderColor: colors.border }]} onPress={() => addPreset(3)} activeOpacity={0.85}>
+              <Text style={[styles.presetLabel, { color: colors.text }]}>750ml</Text>
+            </TouchableOpacity>
+            <View style={{ flex: 1 }} />
+            <View style={styles.streakWrap}>
+              <Text style={[styles.streakLabel, { color: colors.textSecondary }]}>Streak</Text>
+              <Text style={[styles.streakValue, { color: COLORS.primary }]}>{streak}d</Text>
+            </View>
+          </View>
+
+          {/* Grouped glasses grid (rows of 4) */}
+          <View style={styles.glassGridGrouped}>
+            {Array.from({ length: gridCount }).reduce<Array<number[]>>((rows, _, idx) => {
+              const rowIndex = Math.floor(idx / 4);
+              rows[rowIndex] = rows[rowIndex] || [];
+              rows[rowIndex].push(idx);
+              return rows;
+            }, []).map((row, rIdx) => (
+              <View key={rIdx} style={styles.glassRow}>
+                {row.map((i) => (
+                  <TouchableOpacity
+                    key={i}
+                    onPress={i < glasses ? removeGlass : addGlass}
+                    activeOpacity={0.8}
+                    onPressIn={() => { Animated.spring(iconScales[i], { toValue: 0.88, useNativeDriver: true }).start(); Haptics.selectionAsync(); }}
+                    onPressOut={() => Animated.spring(iconScales[i], { toValue: 1, useNativeDriver: true }).start()}
+                  >
+                    <Animated.View style={{ transform: [{ scale: iconScales[i] }] }}>
+                      <View style={[
+                        styles.glassIcon,
+                        i < glasses && styles.glassIconFull,
+                        i === GOAL_GLASSES - 1 && styles.glassIconGoal,
+                      ]}>
+                        <Ionicons
+                          name={i < glasses ? 'water' : 'water-outline'}
+                          size={22}
+                          color={i < glasses ? COLORS.accent : (isDark ? 'rgba(255,255,255,0.2)' : '#C5D8EE')}
+                        />
+                      </View>
+                    </Animated.View>
+                  </TouchableOpacity>
+                ))}
+              </View>
             ))}
           </View>
 
@@ -196,12 +281,13 @@ export default function TrackerScreen() {
               </LinearGradient>
             </TouchableOpacity>
           </View>
-        </View>
+
+        </Animated.View>
 
         {/* ── Weight tracker ─────────────────────────────────────────── */}
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.cardHeader}>
-            <View style={[styles.iconBadge, { backgroundColor: COLORS.primary + '22' }]}>
+        <Animated.View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, opacity: weightAnim, transform: [{ translateY: weightAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] }]}>
+            <View style={styles.cardHeader}>
+              <View style={[styles.iconBadge, { backgroundColor: COLORS.primary + '22' }]}>
               <Ionicons name="body" size={18} color={COLORS.primary} />
             </View>
             <View style={{ flex: 1, marginLeft: SPACING.sm }}>
@@ -274,7 +360,7 @@ export default function TrackerScreen() {
               })()}
             </View>
           )}
-        </View>
+        </Animated.View>
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -487,4 +573,15 @@ const styles = StyleSheet.create({
     paddingVertical: 14, gap: 8,
   },
   modalBtnSaveText: { color: '#fff', fontSize: FONT_SIZE.md, fontWeight: '800' },
+  quickAddRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, marginBottom: SPACING.sm },
+  presetBtn: {
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1, alignItems: 'center', justifyContent: 'center', minWidth: 64,
+  },
+  presetLabel: { fontSize: FONT_SIZE.sm, fontWeight: '700' },
+  streakWrap: { alignItems: 'flex-end' },
+  streakLabel: { fontSize: FONT_SIZE.xs, fontWeight: '700' },
+  streakValue: { fontSize: FONT_SIZE.md, fontWeight: '900' },
+  glassGridGrouped: { marginBottom: SPACING.md },
+  glassRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginBottom: 8 },
 });
