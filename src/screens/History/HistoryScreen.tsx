@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
-import Svg, { Polyline, Circle, Line } from 'react-native-svg';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Easing } from 'react-native';
+import Svg, { Polyline, Polygon, Circle, Line, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../store/ThemeContext';
@@ -14,7 +14,7 @@ import Kicker from '../../components/Kicker';
 import StatTile from '../../components/StatTile';
 import i18n from '../../i18n';
 
-// Format hours into a human-readable label
+// ---------- helpers (unchanged logic) ----------
 function fmtHours(h: number): string {
   if (h < 1)  return `${Math.round(h * 60)}m`;
   if (h < 24) return `${Number(h.toFixed(1))}h`;
@@ -23,7 +23,6 @@ function fmtHours(h: number): string {
   return rem > 0 ? `${days}d ${rem}h` : `${days}d`;
 }
 
-// Count consecutive days (backwards from today) that had at least one fast
 function calcStreak(fasts: FastRecord[]): number {
   if (!fasts.length) return 0;
   const dates = new Set(fasts.map((f) => f.startTime.slice(0, 10)));
@@ -33,36 +32,90 @@ function calcStreak(fasts: FastRecord[]): number {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
     const key = d.toISOString().slice(0, 10);
-    if (dates.has(key)) {
-      streak++;
-    } else if (i > 0) {
-      break; // gap found — streak ends
-    }
+    if (dates.has(key)) streak++;
+    else if (i > 0) break;
   }
   return streak;
 }
 
-// Build a calendar grid for the current month
 function buildCalendar(fasts: FastRecord[]) {
-  const fastDates = new Set(fasts.map((f) => f.startTime.slice(0, 10)));
+  const fastDates = new Map<string, number>();
+  fasts.forEach((f) => {
+    const k = f.startTime.slice(0, 10);
+    fastDates.set(k, (fastDates.get(k) ?? 0) + f.actualHours);
+  });
   const today     = new Date();
   const year      = today.getFullYear();
   const month     = today.getMonth();
-  const firstDow  = new Date(year, month, 1).getDay(); // 0=Sun
+  const firstDow  = new Date(year, month, 1).getDay();
   const daysInMo  = new Date(year, month + 1, 0).getDate();
 
-  const cells: Array<{ day: number | null; isFast: boolean; isToday: boolean }> = [];
-  for (let i = 0; i < firstDow; i++) cells.push({ day: null, isFast: false, isToday: false });
+  const cells: Array<{ day: number | null; isFast: boolean; isToday: boolean; intensity: number }> = [];
+  for (let i = 0; i < firstDow; i++) cells.push({ day: null, isFast: false, isToday: false, intensity: 0 });
   for (let d = 1; d <= daysInMo; d++) {
     const pad  = (n: number) => String(n).padStart(2, '0');
     const key  = `${year}-${pad(month + 1)}-${pad(d)}`;
-    cells.push({ day: d, isFast: fastDates.has(key), isToday: d === today.getDate() });
+    const hrs  = fastDates.get(key) ?? 0;
+    // intensity 0..4 (GitHub-style heatmap)
+    let intensity = 0;
+    if (hrs > 0)  intensity = 1;
+    if (hrs >= 12) intensity = 2;
+    if (hrs >= 18) intensity = 3;
+    if (hrs >= 24) intensity = 4;
+    cells.push({ day: d, isFast: hrs > 0, isToday: d === today.getDate(), intensity });
   }
   return cells;
 }
 
 const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+// ---------- ambient floating orb ----------
+function FloatingOrb({ size, color, top, left, right, bottom, delay = 0, duration = 6000 }: any) {
+  const t = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(t, { toValue: 1, duration, delay, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(t, { toValue: 0, duration, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+  const translateY = t.interpolate({ inputRange: [0, 1], outputRange: [0, -22] });
+  const scale      = t.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] });
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute', width: size, height: size, borderRadius: size / 2,
+        backgroundColor: color, top, left, right, bottom, opacity: 0.55,
+        transform: [{ translateY }, { scale }],
+      }}
+    />
+  );
+}
+
+// ---------- live pulse dot ----------
+function LivePulse({ color = COLORS.primary }: { color?: string }) {
+  const a = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(a, { toValue: 1, duration: 1200, useNativeDriver: true }),
+        Animated.timing(a, { toValue: 0, duration: 1200, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+  const scale = a.interpolate({ inputRange: [0, 1], outputRange: [1, 2.4] });
+  const opacity = a.interpolate({ inputRange: [0, 1], outputRange: [0.55, 0] });
+  return (
+    <View style={{ width: 14, height: 14, alignItems: 'center', justifyContent: 'center' }}>
+      <Animated.View style={{ position: 'absolute', width: 14, height: 14, borderRadius: 7, backgroundColor: color, opacity, transform: [{ scale }] }} />
+      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />
+    </View>
+  );
+}
+
+// ---------- main screen ----------
 export default function HistoryScreen() {
   const { colors, theme } = useTheme();
   const navigation    = useNavigation<any>();
@@ -87,83 +140,144 @@ export default function HistoryScreen() {
   const today = new Date();
   const monthLabel = `${MONTH_LABELS[today.getMonth()]} ${today.getFullYear()}`;
 
-  // Entrance animation for list
-  const listAnim = useRef(new Animated.Value(0)).current;
+  // Entrance animations
+  const listAnim   = useRef(new Animated.Value(0)).current;
+  const heroAnim   = useRef(new Animated.Value(0)).current;
   const itemScales = useRef(Array.from({ length: 20 }, () => new Animated.Value(1))).current;
+  const cellScales = useRef(Array.from({ length: 42 }, () => new Animated.Value(1))).current;
+  const barGrowth  = useRef(new Animated.Value(0)).current;
+  const scrollY    = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
-    Animated.timing(listAnim, { toValue: 1, duration: 420, useNativeDriver: true }).start();
+    Animated.parallel([
+      Animated.timing(heroAnim, { toValue: 1, duration: 600, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(listAnim, { toValue: 1, duration: 520, useNativeDriver: true }),
+      Animated.timing(barGrowth, { toValue: 1, duration: 900, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+    ]).start();
   }, []);
 
-  // Top-5 performance bars
   const top5 = useMemo(() => {
     return [...fasts].sort((a, b) => b.actualHours - a.actualHours).slice(0, 5);
   }, [fasts]);
   const topMax = Math.max(1, ...(top5.map(f => f.actualHours)));
 
+  const heroTranslate = heroAnim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] });
+  const heroParallax  = scrollY.interpolate({ inputRange: [-100, 0, 200], outputRange: [20, 0, -30], extrapolate: 'clamp' });
+
+  // Heatmap intensity → color
+  const heatColor = (lvl: number) => {
+    if (lvl === 0) return colors.cardAlt;
+    const opacity = 0.25 + lvl * 0.18; // 0.43..0.97
+    return `rgba(42,132,226,${opacity})`;
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Starfield density={0.08} />
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Editorial hero */}
-        <View style={styles.heroBlock}>
+      {/* Cinematic ambient orbs */}
+      <FloatingOrb size={320} color="rgba(97,168,255,0.22)" top={-120} right={-100} duration={7000} />
+      <FloatingOrb size={260} color="rgba(147,230,255,0.18)" top={220} left={-110} delay={400} duration={8000} />
+      <FloatingOrb size={300} color="rgba(168,120,255,0.14)" bottom={-140} right={-80} delay={800} duration={9000} />
+
+      <Animated.ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+      >
+        {/* ===== Editorial hero ===== */}
+        <Animated.View style={[styles.heroBlock, { opacity: heroAnim, transform: [{ translateY: heroTranslate }, { translateY: heroParallax }] }]}>
+          {/* ambient blurred glow behind headline */}
+          <LinearGradient
+            colors={['rgba(97,168,255,0.35)', 'rgba(147,230,255,0.08)', 'transparent']}
+            start={{ x: 0.2, y: 0 }} end={{ x: 1, y: 1 }}
+            style={styles.heroGlow}
+          />
           <Kicker>History</Kicker>
           <View style={{ marginTop: 10 }}>
             <Headline line1="Every hour" line2="counts." size={34} />
           </View>
-          <Text style={[styles.heroLead, { color: colors.textSecondary }]}>
-            {fasts.length > 0
-              ? `${stats.total} fasts · ${stats.totalHours} logged this year.`
-              : i18n.t('history.noHistory')}
-          </Text>
-        </View>
+          <View style={styles.heroLeadRow}>
+            <LivePulse color={COLORS.primary} />
+            <Text style={[styles.heroLead, { color: colors.textSecondary }]}>
+              {fasts.length > 0
+                ? `${stats.total} fasts · ${stats.totalHours} logged this year.`
+                : i18n.t('history.noHistory')}
+            </Text>
+          </View>
+          {fasts.length > 0 && (
+            <Text style={[styles.heroMicro, { color: colors.textSecondary }]}>
+              Consistency builds transformation — keep your streak alive.
+            </Text>
+          )}
+        </Animated.View>
 
-        {/* Stat tile row */}
+        {/* ===== Stat tiles ===== */}
         <View style={styles.statRow}>
           <StatTile icon="flame-outline"      value={`${stats.streak}d`} label="Streak"    style={{ flex: 1 }} />
           <StatTile icon="trophy-outline"     value={stats.longest}      label="Longest"   accent={COLORS.accent}  style={{ flex: 1 }} />
           <StatTile icon="checkmark-outline"  value={stats.total}        label="Completed" accent={COLORS.success} style={{ flex: 1 }} />
         </View>
 
-        {/* Performance graph: recent fast durations */}
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Performance</Text>
+        {/* ===== Performance graph ===== */}
+        <View style={[styles.card, styles.glassCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <LinearGradient
+            colors={['rgba(97,168,255,0.08)', 'transparent']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill as any}
+          />
+          <View style={styles.sectionTitleRow}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Performance</Text>
+            <View style={[styles.tagPill, { borderColor: colors.border }]}>
+              <Text style={[styles.tagPillText, { color: colors.textSecondary }]}>Last 12</Text>
+            </View>
+          </View>
           <PerformanceGraph fasts={fasts} accent={COLORS.primary} textColor={colors.textSecondary} />
         </View>
 
-        {/* Calendar */}
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>{monthLabel}</Text>
-          {/* Day-of-week header */}
+        {/* ===== Calendar (heatmap) ===== */}
+        <View style={[styles.card, styles.glassCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.sectionTitleRow}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{monthLabel}</Text>
+            <View style={styles.legendRow}>
+              {[0,1,2,3,4].map(l => (
+                <View key={l} style={[styles.legendDot, { backgroundColor: heatColor(l), borderColor: colors.border }]} />
+              ))}
+            </View>
+          </View>
+
           <View style={styles.calendarHeader}>
             {['S','M','T','W','T','F','S'].map((d, i) => (
               <Text key={i} style={[styles.calDow, { color: colors.textSecondary }]}>{d}</Text>
             ))}
           </View>
           <View style={styles.calendarGrid}>
-            {calendarCells.map((cell, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.calendarCell,
-                  { backgroundColor: colors.cardAlt, borderColor: colors.border },
-                  cell.isFast  && { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-                  cell.isToday && !cell.isFast && { borderColor: COLORS.primary, borderWidth: 1.5 },
-                  !cell.day    && { backgroundColor: 'transparent', borderColor: 'transparent' },
-                ]}
-              >
-                {cell.day != null && (
-                  <Text style={[styles.calDayNum, { color: cell.isFast ? '#fff' : colors.text }]}>
-                    {cell.day}
-                  </Text>
-                )}
-              </View>
-            ))}
+            {calendarCells.map((cell, i) => {
+              const bg = cell.isFast ? heatColor(cell.intensity) : colors.cardAlt;
+              return (
+                <Animated.View
+                  key={i}
+                  style={[
+                    styles.calendarCell,
+                    { backgroundColor: bg, borderColor: colors.border, transform: [{ scale: cellScales[i] ?? 1 }] },
+                    cell.isToday && { borderColor: COLORS.primary, borderWidth: 1.5 },
+                    !cell.day    && { backgroundColor: 'transparent', borderColor: 'transparent' },
+                  ]}
+                >
+                  {cell.day != null && (
+                    <Text style={[styles.calDayNum, { color: cell.intensity >= 3 ? '#fff' : colors.text }]}>
+                      {cell.day}
+                    </Text>
+                  )}
+                </Animated.View>
+              );
+            })}
           </View>
         </View>
 
-        {/* Fast list */}
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        {/* ===== Fast list card ===== */}
+        <View style={[styles.card, styles.glassCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('history.listView')}</Text>
 
           {/* Top-5 bar graph */}
@@ -172,14 +286,24 @@ export default function HistoryScreen() {
               <Text style={[styles.sectionSub, { color: colors.textSecondary, marginBottom: 8 }]}>Top 5 longest fasts</Text>
               <View style={styles.barChartRow}>
                 {top5.map((f, i) => {
-                  const h = Math.round((f.actualHours / topMax) * 120);
+                  const target = Math.round((f.actualHours / topMax) * 120);
+                  const animH = barGrowth.interpolate({ inputRange: [0, 1], outputRange: [0, target] });
                   const label = fmtHours(f.actualHours);
                   const date = new Date(f.startTime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
                   return (
                     <TouchableOpacity key={f.id} style={styles.barCol} onPress={() => navigation.navigate('FastDetail', { record: f })} activeOpacity={0.85}>
                       <Text style={[styles.barTopLabel, { color: colors.text }]}>{label}</Text>
                       <View style={styles.barWrap}>
-                        <View style={[styles.barFill, { height: h, backgroundColor: COLORS.primary }]} />
+                        <Animated.View style={{ width: 36, height: animH, borderRadius: 10, overflow: 'hidden' }}>
+                          <LinearGradient
+                            colors={[COLORS.primary, COLORS.accent ?? COLORS.primary]}
+                            start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+                            style={{ flex: 1, borderRadius: 10 }}
+                          />
+                        </Animated.View>
+                      </View>
+                      <View style={styles.rankPill}>
+                        <Text style={styles.rankPillText}>#{i + 1}</Text>
                       </View>
                       <Text style={[styles.barBottomLabel, { color: colors.textSecondary }]}>{date}</Text>
                     </TouchableOpacity>
@@ -188,51 +312,71 @@ export default function HistoryScreen() {
               </View>
             </View>
           )}
+
           {fasts.length === 0 ? (
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{i18n.t('history.noHistory')}</Text>
           ) : (
-            fasts.slice(0, 20).map((fast, idx) => (
-              <Animated.View
-                key={fast.id}
-                style={{
-                  opacity: listAnim,
-                  transform: [{ translateY: listAnim.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }],
-                }}
-              >
-                <TouchableOpacity
-                  style={[styles.fastRow, { borderBottomColor: colors.border }]}
-                  onPress={() => navigation.navigate('FastDetail', { record: fast })}
-                  onPressIn={() => Animated.spring(itemScales[idx], { toValue: 0.96, useNativeDriver: true }).start()}
-                  onPressOut={() => Animated.spring(itemScales[idx], { toValue: 1, useNativeDriver: true }).start()}
+            fasts.slice(0, 20).map((fast, idx) => {
+              const stagger = listAnim.interpolate({ inputRange: [0, 1], outputRange: [12 + idx * 2, 0] });
+              return (
+                <Animated.View
+                  key={fast.id}
+                  style={{
+                    opacity: listAnim,
+                    transform: [{ translateY: stagger }],
+                    marginBottom: 10,
+                  }}
                 >
-                  <Animated.View style={{ transform: [{ scale: itemScales[idx] }] , flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <View>
-                      <Text style={[styles.fastTitle, { color: colors.text }]}>{fast.name ?? `${fast.targetHours}h Fast`}</Text>
-                      <Text style={[styles.fastSub, { color: colors.textSecondary }]}>
-                        {new Date(fast.startTime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                      </Text>
-                    </View>
-                    <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={[styles.fastValue, { color: fast.completed ? COLORS.success : COLORS.warning }]}>
-                        {fmtHours(fast.actualHours)}
-                      </Text>
-                      <Text style={[styles.fastSub, { color: colors.textSecondary }]}>
-                        {fast.completed ? `${i18n.t('history.targetMet')} ✓` : i18n.t('history.targetNotMet')}
-                      </Text>
-                    </View>
-                  </Animated.View>
-                </TouchableOpacity>
-              </Animated.View>
-            ))
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => navigation.navigate('FastDetail', { record: fast })}
+                    onPressIn={() => Animated.spring(itemScales[idx], { toValue: 0.97, useNativeDriver: true }).start()}
+                    onPressOut={() => Animated.spring(itemScales[idx], { toValue: 1, useNativeDriver: true }).start()}
+                  >
+                    <Animated.View
+                      style={[
+                        styles.fastCard,
+                        { backgroundColor: colors.cardAlt, borderColor: colors.border, transform: [{ scale: itemScales[idx] }] },
+                      ]}
+                    >
+                      <View style={[styles.fastAccent, { backgroundColor: fast.completed ? COLORS.success : COLORS.warning }]} />
+                      <View style={{ flex: 1, paddingLeft: 14 }}>
+                        <Text style={[styles.fastTitle, { color: colors.text }]}>{fast.name ?? `${fast.targetHours}h Fast`}</Text>
+                        <Text style={[styles.fastSub, { color: colors.textSecondary }]}>
+                          {new Date(fast.startTime).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end', marginRight: 8 }}>
+                        <View style={[styles.durationBadge, { backgroundColor: (fast.completed ? COLORS.success : COLORS.warning) + '22' }]}>
+                          <Text style={[styles.fastValue, { color: fast.completed ? COLORS.success : COLORS.warning }]}>
+                            {fmtHours(fast.actualHours)}
+                          </Text>
+                        </View>
+                        <Text style={[styles.fastSub, { color: colors.textSecondary, marginTop: 4 }]}>
+                          {fast.completed ? `${i18n.t('history.targetMet')} ✓` : i18n.t('history.targetNotMet')}
+                        </Text>
+                      </View>
+                      <Text style={[styles.chev, { color: colors.textSecondary }]}>›</Text>
+                    </Animated.View>
+                  </TouchableOpacity>
+                </Animated.View>
+              );
+            })
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }
 
+// ---------- premium performance graph ----------
 function PerformanceGraph({ fasts, accent, textColor }: { fasts: FastRecord[]; accent: string; textColor: string }) {
   const recent = fasts.slice(-12);
+  const reveal = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(reveal, { toValue: 1, duration: 900, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [recent.length]);
+
   if (!recent.length) {
     return <Text style={{ color: textColor, paddingVertical: 12 }}>{'No data yet'}</Text>;
   }
@@ -242,80 +386,136 @@ function PerformanceGraph({ fasts, accent, textColor }: { fasts: FastRecord[]; a
   const minV = Math.min(...values);
   const range = Math.max(0.1, maxV - minV);
   const width = 300;
-  const height = 80;
-  const padX = 12;
+  const height = 110;
+  const padX = 14;
   const step = (width - padX * 2) / Math.max(1, values.length - 1);
 
-  const points = values.map((v, i) => {
+  const pts = values.map((v, i) => {
     const x = padX + i * step;
-    const y = height - ((v - minV) / range) * (height - 12) - 6;
-    return `${x},${y}`;
-  }).join(' ');
+    const y = height - ((v - minV) / range) * (height - 20) - 10;
+    return { x, y, v };
+  });
+
+  // smooth curve via quadratic-ish polyline (cheap smoothing)
+  const linePoints = pts.map(p => `${p.x},${p.y}`).join(' ');
+  const areaPoints = `${padX},${height - 4} ${linePoints} ${width - padX},${height - 4}`;
+
+  const maxIdx = values.indexOf(maxV);
+  const minIdx = values.indexOf(minV);
 
   return (
-    <View style={{ paddingVertical: 8 }}>
+    <Animated.View style={{ paddingVertical: 8, opacity: reveal, transform: [{ translateY: reveal.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }}>
       <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
-        {/* baseline grid */}
-        <Line x1={padX} y1={height - 6} x2={width - padX} y2={height - 6} stroke={textColor} strokeOpacity={0.06} strokeWidth={1} />
-        {/* polyline */}
-        <Polyline points={points} fill="none" stroke={accent} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
-        {/* dots */}
-        {values.map((v, i) => {
-          const x = padX + i * step;
-          const y = height - ((v - minV) / range) * (height - 12) - 6;
-          return <Circle key={i} cx={x} cy={y} r={2.8} fill={accent} />;
-        })}
+        <Defs>
+          <SvgLinearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={accent} stopOpacity="0.45" />
+            <Stop offset="1" stopColor={accent} stopOpacity="0" />
+          </SvgLinearGradient>
+        </Defs>
+
+        {/* horizontal grid lines */}
+        {[0.25, 0.5, 0.75].map((t, i) => (
+          <Line key={i} x1={padX} y1={height * t} x2={width - padX} y2={height * t} stroke={textColor} strokeOpacity={0.06} strokeWidth={1} />
+        ))}
+        <Line x1={padX} y1={height - 6} x2={width - padX} y2={height - 6} stroke={textColor} strokeOpacity={0.1} strokeWidth={1} />
+
+        {/* area gradient under line */}
+        <Polygon points={areaPoints} fill="url(#areaGrad)" />
+
+        {/* line */}
+        <Polyline points={linePoints} fill="none" stroke={accent} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* dots with glow */}
+        {pts.map((p, i) => (
+          <React.Fragment key={i}>
+            {(i === maxIdx || i === minIdx) && (
+              <Circle cx={p.x} cy={p.y} r={7} fill={accent} fillOpacity={0.18} />
+            )}
+            <Circle cx={p.x} cy={p.y} r={3} fill={accent} />
+          </React.Fragment>
+        ))}
       </Svg>
-    </View>
+
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6, paddingHorizontal: 4 }}>
+        <Text style={{ color: textColor, fontSize: 11 }}>Min {fmtHours(minV)}</Text>
+        <Text style={{ color: textColor, fontSize: 11 }}>Max {fmtHours(maxV)}</Text>
+      </View>
+    </Animated.View>
   );
 }
 
+// ---------- styles ----------
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  orbTop: {
-    position: 'absolute', width: 260, height: 260, borderRadius: 130,
-    backgroundColor: 'rgba(97,168,255,0.28)', top: -110, right: -80,
+  content:   { padding: SPACING.lg, paddingTop: 8, paddingBottom: 140 },
+
+  heroBlock: { marginTop: SPACING.md, marginBottom: SPACING.lg, position: 'relative' },
+  heroGlow:  {
+    position: 'absolute', top: -40, left: -40, right: -40, height: 220,
+    borderRadius: 200, opacity: 0.9,
   },
-  orbBottom: {
-    position: 'absolute', width: 300, height: 300, borderRadius: 150,
-    backgroundColor: 'rgba(147,230,255,0.2)', bottom: -140, left: -90,
+  heroLeadRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: SPACING.md },
+  heroLead:    { fontSize: FONT_SIZE.sm, lineHeight: 20, flex: 1 },
+  heroMicro:   { fontSize: 11, marginTop: 8, opacity: 0.7, letterSpacing: 0.3, fontStyle: 'italic' },
+
+  statRow: { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg },
+
+  card: {
+    borderRadius: BORDER_RADIUS.lg, padding: SPACING.lg, marginBottom: SPACING.lg,
+    borderWidth: 1, shadowColor: '#1A4D93', shadowOpacity: 0.08, shadowRadius: 14, shadowOffset: { width: 0, height: 6 },
+    elevation: 3, overflow: 'hidden',
   },
-  content:    { padding: SPACING.lg, paddingTop: 8, paddingBottom: 120 },
+  glassCard: {
+    // subtle glassy depth (preserves theme bg)
+  },
 
-  heroBlock: { marginTop: SPACING.md, marginBottom: SPACING.lg },
-  heroLead:  { fontSize: FONT_SIZE.sm, lineHeight: 20, marginTop: SPACING.md, maxWidth: 320 },
-  statRow:   { flexDirection: 'row', gap: SPACING.sm, marginBottom: SPACING.lg },
-  hero:       { borderRadius: BORDER_RADIUS.xl, padding: SPACING.lg, marginBottom: SPACING.lg, shadowColor: '#2A84E2', shadowOpacity: 0.24, shadowRadius: 16, elevation: 8 },
-  heroKicker: { color: 'rgba(255,255,255,0.8)', fontSize: FONT_SIZE.xs, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
-  title:      { fontSize: FONT_SIZE.xxl, fontWeight: '900', marginTop: 6, color: '#fff' },
-  heroBody:   { color: 'rgba(255,255,255,0.9)', marginTop: SPACING.sm, fontSize: FONT_SIZE.md, lineHeight: 22 },
+  sectionTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md },
+  sectionTitle:    { fontSize: FONT_SIZE.lg, fontWeight: '800', letterSpacing: 0.2 },
+  sectionSub:      { fontSize: FONT_SIZE.sm },
 
-  summaryGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.lg },
-  summaryCard:  { width: '47.5%', borderRadius: BORDER_RADIUS.lg, padding: SPACING.md, alignItems: 'center', borderWidth: 1, shadowColor: '#1A4D93', shadowOpacity: 0.08, shadowRadius: 10, elevation: 2 },
-  summaryValue: { fontSize: FONT_SIZE.xl, fontWeight: '800' },
-  summaryLabel: { fontSize: FONT_SIZE.sm, marginTop: 4 },
+  tagPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, borderWidth: 1 },
+  tagPillText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.4 },
 
-  card:         { borderRadius: BORDER_RADIUS.lg, padding: SPACING.lg, marginBottom: SPACING.lg, borderWidth: 1, shadowColor: '#1A4D93', shadowOpacity: 0.06, shadowRadius: 10, elevation: 2 },
-  sectionTitle: { fontSize: FONT_SIZE.lg, fontWeight: '700', marginBottom: SPACING.md },
+  legendRow: { flexDirection: 'row', gap: 4 },
+  legendDot: { width: 10, height: 10, borderRadius: 3, borderWidth: 1 },
 
   calendarHeader: { flexDirection: 'row', marginBottom: 6 },
-  calDow:         { flex: 1, textAlign: 'center', fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+  calDow:         { flex: 1, textAlign: 'center', fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6 },
   calendarGrid:   { flexDirection: 'row', flexWrap: 'wrap' },
-  calendarCell:   { width: `${100 / 7}%` as any, aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 8, borderWidth: 1, marginBottom: 4 },
+  calendarCell:   {
+    width: `${100 / 7}%` as any, aspectRatio: 1, alignItems: 'center', justifyContent: 'center',
+    borderRadius: 10, borderWidth: 1, marginBottom: 4,
+  },
   calDayNum:      { fontSize: 11, fontWeight: '700' },
 
-  fastRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: SPACING.md, borderBottomWidth: 1 },
+  // Fast list card rows
+  fastCard: {
+    flexDirection: 'row', alignItems: 'center',
+    borderRadius: BORDER_RADIUS.md, borderWidth: 1,
+    paddingVertical: 14, paddingHorizontal: 12,
+    shadowColor: '#1A4D93', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1,
+    overflow: 'hidden',
+  },
+  fastAccent: {
+    position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, borderTopLeftRadius: BORDER_RADIUS.md, borderBottomLeftRadius: BORDER_RADIUS.md,
+  },
   fastTitle: { fontSize: FONT_SIZE.md, fontWeight: '700' },
-  fastSub:   { fontSize: FONT_SIZE.sm, marginTop: 4 },
-  fastValue: { fontSize: FONT_SIZE.lg, fontWeight: '800' },
+  fastSub:   { fontSize: FONT_SIZE.sm, marginTop: 2 },
+  fastValue: { fontSize: FONT_SIZE.md, fontWeight: '800' },
+  durationBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
+  chev: { fontSize: 28, fontWeight: '300', marginLeft: 4, opacity: 0.5 },
+
   emptyText: { fontSize: FONT_SIZE.md, textAlign: 'center', paddingVertical: SPACING.lg, lineHeight: 24 },
-  sectionSub: { fontSize: FONT_SIZE.sm, marginBottom: 6 },
 
   /* Bar chart */
   barChartRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
   barCol: { width: 52, alignItems: 'center' },
-  barWrap: { width: 36, height: 120, borderRadius: 8, backgroundColor: 'transparent', justifyContent: 'flex-end', overflow: 'hidden' },
-  barFill: { width: 36, borderRadius: 8 },
+  barWrap: { width: 36, height: 120, borderRadius: 10, justifyContent: 'flex-end', overflow: 'hidden', backgroundColor: 'rgba(127,127,127,0.06)' },
   barTopLabel: { fontSize: 12, fontWeight: '700', marginBottom: 6 },
-  barBottomLabel: { fontSize: 11, marginTop: 8 },
+  barBottomLabel: { fontSize: 11, marginTop: 6 },
+  rankPill: {
+    marginTop: 6, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 999,
+    backgroundColor: 'rgba(42,132,226,0.15)',
+  },
+  rankPillText: { fontSize: 10, fontWeight: '800', color: COLORS.primary, letterSpacing: 0.4 },
 });

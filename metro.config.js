@@ -15,4 +15,8 @@ config.cacheStores = [
   }),
 ];
 
+// Support .lottie and other binary assets
+config.resolver.assetExts.push('lottie');
+config.resolver.sourceExts = [...config.resolver.sourceExts, 'lottie'];
+
 module.exports = config;
