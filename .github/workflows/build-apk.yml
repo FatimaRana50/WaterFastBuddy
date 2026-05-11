@@ -61,13 +61,13 @@ jobs:
       - name: Validate RevenueCat production key
         run: |
           if [ -z "$EXPO_PUBLIC_RC_API_KEY" ]; then
-            echo "Missing GitHub secret RC_PUBLIC_API_KEY (RevenueCat production public SDK key)."
-            exit 1
+            echo "Warning: RC_PUBLIC_API_KEY is missing. RevenueCat will be disabled in this build."
+            exit 0
           fi
 
           if [[ "$EXPO_PUBLIC_RC_API_KEY" == test_* ]]; then
-            echo "RC_PUBLIC_API_KEY is a test key. Use production public SDK key (for Android usually starts with goog_)."
-            exit 1
+            echo "Warning: RC_PUBLIC_API_KEY is a test key. RevenueCat will be disabled in this build."
+            exit 0
           fi
 
       - name: Build Release APK

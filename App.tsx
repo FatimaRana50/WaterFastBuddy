@@ -28,7 +28,10 @@ function AppContent() {
   const { theme, colors } = useTheme();
 
   useEffect(() => {
-    initRevenueCat();
+    // Disabled RevenueCat initialization to avoid app exit when a test API key
+    // is present in release builds. Re-enable after configuring a production
+    // public SDK key in your CI (set RC_PUBLIC_API_KEY in GitHub Secrets).
+    // initRevenueCat();
     setupNotificationChannel();
   }, []);
 
