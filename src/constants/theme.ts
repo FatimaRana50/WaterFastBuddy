@@ -1,18 +1,16 @@
 // WaterFastBuddy design tokens — matches the web brand
-// Palette distilled from the website: near-white backgrounds with vivid blue
-// accents (light) and deep navy with electric blue (dark). Both modes share
-// the same primary accent so screenshots look consistent side-by-side.
 export const COLORS = {
-  // Brand blues — used across both themes
-  primary:      '#1B8CFF',   // vivid "WaterFastBuddy" blue
-  primaryDark:  '#0B5DD1',
-  primaryDeep:  '#083B8A',
+  // Brand blues — light-theme values used by default for shared UI
+  primary:      '#0694F9',   // hsl(205 95% 50%)
+  primaryGlow:  '#4DD2FF',   // hsl(195 100% 65%)
+  primaryDeep:  '#073D88',   // hsl(215 90% 28%)
+  primaryDark:  '#073D88',   // alias for primaryDeep
   primaryLight: '#7FBEFF',
-  accent:       '#21C7FF',   // cyan-ish gradient tail
+  accent:       '#38DAFA',   // hsl(190 95% 60%)
   accentLight:  '#BCE9FF',
 
   // Kicker text (small uppercase section label)
-  kicker:       '#1B8CFF',
+  kicker:       '#0694F9',
 
   // Atmospheric support — kept for legacy callers
   mist:      '#EEF5FF',
@@ -20,9 +18,9 @@ export const COLORS = {
   navyInk:   '#0B1530',
 
   // Gradients (start → end)
-  gradientStart: '#0B5DD1',
-  gradientMid:   '#1B8CFF',
-  gradientEnd:   '#21C7FF',
+  gradientStart: '#073D88',
+  gradientMid:   '#0694F9',
+  gradientEnd:   '#38DAFA',
 
   // Status
   success: '#10B981',
@@ -49,14 +47,18 @@ export const LIGHT_THEME = {
   textSecondary: '#5C6B85',
   border:        '#D6E2F2',
   tabBar:        'rgba(255,255,255,0.96)',
-  tabBarActive:  COLORS.primary,
+  tabBarActive:  '#0694F9',
   tabBarInactive:'#7E8DA8',
-  headerBg:      '#0B5DD1',
+  headerBg:      '#073D88',
   headerText:    '#FFFFFF',
-  // Extras used by the new design system
-  pillBg:        'rgba(255,255,255,0.94)', // floating top bar fill
-  pillBorder:    'rgba(27,140,255,0.12)',
-  glow:          'rgba(27,140,255,0.18)',
+  pillBg:        'rgba(255,255,255,0.94)',
+  pillBorder:    'rgba(6,148,249,0.12)',
+  glow:          'rgba(6,148,249,0.18)',
+  // Theme-specific brand blues — hsl(205 95% 50%), hsl(195 100% 65%), hsl(215 90% 28%), hsl(190 95% 60%)
+  primary:      '#0694F9',
+  primaryGlow:  '#4DD2FF',
+  primaryDeep:  '#073D88',
+  accent:       '#38DAFA',
 };
 
 // Deep navy — matches the website's dark hero
@@ -69,13 +71,18 @@ export const DARK_THEME = {
   textSecondary: '#8BA2C8',
   border:        '#1F3358',
   tabBar:        'rgba(10,17,33,0.94)',
-  tabBarActive:  COLORS.accent,
+  tabBarActive:  '#00B8FF',
   tabBarInactive:'#5A7299',
   headerBg:      '#0A1630',
   headerText:    '#EAF4FF',
   pillBg:        'rgba(14,27,49,0.92)',
-  pillBorder:    'rgba(27,140,255,0.28)',
-  glow:          'rgba(33,199,255,0.22)',
+  pillBorder:    'rgba(0,184,255,0.28)',
+  glow:          'rgba(0,229,255,0.22)',
+  // Theme-specific brand blues — hsl(193 100% 50%), hsl(185 100% 62%), hsl(200 85% 38%), hsl(185 100% 50%)
+  primary:      '#00B8FF',
+  primaryGlow:  '#3DEBFF',
+  primaryDeep:  '#0F6FB3',
+  accent:       '#00E5FF',
 };
 
 export const SPACING = {

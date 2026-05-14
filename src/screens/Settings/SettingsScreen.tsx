@@ -101,15 +101,8 @@ export default function SettingsScreen() {
     );
   };
 
-  const isDark = theme === 'dark';
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {!isDark && (
-        <LinearGradient colors={[COLORS.mist, '#DCEEFF', '#ECF8FF']} style={StyleSheet.absoluteFillObject} />
-      )}
-      {!isDark && <View pointerEvents="none" style={styles.orbTop} />}
-
       <ScrollView contentContainerStyle={styles.content}>
         <LinearGradient colors={[COLORS.primaryDark, COLORS.gradientStart, COLORS.gradientEnd]} style={styles.hero}>
           <Text style={styles.heroKicker}>{i18n.t('settingsScreen.preferences')}</Text>

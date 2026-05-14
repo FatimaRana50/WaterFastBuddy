@@ -14,7 +14,6 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useUser } from '../../store/UserContext';
 import { calculateTDEE, calculateBmi, calculateBodyFatPercentage } from '../../utils/bmi';
 import { FONT, FONT_SIZE, SPACING, COLORS, BORDER_RADIUS } from '../../constants/theme';
-import Starfield from '../../components/Starfield';
 import Headline from '../../components/Headline';
 import Kicker from '../../components/Kicker';
 import StatTile from '../../components/StatTile';
@@ -50,8 +49,6 @@ export default function CaloriesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Starfield density={0.08} />
-
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View style={styles.heroBlock}>

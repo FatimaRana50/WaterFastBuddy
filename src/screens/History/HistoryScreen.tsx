@@ -8,7 +8,6 @@ import { useLanguage } from '../../store/LanguageContext';
 import { useFasts } from '../../store/FastsContext';
 import { FastRecord } from '../../types';
 import { COLORS, FONT_SIZE, SPACING, BORDER_RADIUS } from '../../constants/theme';
-import Starfield from '../../components/Starfield';
 import Headline from '../../components/Headline';
 import Kicker from '../../components/Kicker';
 import StatTile from '../../components/StatTile';
@@ -69,30 +68,6 @@ function buildCalendar(fasts: FastRecord[]) {
 
 const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-// ---------- ambient floating orb ----------
-function FloatingOrb({ size, color, top, left, right, bottom, delay = 0, duration = 6000 }: any) {
-  const t = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(t, { toValue: 1, duration, delay, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(t, { toValue: 0, duration, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-      ])
-    ).start();
-  }, []);
-  const translateY = t.interpolate({ inputRange: [0, 1], outputRange: [0, -22] });
-  const scale      = t.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] });
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={{
-        position: 'absolute', width: size, height: size, borderRadius: size / 2,
-        backgroundColor: color, top, left, right, bottom, opacity: 0.55,
-        transform: [{ translateY }, { scale }],
-      }}
-    />
-  );
-}
 
 // ---------- live pulse dot ----------
 function LivePulse({ color = COLORS.primary }: { color?: string }) {
@@ -173,13 +148,6 @@ export default function HistoryScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Starfield density={0.08} />
-
-      {/* Cinematic ambient orbs */}
-      <FloatingOrb size={320} color="rgba(97,168,255,0.22)" top={-120} right={-100} duration={7000} />
-      <FloatingOrb size={260} color="rgba(147,230,255,0.18)" top={220} left={-110} delay={400} duration={8000} />
-      <FloatingOrb size={300} color="rgba(168,120,255,0.14)" bottom={-140} right={-80} delay={800} duration={9000} />
-
       <Animated.ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}

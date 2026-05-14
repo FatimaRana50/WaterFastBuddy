@@ -140,7 +140,12 @@ export default function WaterBodyAvatar({
         style={[
           styles.aura,
           auraStyle,
-          { width: size * 1.18, height: aspectH * 0.92, borderRadius: size * 0.55 },
+          {
+            width: size * 1.18,
+            height: aspectH * 0.92,
+            borderRadius: size * 0.55,
+            overflow: 'hidden',
+          },
         ]}
       >
         <LinearGradient

@@ -23,7 +23,6 @@ import { useUser } from '../../store/UserContext';
 import { useFasts } from '../../store/FastsContext';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
 import WaterBodyAvatar from '../../components/Avatar/WaterBodyAvatar';
-import Starfield from '../../components/Starfield';
 import FastCompleteScreen from './FastCompleteScreen';
 import { FastRecord, SavedFast } from '../../types';
 import i18n from '../../i18n';
@@ -85,46 +84,6 @@ function getWeekDays() {
   });
 }
 
-// ─── Ambient background glows ─────────────────────────────────────────────────
-function AmbientGlows() {
-  const a = useRef(new Animated.Value(0)).current;
-  const b = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const loop = (v: Animated.Value, d: number) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(v, { toValue: 1, duration: d, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-          Animated.timing(v, { toValue: 0, duration: d, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        ]),
-      ).start();
-    loop(a, 6500);
-    loop(b, 8200);
-  }, [a, b]);
-  const ty1 = a.interpolate({ inputRange: [0, 1], outputRange: [-12, 12] });
-  const ty2 = b.interpolate({ inputRange: [0, 1], outputRange: [16, -10] });
-  return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <Animated.View style={[styles.glow, { top: -80, left: -60, transform: [{ translateY: ty1 }] }]}>
-        <LinearGradient
-          colors={['rgba(30,99,233,0.35)', 'rgba(30,99,233,0)']}
-          style={styles.glowFill}
-        />
-      </Animated.View>
-      <Animated.View style={[styles.glow, { top: 220, right: -100, transform: [{ translateY: ty2 }] }]}>
-        <LinearGradient
-          colors={['rgba(30,155,184,0.28)', 'rgba(30,155,184,0)']}
-          style={styles.glowFill}
-        />
-      </Animated.View>
-      <Animated.View style={[styles.glowSm, { bottom: 60, left: 40, transform: [{ translateY: ty1 }] }]}>
-        <LinearGradient
-          colors={['rgba(125,180,255,0.22)', 'rgba(125,180,255,0)']}
-          style={styles.glowFill}
-        />
-      </Animated.View>
-    </View>
-  );
-}
 
 // ─── Tactile press wrapper ────────────────────────────────────────────────────
 function PressableScale({
@@ -505,9 +464,6 @@ export default function FastsScreen() {
 
     return (
       <View style={[styles.screen, { backgroundColor: colors.background }]}>
-        <AmbientGlows />
-        <Starfield density={0.08} />
-
         <ScrollView contentContainerStyle={styles.activeScroll} showsVerticalScrollIndicator={false}>
           <View style={styles.activeHeaderRow}>
             <Text style={[styles.activeKickerLux, { color: COLORS.primary }]}>IN FLOW</Text>
@@ -601,8 +557,6 @@ export default function FastsScreen() {
   // ── Plan selection ────────────────────────────────────────────────────────
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <AmbientGlows />
-
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
 
         {/* HERO */}

@@ -37,7 +37,11 @@ function AppContent() {
 
   return (
     <>
-      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar
+        style={theme === 'dark' ? 'light' : 'dark'}
+        backgroundColor={colors.background}
+        translucent={false}
+      />
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <RootNavigator />
       </View>

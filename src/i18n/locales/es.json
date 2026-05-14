@@ -220,6 +220,7 @@
     "driveRestore": "Restaurar desde Google Drive",
     "driveRestoreCta": "Descargar",
     "driveSignOut": "Cerrar sesión en Drive",
+    "contactUs": "Contáctanos",
     "driveUnconfiguredTitle": "Drive no configurado",
     "driveUnconfiguredBody": "La sincronización con Google Drive requiere un ID de cliente OAuth en app.json. Usa la copia local mientras tanto.",
     "driveBackupDoneTitle": "Respaldado en Drive",
@@ -344,6 +345,9 @@
     "directSupport": "Soporte directo",
     "setup": {
       "nameSubtitle": "Personalizaremos tu experiencia para ti.",
+      "whatsYourName": "¿Cuál es tu\nnombre?",
+      "whatsYourGender": "¿Cuál es tu\ngénero?",
+      "genderSubtitle": "Esto nos ayuda a personalizar tus métricas corporales y plan de ayuno.",
       "maleJourney": "Su camino",
       "femaleJourney": "Su camino",
       "bodyTitle": "Tus medidas\ncorporales",

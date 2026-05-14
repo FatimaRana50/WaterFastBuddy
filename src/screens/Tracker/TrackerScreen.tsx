@@ -12,7 +12,6 @@ import { useTheme } from '../../store/ThemeContext';
 import { useUser } from '../../store/UserContext';
 import { useLanguage } from '../../store/LanguageContext';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../constants/theme';
-import Starfield from '../../components/Starfield';
 import Headline from '../../components/Headline';
 import Kicker from '../../components/Kicker';
 import WaterBodyAvatar from '../../components/Avatar/WaterBodyAvatar';
@@ -252,23 +251,6 @@ export default function TrackerScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Layered ambient backdrop */}
-      <Starfield density={0.07} />
-      <Animated.View pointerEvents="none" style={[styles.orb, styles.orbPrimary, { transform: [{ translateY: orbATranslate }] }]}>
-        <LinearGradient
-          colors={[COLORS.primary + '55', 'transparent']}
-          style={styles.orbGrad}
-          start={{ x: 0.3, y: 0.3 }} end={{ x: 1, y: 1 }}
-        />
-      </Animated.View>
-      <Animated.View pointerEvents="none" style={[styles.orb, styles.orbAccent, { transform: [{ translateX: orbBTranslate }] }]}>
-        <LinearGradient
-          colors={[COLORS.accent + '4D', 'transparent']}
-          style={styles.orbGrad}
-          start={{ x: 0.2, y: 0.2 }} end={{ x: 1, y: 1 }}
-        />
-      </Animated.View>
-
       <Animated.ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}

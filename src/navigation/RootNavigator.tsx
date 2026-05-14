@@ -1,5 +1,10 @@
 import React, { useEffect, useRef } from 'react';
-import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  NavigationContainerRef,
+  DarkTheme as NavigationDarkTheme,
+  DefaultTheme as NavigationDefaultTheme,
+} from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import BottomTabs from './BottomTabs';
 import OnboardingNavigator from './OnboardingNavigator';
@@ -11,12 +16,40 @@ import PaywallScreen from '../screens/Paywall/PaywallScreen';
 import FastDetailScreen from '../screens/History/FastDetailScreen';
 import TipDetailScreen from '../screens/Tips/TipDetailScreen';
 import ShopScreen from '../screens/Shop/ShopScreen';
+import { useTheme } from '../store/ThemeContext';
 
 const Stack = createStackNavigator();
 
 export default function RootNavigator() {
   const { profile, isTrialExpired } = useUser();
+  const { theme, colors } = useTheme();
   const navRef = useRef<NavigationContainerRef<any>>(null);
+
+  const navTheme = theme === 'dark'
+    ? {
+        ...NavigationDarkTheme,
+        colors: {
+          ...NavigationDarkTheme.colors,
+          background: colors.background,
+          card: colors.surface,
+          text: colors.text,
+          border: colors.border,
+          primary: colors.tabBarActive,
+          notification: colors.tabBarActive,
+        },
+      }
+    : {
+        ...NavigationDefaultTheme,
+        colors: {
+          ...NavigationDefaultTheme.colors,
+          background: colors.background,
+          card: colors.surface,
+          text: colors.text,
+          border: colors.border,
+          primary: colors.tabBarActive,
+          notification: colors.tabBarActive,
+        },
+      };
 
   // Remember the previous trial-gate state so we only reset the stack when
   // something actually changes. Otherwise this effect fires on the very first
@@ -46,7 +79,7 @@ export default function RootNavigator() {
   }, [profile?.onboardingComplete, isTrialExpired]);
 
   return (
-    <NavigationContainer ref={navRef}>
+    <NavigationContainer ref={navRef} theme={navTheme as any}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Splash"     component={SplashScreen} />
         <Stack.Screen name="Onboarding" component={OnboardingNavigator} />

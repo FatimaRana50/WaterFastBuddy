@@ -220,6 +220,7 @@
     "driveRestore": "从 Google Drive 恢复",
     "driveRestoreCta": "下载",
     "driveSignOut": "退出 Google Drive",
+    "contactUs": "联系我们",
     "driveUnconfiguredTitle": "Drive 未配置",
     "driveUnconfiguredBody": "Google Drive 同步需要在 app.json 中配置 OAuth 客户端 ID。在此之前请使用本地备份。",
     "driveBackupDoneTitle": "已备份到 Drive",
@@ -344,6 +345,9 @@
     "directSupport": "直接支持",
     "setup": {
       "nameSubtitle": "我们会为你个性化体验。",
+      "whatsYourName": "你的\n名字是什么？",
+      "whatsYourGender": "你的\n性别是什么？",
+      "genderSubtitle": "这有助于我们个性化你的身体指标和断食计划。",
       "maleJourney": "他的旅程",
       "femaleJourney": "她的旅程",
       "bodyTitle": "你的身体\n数据",

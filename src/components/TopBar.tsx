@@ -2,14 +2,12 @@
 //
 // Layout:
 //   Left:  droplet logo + "WaterFastBuddy" wordmark
-//   Right: single overflow menu (3 dots)
+//   Right: "Book 1-1" & "Buy Salts" CTA buttons
 //
-// All secondary actions (Book 1-1, Buy Salts, social links) live inside
-// the overflow sheet so the bar itself stays calm and readable.
-import React, { useState } from 'react';
+// Streamlined nav bar with inline gradient buttons for primary actions.
+import React from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, Linking, Platform,
-  Modal, Pressable,
+  View, Text, TouchableOpacity, StyleSheet, Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,11 +17,6 @@ import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../store/ThemeContext';
 import i18n from '../i18n';
 import { COLORS, FONT_SIZE, BORDER_RADIUS, SPACING } from '../constants/theme';
-
-// ── Placeholder URLs — client will supply final values ────────────────────────
-const URL_INSTAGRAM = 'https://instagram.com/waterfastbuddy';
-const URL_FACEBOOK  = 'https://facebook.com/waterfastbuddy';
-const URL_YOUTUBE   = 'https://youtube.com/@waterfastbuddy';
 
 // Gradient-filled droplet SVG — the website's logo mark.
 function DropletLogo({ size = 22 }: { size?: number }) {
@@ -47,21 +40,18 @@ export default function TopBar() {
   const insets     = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  const openUrl = (url: string) => {
-    setMenuOpen(false);
-    Linking.openURL(url).catch(() => {});
-  };
-
-  const goTo = (route: string) => {
-    setMenuOpen(false);
-    navigation.navigate(route);
-  };
 
   return (
     <>
-      <View style={{ paddingTop: insets.top + 6, paddingHorizontal: SPACING.md }}>
+      <View
+        style={{
+          paddingTop: insets.top + 6,
+          paddingHorizontal: SPACING.md,
+          paddingBottom: 6,
+          width: '100%',
+          backgroundColor: colors.background,
+        }}
+      >
         <View
           style={[
             styles.pill,
@@ -88,103 +78,44 @@ export default function TopBar() {
             </Text>
           </TouchableOpacity>
 
-          {/* Right: overflow menu */}
-          <TouchableOpacity
-            onPress={() => setMenuOpen(true)}
-            activeOpacity={0.7}
-            style={[styles.menuBtn, { backgroundColor: colors.cardAlt, borderColor: colors.border }]}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons name="ellipsis-horizontal" size={18} color={colors.text} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Overflow menu — bottom sheet style */}
-      <Modal
-        visible={menuOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setMenuOpen(false)}
-      >
-        <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)}>
-          <Pressable style={[styles.sheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={[styles.sheetHandle, { backgroundColor: colors.border }]} />
-
-            <Text style={[styles.sheetTitle, { color: colors.text }]}>WaterFastBuddy</Text>
-            <Text style={[styles.sheetSub, { color: colors.textSecondary }]}>
-              Quick actions & links
-            </Text>
-
-            {/* Primary CTA — Book 1-1 */}
-            <TouchableOpacity onPress={() => goTo('Booking')} activeOpacity={0.85} style={{ marginTop: SPACING.lg }}>
+          {/* Right: inline action buttons */}
+          <View style={styles.btnRow}>
+            {/* Book 1-1 Button */}
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Booking')}
+              activeOpacity={0.8}
+              style={styles.compactBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
               <LinearGradient
                 colors={[COLORS.primary, COLORS.accent]}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                style={styles.primaryCta}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.compactBtnGradient}
               >
-                <Ionicons name="calendar-outline" size={18} color="#fff" />
-                <Text style={styles.primaryCtaText}>{i18n.t('topBar.book')}</Text>
+                <Ionicons name="calendar-outline" size={16} color="#fff" />
               </LinearGradient>
             </TouchableOpacity>
 
-            {/* Secondary CTA — Buy Salts */}
+            {/* Buy Salts Button */}
             <TouchableOpacity
-              onPress={() => goTo('Shop')}
-              activeOpacity={0.85}
-              style={[styles.secondaryCta, { borderColor: colors.border, backgroundColor: colors.cardAlt }]}
+              onPress={() => navigation.navigate('Shop')}
+              activeOpacity={0.8}
+              style={styles.compactBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="bag-handle-outline" size={18} color={COLORS.primary} />
-              <Text style={[styles.secondaryCtaText, { color: COLORS.primary }]}>
-                {i18n.t('topBar.buyFastingSalts')}
-              </Text>
+              <LinearGradient
+                colors={[COLORS.accent, COLORS.primary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.compactBtnGradient}
+              >
+                <Ionicons name="bag-handle-outline" size={16} color="#fff" />
+              </LinearGradient>
             </TouchableOpacity>
-
-            {/* Divider */}
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Follow us</Text>
-
-            {/* Socials row */}
-            <View style={styles.socialRow}>
-              <TouchableOpacity
-                onPress={() => openUrl(URL_INSTAGRAM)}
-                style={[styles.socialBtn, { backgroundColor: colors.cardAlt, borderColor: colors.border }]}
-                activeOpacity={0.75}
-              >
-                <Ionicons name="logo-instagram" size={20} color={colors.text} />
-                <Text style={[styles.socialLabel, { color: colors.text }]}>Instagram</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => openUrl(URL_FACEBOOK)}
-                style={[styles.socialBtn, { backgroundColor: colors.cardAlt, borderColor: colors.border }]}
-                activeOpacity={0.75}
-              >
-                <Ionicons name="logo-facebook" size={20} color={colors.text} />
-                <Text style={[styles.socialLabel, { color: colors.text }]}>Facebook</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => openUrl(URL_YOUTUBE)}
-                style={[styles.socialBtn, { backgroundColor: colors.cardAlt, borderColor: colors.border }]}
-                activeOpacity={0.75}
-              >
-                <Ionicons name="logo-youtube" size={20} color={colors.text} />
-                <Text style={[styles.socialLabel, { color: colors.text }]}>YouTube</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Close */}
-            <TouchableOpacity
-              onPress={() => setMenuOpen(false)}
-              activeOpacity={0.7}
-              style={styles.closeBtn}
-            >
-              <Text style={[styles.closeBtnText, { color: colors.textSecondary }]}>Close</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
+          </View>
+        </View>
+      </View>
     </>
   );
 }
@@ -193,8 +124,8 @@ const styles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: BORDER_RADIUS.round,
     borderWidth: 1,
     shadowOpacity: Platform.OS === 'android' ? 0 : 0.18,
@@ -216,120 +147,24 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // Overflow menu trigger
-  menuBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-
-  // ── Bottom sheet ────────────────────────────────────────────────────────
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(6,14,30,0.55)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    borderTopWidth: 1,
-    paddingHorizontal: SPACING.xl,
-    paddingTop: SPACING.sm,
-    paddingBottom: SPACING.xl + 16,
-  },
-  sheetHandle: {
-    alignSelf: 'center',
-    width: 44,
-    height: 4,
-    borderRadius: 2,
-    marginBottom: SPACING.lg,
-  },
-  sheetTitle: {
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: 0.2,
-  },
-  sheetSub: {
-    fontSize: FONT_SIZE.sm,
-    marginTop: 4,
-  },
-
-  // Primary CTA
-  primaryCta: {
+  // Button row
+  btnRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     gap: 8,
-    paddingVertical: 16,
-    borderRadius: BORDER_RADIUS.round,
-  },
-  primaryCtaText: {
-    color: '#fff',
-    fontSize: FONT_SIZE.md,
-    fontWeight: '800',
+    alignItems: 'center',
   },
 
-  // Secondary CTA
-  secondaryCta: {
-    flexDirection: 'row',
+  // Compact icon-only buttons
+  compactBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  compactBtnGradient: {
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: BORDER_RADIUS.round,
-    borderWidth: 1,
-    marginTop: SPACING.sm,
-  },
-  secondaryCtaText: {
-    fontSize: FONT_SIZE.md,
-    fontWeight: '800',
-  },
-
-  // Divider
-  divider: {
-    height: 1,
-    marginVertical: SPACING.lg,
-    opacity: 0.5,
-  },
-  sectionLabel: {
-    fontSize: FONT_SIZE.xs,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    marginBottom: SPACING.sm,
-  },
-
-  // Social grid
-  socialRow: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-  },
-  socialBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 14,
-    borderRadius: BORDER_RADIUS.lg,
-    borderWidth: 1,
-  },
-  socialLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-
-  // Close button
-  closeBtn: {
-    alignSelf: 'center',
-    marginTop: SPACING.lg,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-  },
-  closeBtnText: {
-    fontSize: FONT_SIZE.sm,
-    fontWeight: '700',
   },
 });

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking,
   Modal, TextInput, Switch, Alert, Dimensions, Share, Animated, Easing, Pressable,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import WeightChart from '../../components/WeightChart';
 import { useTheme } from '../../store/ThemeContext';
 import { useLanguage } from '../../store/LanguageContext';
@@ -13,7 +14,6 @@ import { calculateBmi, calculateTDEE, goalWeightForBmi, calculateBodyFatPercenta
 import { COLORS, FONT_SIZE, SPACING, BORDER_RADIUS } from '../../constants/theme';
 import WaterBodyAvatar from '../../components/Avatar/WaterBodyAvatar';
 import MorphingAvatar from '../../components/Avatar/MorphingAvatar';
-import Starfield from '../../components/Starfield';
 import Headline from '../../components/Headline';
 import Kicker from '../../components/Kicker';
 import { ActivityLevel, Gender, Language, WeightEntry } from '../../types';
@@ -227,23 +227,25 @@ function BodyFatGauge({ value, category, gender }: { value: number; category: st
 
   return (
     <View style={styles.bmiGaugeWrap}>
-      <View style={styles.bmiGaugeTrack}>
-        {bands.map(([c, lo, hi]) => {
-          const left  = ((lo as number) / max) * 100;
-          const width = (((hi as number) - (lo as number)) / max) * 100;
-          return (
-            <View
-              key={String(lo)}
-              style={[styles.bmiSegment, { backgroundColor: String(c), left: `${left}%` as any, width: `${width}%` as any }]}
-            />
-          );
-        })}
-        <LinearGradient
-          pointerEvents="none"
-          colors={['rgba(255,255,255,0.35)', 'rgba(255,255,255,0)']}
-          start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
+      <View style={styles.bmiTrackRow}>
+        <View style={styles.bmiGaugeTrack}>
+          {bands.map(([c, lo, hi]) => {
+            const left  = ((lo as number) / max) * 100;
+            const width = (((hi as number) - (lo as number)) / max) * 100;
+            return (
+              <View
+                key={String(lo)}
+                style={[styles.bmiSegment, { backgroundColor: String(c), left: `${left}%` as any, width: `${width}%` as any }]}
+              />
+            );
+          })}
+          <LinearGradient
+            pointerEvents="none"
+            colors={['rgba(255,255,255,0.35)', 'rgba(255,255,255,0)']}
+            start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
         <Animated.View style={[styles.bmiThumb, { left: leftStyle as any, borderColor: color, shadowColor: color }]} />
         <Animated.View pointerEvents="none" style={[styles.bmiThumbGlowWrap, { left: leftStyle as any }]}>
           <Animated.View
@@ -297,16 +299,19 @@ function BmiGauge({ bmi }: { bmi: number }) {
 
   return (
     <View style={styles.bmiGaugeWrap}>
-      <View style={styles.bmiGaugeTrack}>
-        {[['#60A5FA', 0], ['#10B981', 25], ['#F59E0B', 50], ['#EF4444', 75]].map(([c, left]) => (
-          <View key={String(left)} style={[styles.bmiSegment, { backgroundColor: String(c), left: `${left}%` as any }]} />
-        ))}
-        <LinearGradient
-          pointerEvents="none"
-          colors={['rgba(255,255,255,0.35)', 'rgba(255,255,255,0)']}
-          start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
+      {/* Track row: fixed height so thumb can overflow without being clipped */}
+      <View style={styles.bmiTrackRow}>
+        <View style={styles.bmiGaugeTrack}>
+          {[['#60A5FA', 0], ['#10B981', 25], ['#F59E0B', 50], ['#EF4444', 75]].map(([c, left]) => (
+            <View key={String(left)} style={[styles.bmiSegment, { backgroundColor: String(c), left: `${left}%` as any }]} />
+          ))}
+          <LinearGradient
+            pointerEvents="none"
+            colors={['rgba(255,255,255,0.35)', 'rgba(255,255,255,0)']}
+            start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
         <Animated.View style={[styles.bmiThumb, { left: leftStyle as any, borderColor: color, shadowColor: color }]} />
         <Animated.View pointerEvents="none" style={[styles.bmiThumbGlowWrap, { left: leftStyle as any }]}>
           <Animated.View
@@ -443,18 +448,6 @@ export default function ProfileScreen() {
   const [restoreBusy,      setRestoreBusy]      = useState(false);
 
   const [driveBusy, setDriveBusy] = useState(false);
-
-  const orbDrift = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(orbDrift, { toValue: 1, duration: 8000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(orbDrift, { toValue: 0, duration: 8000, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [orbDrift]);
 
   useEffect(() => {
     getAllWeightEntries().then(setWeightEntries).catch(() => {});
@@ -672,29 +665,16 @@ export default function ProfileScreen() {
     ? +(bodyFatSeries[bodyFatSeries.length - 1] - bodyFatSeries[0]).toFixed(1)
     : 0;
 
-  const orbTopTranslate = orbDrift.interpolate({ inputRange: [0, 1], outputRange: [-12, 12] });
-  const orbBotTranslate = orbDrift.interpolate({ inputRange: [0, 1], outputRange: [10, -10] });
-
   // Stat tiles data
   const statTiles = [
-    { icon: '⚡', value: `${profile.weightKg}kg`, label: 'Weight',   color: COLORS.primary },
-    { icon: '📏', value: `${profile.heightCm}cm`, label: 'Height',   color: COLORS.accent  },
-    { icon: '🔥', value: `${tdee}`,               label: 'Kcal/day', color: COLORS.success },
+    { iconName: 'barbell-outline' as const,  value: `${profile.weightKg}kg`, label: i18n.t('ui.weight'),  color: COLORS.primary },
+    { iconName: 'resize-outline' as const,   value: `${profile.heightCm}cm`, label: i18n.t('ui.height'),  color: COLORS.accent  },
+    { iconName: 'flame-outline' as const,    value: String(tdee),             label: 'kcal/day',           color: COLORS.success },
   ];
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.orbTop, { transform: [{ translateY: orbTopTranslate }] }]}
-      />
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.orbBottom, { transform: [{ translateY: orbBotTranslate }] }]}
-      />
-      <Starfield density={0.08} />
-
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
         {/* ── Editorial hero ── */}
@@ -755,7 +735,9 @@ export default function ProfileScreen() {
                   style={StyleSheet.absoluteFill}
                 />
                 <View style={styles.statTileInner}>
-                  <Text style={styles.statTileIcon}>{tile.icon}</Text>
+                  <View style={[styles.statTileIconChip, { backgroundColor: tile.color + '1A' }]}>
+                    <Ionicons name={tile.iconName} size={16} color={tile.color} />
+                  </View>
                   <Text
                     style={[styles.statTileValue, { color: colors.text }]}
                     numberOfLines={1}
@@ -973,6 +955,60 @@ export default function ProfileScreen() {
             <SettingRow icon="💾" label={i18n.t('profile.backup')} valueText={i18n.t('common.save')} valueColor={COLORS.primary} onPress={handleExport} />
             <SettingRow icon="♻️" label={i18n.t('profile.restore')} valueText={i18n.t('profile.paste')} valueColor={COLORS.primary} onPress={() => setShowRestoreModal(true)} />
             <SettingRow icon="🚪" label={i18n.t('profile.driveSignOut')} valueText="" onPress={handleDriveSignOut} last />
+          </GlassCard>
+        </FadeInUp>
+
+        {/* ── Contact & Follow ── */}
+        <FadeInUp delay={330}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{i18n.t('profile.contactUs')}</Text>
+          <GlassCard glowColor={COLORS.accent}>
+            <Text style={[styles.cardSubLabel, { color: colors.textSecondary }]}>Follow us for tips, updates, and community</Text>
+            <View style={styles.socialList}>
+              <TouchableOpacity
+                onPress={() => Linking.openURL('https://instagram.com/waterfastbuddy').catch(() => {})}
+                activeOpacity={0.85}
+                style={[styles.socialRowCard, { backgroundColor: colors.cardAlt, borderColor: COLORS.accent + '30' }]}
+              >
+                <View style={[styles.socialIconChip, { backgroundColor: COLORS.accent + '16' }]}>
+                  <Ionicons name="logo-instagram" size={18} color={COLORS.accent} />
+                </View>
+                <View style={styles.socialTextBlock}>
+                  <Text style={[styles.socialCardTitle, { color: colors.text }]}>Instagram</Text>
+                  <Text style={[styles.socialCardHandle, { color: colors.textSecondary }]}>@waterfastbuddy</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => Linking.openURL('https://facebook.com/waterfastbuddy').catch(() => {})}
+                activeOpacity={0.85}
+                style={[styles.socialRowCard, { backgroundColor: colors.cardAlt, borderColor: COLORS.primary + '30' }]}
+              >
+                <View style={[styles.socialIconChip, { backgroundColor: COLORS.primary + '16' }]}>
+                  <Ionicons name="logo-facebook" size={18} color={COLORS.primary} />
+                </View>
+                <View style={styles.socialTextBlock}>
+                  <Text style={[styles.socialCardTitle, { color: colors.text }]}>Facebook</Text>
+                  <Text style={[styles.socialCardHandle, { color: colors.textSecondary }]}>WaterFastBuddy</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => Linking.openURL('https://youtube.com/@waterfastbuddy').catch(() => {})}
+                activeOpacity={0.85}
+                style={[styles.socialRowCard, { backgroundColor: colors.cardAlt, borderColor: '#EF4444' + '30' }]}
+              >
+                <View style={[styles.socialIconChip, { backgroundColor: '#EF4444' + '16' }]}>
+                  <Ionicons name="logo-youtube" size={18} color="#EF4444" />
+                </View>
+                <View style={styles.socialTextBlock}>
+                  <Text style={[styles.socialCardTitle, { color: colors.text }]}>YouTube</Text>
+                  <Text style={[styles.socialCardHandle, { color: colors.textSecondary }]}>@waterfastbuddy</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
           </GlassCard>
         </FadeInUp>
 
@@ -1249,14 +1285,6 @@ export default function ProfileScreen() {
 // ─── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  orbTop: {
-    position: 'absolute', width: 320, height: 320, borderRadius: 160,
-    backgroundColor: 'rgba(85,170,255,0.20)', top: -140, right: -110,
-  },
-  orbBottom: {
-    position: 'absolute', width: 360, height: 360, borderRadius: 180,
-    backgroundColor: 'rgba(111,216,238,0.16)', bottom: -190, left: -130,
-  },
   scroll: { paddingBottom: 110 },
 
   // Editorial hero
@@ -1274,7 +1302,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: BORDER_RADIUS.round,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
+    borderColor: COLORS.primary + '28',
   },
   heroLead: {
     fontSize: FONT_SIZE.sm,
@@ -1338,9 +1366,10 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.xs,
   },
-  statTileIcon: {
-    fontSize: 16,
-    marginBottom: 4,
+  statTileIconChip: {
+    width: 30, height: 30, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 6,
   },
   statTileValue: {
     fontSize: FONT_SIZE.lg,
@@ -1392,22 +1421,33 @@ const styles = StyleSheet.create({
   infoValue: { fontSize: FONT_SIZE.sm, fontWeight: '700' },
 
   // BMI gauge
-  bmiGaugeWrap:  { },
+  bmiGaugeWrap: { },
+  // Container that's tall enough for the thumb to overflow the track without clipping
+  bmiTrackRow: {
+    height: 22,
+    position: 'relative',
+    marginBottom: 2,
+  },
   bmiGaugeTrack: {
+    position: 'absolute',
+    left: 0, right: 0,
+    top: 5, // (22 - 12) / 2 = 5 — vertically centers 12px track inside 22px row
     height: 12, borderRadius: 6, backgroundColor: 'rgba(148,163,184,0.18)',
-    overflow: 'hidden', position: 'relative', marginBottom: 6,
+    overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.10)',
   },
   bmiSegment:    { position: 'absolute', top: 0, bottom: 0, width: '25%', opacity: 0.9 },
   bmiThumb: {
-    position: 'absolute', top: -4, width: 18, height: 18, borderRadius: 9,
-    backgroundColor: '#fff', borderWidth: 2.5, borderColor: '#3B82F6',
+    // top: 2 = (22 - 18) / 2 — centers 18px thumb inside 22px row
+    position: 'absolute', top: 2, width: 18, height: 18, borderRadius: 9,
+    backgroundColor: '#fff', borderWidth: 2.5,
     shadowOpacity: 0.6, shadowRadius: 8, shadowOffset: { width: 0, height: 0 }, elevation: 5,
     marginLeft: -9,
     zIndex: 3,
   },
   bmiThumbGlowWrap: {
-    position: 'absolute', top: -10, width: 30, height: 30,
+    // top: -4 = (22 - 30) / 2 — centers 30px glow inside 22px row
+    position: 'absolute', top: -4, width: 30, height: 30,
     marginLeft: -15, zIndex: 2,
     alignItems: 'center', justifyContent: 'center',
   },
@@ -1563,4 +1603,40 @@ const styles = StyleSheet.create({
   langRow:     { flexDirection: 'row', alignItems: 'center', gap: SPACING.md, paddingHorizontal: SPACING.lg, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   langFlag:    { fontSize: 22 },
   langLabel:   { flex: 1, fontSize: FONT_SIZE.md, fontWeight: '600' },
+
+  // ── Social contact rows ──
+  socialList: {
+    gap: SPACING.sm,
+    marginTop: SPACING.sm,
+  },
+  socialRowCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: BORDER_RADIUS.lg,
+    borderWidth: 1,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 12,
+    gap: SPACING.sm,
+  },
+  socialIconChip: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  socialTextBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  socialCardTitle: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: '800',
+  },
+  socialCardHandle: {
+    fontSize: FONT_SIZE.xs,
+    fontWeight: '500',
+    marginTop: 2,
+  },
 });

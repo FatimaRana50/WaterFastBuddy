@@ -220,6 +220,7 @@
     "driveRestore": "Google Drive से पुनर्स्थापित",
     "driveRestoreCta": "डाउनलोड",
     "driveSignOut": "Drive से साइन आउट",
+    "contactUs": "हमसे संपर्क करें",
     "driveUnconfiguredTitle": "Drive सेटअप नहीं है",
     "driveUnconfiguredBody": "Google Drive सिंक के लिए app.json में OAuth क्लाइंट ID चाहिए। तब तक स्थानीय बैकअप का उपयोग करें।",
     "driveBackupDoneTitle": "Drive पर बैकअप हो गया",
@@ -344,6 +345,9 @@
     "directSupport": "सीधा समर्थन",
     "setup": {
       "nameSubtitle": "हम आपका अनुभव आपके लिए व्यक्तिगत करेंगे।",
+      "whatsYourName": "आपका नाम\nक्या है?",
+      "whatsYourGender": "आपका लिंग\nक्या है?",
+      "genderSubtitle": "यह हमें आपके शरीर के मेट्रिक्स और उपवास योजना को व्यक्तिगत करने में मदद करता है।",
       "maleJourney": "उनकी यात्रा",
       "femaleJourney": "उनकी यात्रा",
       "bodyTitle": "आपके शरीर की\nमाप",
