@@ -1,34 +1,28 @@
 /**
- * WelcomeSlides — v3 "Aurora" Edition
+ * WelcomeSlides — v3.1 "Aurora+" Edition
  * ─────────────────────────────────────────────────────────────
- * A next-level, cinematic onboarding for WaterFastBuddy.
+ * Same premium aurora onboarding, now with nuanced secondary accents
+ * (violet, amber/gold, soft magenta) layered into a still-blue identity.
  *
- * Design pillars
- *  • Dark aurora theme (deep navy → electric cyan), per client tokens
- *  • Premium glassmorphism + parallax depth
- *  • Hero illustrations are SVG-driven, animated, and *unique per slide*
- *  • Real interaction model: swipeable FlatList + animated progress rail
- *  • Identity-shift copy, credibility cues, and a final conversion screen
- *  • Zero new dependencies — drop-in replacement
- *
- * Theme tokens (from client):
- *   --primary       hsl(193 100% 50%)   #00B8FF
- *   --primary-glow  hsl(185 100% 62%)   #3DEBFF
- *   --primary-deep  hsl(200  85% 38%)   #0F6FB3
- *   --accent        hsl(185 100% 50%)   #00E5FF
+ * Changes vs v3:
+ *  • Aurora background blobs now mix primary / violet / soft magenta
+ *  • Each hero has its own emotional color temperature
+ *  • Cards, chips, rails, progress, and CTA use tasteful accent variation
+ *  • Blue/cyan remains dominant; backgrounds stay deep navy
+ *  • No copy, layout, spacing, or interaction changes
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Animated, Easing,
+  View, Text, StyleSheet, Animated, Easing,
   Dimensions, FlatList, Linking, NativeSyntheticEvent,
-  NativeScrollEvent, Pressable, Platform,
+  NativeScrollEvent, Pressable,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, {
-  Path, Circle, Rect, Defs, LinearGradient as SvgGrad, RadialGradient as SvgRad,
-  Stop, G, Line, Polygon,
+  Path, Circle, Defs, LinearGradient as SvgGrad, RadialGradient as SvgRad,
+  Stop, Line, Polygon,
 } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,26 +31,38 @@ const { width: W, height: H } = Dimensions.get('window');
 
 /* ── THEME ─────────────────────────────────────────────────── */
 const C = {
-  primary:     '#00B8FF',  // hsl(193 100% 50%)
-  glow:        '#3DEBFF',  // hsl(185 100% 62%)
-  deep:        '#0F6FB3',  // hsl(200 85% 38%)
-  accent:      '#00E5FF',  // hsl(185 100% 50%)
-  bg0:         '#03101F',  // near-black navy
+  // Primary blue identity (unchanged)
+  primary:     '#00B8FF',
+  glow:        '#3DEBFF',
+  deep:        '#0F6FB3',
+  accent:      '#00E5FF',
+
+  // Secondary accents — used sparingly for depth & warmth
+  violet:      '#8B7CF6',   // indigo/violet for autophagy, depth, mystery
+  violetSoft:  '#A78BFA',
+  gold:        '#F5B544',   // amber for achievement, transformation, warmth
+  goldSoft:    '#FCD34D',
+  magenta:     '#F472B6',   // soft pink for emotion / heart / trust
+  magentaSoft: '#FBA8D4',
+  mint:        '#5EEAD4',   // very occasional teal-mint for vitality
+
+  // Backgrounds (stay deep navy)
+  bg0:         '#03101F',
   bg1:         '#061A33',
   bg2:         '#0A2B52',
+
   text:        '#EAF6FF',
   textDim:     '#8FB4D6',
   textMute:    '#5A7FA1',
   glass:       'rgba(255,255,255,0.06)',
   glassBd:     'rgba(125,220,255,0.18)',
   glassHi:     'rgba(125,220,255,0.35)',
+  glassWarm:   'rgba(245,181,68,0.22)',
+  glassViolet: 'rgba(139,124,246,0.22)',
 };
 
-const AnimatedSvg = Animated.createAnimatedComponent(Svg);
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-
 /* ═════════════════════════════════════════════════════════════
-   HERO 1 — IDENTITY: Orbital droplet (you are the center)
+   HERO 1 — IDENTITY: Orbital droplet  (cool blue + a hint of violet)
    ═════════════════════════════════════════════════════════════ */
 function HeroIdentity() {
   const spin = useRef(new Animated.Value(0)).current;
@@ -80,38 +86,43 @@ function HeroIdentity() {
   const S = 280;
   return (
     <View style={{ width: S, height: S, alignItems: 'center', justifyContent: 'center' }}>
-      {/* Glow halo */}
+      {/* Halo — primary blue (kept) */}
       <Animated.View style={{
         position: 'absolute', width: S * 0.7, height: S * 0.7, borderRadius: S,
         backgroundColor: C.primary, opacity: pulseOpacity, transform: [{ scale: pulseScale }],
       }} />
-      {/* Outer rotating ring with constellation dots */}
+      {/* Subtle violet outer halo for depth */}
+      <Animated.View style={{
+        position: 'absolute', width: S * 0.85, height: S * 0.85, borderRadius: S,
+        backgroundColor: C.violet, opacity: 0.08,
+      }} />
       <Animated.View style={{ position: 'absolute', transform: [{ rotate }] }}>
         <Svg width={S} height={S} viewBox="0 0 280 280">
           <Defs>
             <SvgGrad id="ring1" x1="0" y1="0" x2="1" y2="1">
               <Stop offset="0%" stopColor={C.glow} stopOpacity={0.9} />
+              <Stop offset="60%" stopColor={C.violet} stopOpacity={0.5} />
               <Stop offset="100%" stopColor={C.primary} stopOpacity={0.1} />
             </SvgGrad>
           </Defs>
           <Circle cx="140" cy="140" r="130" stroke="url(#ring1)" strokeWidth="1.5" fill="none" strokeDasharray="2 8" />
-          {[0, 60, 120, 180, 240, 300].map(a => {
+          {[0, 60, 120, 180, 240, 300].map((a, i) => {
             const r = 130;
             const x = 140 + r * Math.cos((a * Math.PI) / 180);
             const y = 140 + r * Math.sin((a * Math.PI) / 180);
-            return <Circle key={a} cx={x} cy={y} r="3" fill={C.glow} />;
+            // one of six dots tinted violet for subtle variation
+            const fill = i === 2 ? C.violetSoft : i === 5 ? C.goldSoft : C.glow;
+            return <Circle key={a} cx={x} cy={y} r="3" fill={fill} />;
           })}
         </Svg>
       </Animated.View>
-      {/* Inner counter-rotating ring */}
       <Animated.View style={{ position: 'absolute', transform: [{ rotate: rotateRev }] }}>
         <Svg width={S * 0.75} height={S * 0.75} viewBox="0 0 210 210">
           <Circle cx="105" cy="105" r="95" stroke={C.accent} strokeOpacity={0.3} strokeWidth="1" fill="none" strokeDasharray="6 6" />
           <Circle cx="200" cy="105" r="5" fill={C.accent} />
-          <Circle cx="10"  cy="105" r="3" fill={C.glow} opacity={0.7} />
+          <Circle cx="10"  cy="105" r="3" fill={C.violetSoft} opacity={0.85} />
         </Svg>
       </Animated.View>
-      {/* Central droplet */}
       <Svg width={120} height={150} viewBox="0 0 120 150">
         <Defs>
           <SvgGrad id="dropG" x1="0" y1="0" x2="0" y2="1">
@@ -139,7 +150,7 @@ function HeroIdentity() {
 }
 
 /* ═════════════════════════════════════════════════════════════
-   HERO 2 — SCIENCE: Animated metabolic timeline
+   HERO 2 — SCIENCE: Metabolic timeline (blue → violet → gold)
    ═════════════════════════════════════════════════════════════ */
 function HeroScience() {
   const fill = useRef(new Animated.Value(0)).current;
@@ -155,8 +166,8 @@ function HeroScience() {
     { t: '0h',  l: 'Fed',        c: C.textDim },
     { t: '12h', l: 'Glycogen',   c: C.glow },
     { t: '18h', l: 'Ketosis',    c: C.primary },
-    { t: '24h', l: 'Autophagy',  c: C.accent },
-    { t: '48h', l: 'HGH +500%',  c: '#FFD46B' },
+    { t: '24h', l: 'Autophagy',  c: C.violetSoft },
+    { t: '48h', l: 'HGH +500%',  c: C.goldSoft },
   ];
 
   const railWidth = 260;
@@ -164,8 +175,9 @@ function HeroScience() {
 
   return (
     <View style={{ width: 280, alignItems: 'center' }}>
-      {/* Glass card with metric */}
       <View style={s2.card}>
+        {/* warm gold corner accent for "achievement" */}
+        <View style={s2.cornerAccent} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <View style={s2.pulseDot} />
           <Text style={s2.cardLabel}>LIVE METABOLIC STATE</Text>
@@ -174,12 +186,11 @@ function HeroScience() {
         <Text style={s2.cardSub}>Cellular cleanup engaged · 24h+</Text>
       </View>
 
-      {/* Rail */}
       <View style={{ width: railWidth, marginTop: 22 }}>
         <View style={s2.rail}>
           <Animated.View style={{ width: railFill, height: '100%' }}>
             <LinearGradient
-              colors={[C.glow, C.primary, C.accent]}
+              colors={[C.glow, C.primary, C.violet, C.gold]}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
               style={{ flex: 1, borderRadius: 4 }}
             />
@@ -202,6 +213,12 @@ const s2 = StyleSheet.create({
   card: {
     width: 260, padding: 18, borderRadius: 22,
     backgroundColor: C.glass, borderWidth: 1, borderColor: C.glassBd,
+    overflow: 'hidden',
+  },
+  cornerAccent: {
+    position: 'absolute', top: -30, right: -30,
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: C.gold, opacity: 0.18,
   },
   pulseDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#22C55E' },
   cardLabel: { color: C.textDim, fontSize: 10, fontWeight: '800', letterSpacing: 1.5 },
@@ -214,14 +231,14 @@ const s2 = StyleSheet.create({
 });
 
 /* ═════════════════════════════════════════════════════════════
-   HERO 3 — TRANSFORMATION: Stat orbits
+   HERO 3 — TRANSFORMATION: Stat orbits (warm gold-led, blue base)
    ═════════════════════════════════════════════════════════════ */
 function HeroTransform() {
   const stats = [
-    { v: '−7.2', u: 'kg', l: 'avg 30 days', x: -90, y: -60 },
-    { v: '+38%', u: '',   l: 'energy',      x:  90, y: -40 },
-    { v: '12h',  u: '',   l: 'deep sleep',  x: -80, y:  70 },
-    { v: '0',    u: '',   l: 'cravings',    x:  85, y:  80 },
+    { v: '−7.2', u: 'kg', l: 'avg 30 days', x: -90, y: -60, accent: C.gold },
+    { v: '+38%', u: '',   l: 'energy',      x:  90, y: -40, accent: C.goldSoft },
+    { v: '12h',  u: '',   l: 'deep sleep',  x: -80, y:  70, accent: C.violetSoft },
+    { v: '0',    u: '',   l: 'cravings',    x:  85, y:  80, accent: C.glow },
   ];
   const float = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -234,21 +251,23 @@ function HeroTransform() {
 
   return (
     <View style={{ width: 280, height: 280, alignItems: 'center', justifyContent: 'center' }}>
-      {/* Center silhouette */}
       <View style={s3.center}>
         <LinearGradient colors={[C.primary, C.deep]} style={s3.centerGrad}>
           <Ionicons name="person" size={48} color={C.text} />
         </LinearGradient>
+        {/* warm achievement ring */}
+        <View style={s3.achievementRing} />
         <Text style={s3.centerLabel}>NEW YOU</Text>
       </View>
-      {/* Floating stat chips */}
       {stats.map((st, i) => (
         <Animated.View key={i} style={[s3.chip, {
           left: 140 + st.x - 50,
           top:  140 + st.y - 28,
+          borderColor: `${st.accent}55`,
+          backgroundColor: `${st.accent}14`,
           transform: [{ translateY: i % 2 === 0 ? lift : Animated.multiply(lift, -1) }],
         }]}>
-          <Text style={s3.chipV}>
+          <Text style={[s3.chipV, { color: st.accent === C.glow ? C.text : st.accent }]}>
             {st.v}<Text style={s3.chipU}>{st.u}</Text>
           </Text>
           <Text style={s3.chipL}>{st.l}</Text>
@@ -264,31 +283,35 @@ const s3 = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: C.glassHi,
   },
-  centerLabel: { color: C.glow, fontSize: 10, fontWeight: '900', letterSpacing: 2, marginTop: 8 },
+  achievementRing: {
+    position: 'absolute', width: 124, height: 124, borderRadius: 62,
+    borderWidth: 1, borderColor: C.gold, opacity: 0.35,
+  },
+  centerLabel: { color: C.goldSoft, fontSize: 10, fontWeight: '900', letterSpacing: 2, marginTop: 8 },
   chip: {
     position: 'absolute', width: 100,
     paddingVertical: 10, paddingHorizontal: 12, borderRadius: 14,
-    backgroundColor: 'rgba(0,184,255,0.10)', borderWidth: 1, borderColor: C.glassBd,
+    borderWidth: 1,
     alignItems: 'center',
   },
-  chipV: { color: C.text, fontSize: 18, fontWeight: '900', letterSpacing: -0.5 },
+  chipV: { fontSize: 18, fontWeight: '900', letterSpacing: -0.5 },
   chipU: { fontSize: 11, fontWeight: '700', color: C.textDim },
   chipL: { color: C.textDim, fontSize: 9, fontWeight: '700', marginTop: 2, letterSpacing: 0.5 },
 });
 
 /* ═════════════════════════════════════════════════════════════
-   HERO 4 — TRUST: Coach + ratings shield
+   HERO 4 — TRUST: Shield (blue base + warm magenta + gold stars)
    ═════════════════════════════════════════════════════════════ */
 function HeroTrust() {
   return (
     <View style={{ width: 280, alignItems: 'center' }}>
-      {/* Shield with checkmark */}
       <View style={s4.shieldWrap}>
         <Svg width={140} height={160} viewBox="0 0 140 160">
           <Defs>
             <SvgGrad id="shieldG" x1="0" y1="0" x2="0" y2="1">
               <Stop offset="0%" stopColor={C.glow} />
-              <Stop offset="100%" stopColor={C.deep} />
+              <Stop offset="70%" stopColor={C.primary} />
+              <Stop offset="100%" stopColor={C.violet} stopOpacity={0.85} />
             </SvgGrad>
           </Defs>
           <Path
@@ -297,23 +320,21 @@ function HeroTrust() {
           />
           <Path d="M45 80 L65 100 L100 60" stroke="#fff" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </Svg>
-        {/* Floating mini badges */}
-        <View style={[s4.badge, { top: 0, left: -8 }]}>
+        <View style={[s4.badge, { top: 0, left: -8, borderColor: C.glassBd }]}>
           <Ionicons name="medkit" size={14} color={C.glow} />
         </View>
-        <View style={[s4.badge, { top: 40, right: -12 }]}>
-          <Ionicons name="shield-checkmark" size={14} color={C.accent} />
+        <View style={[s4.badge, { top: 40, right: -12, borderColor: 'rgba(245,181,68,0.4)' }]}>
+          <Ionicons name="shield-checkmark" size={14} color={C.goldSoft} />
         </View>
-        <View style={[s4.badge, { bottom: 20, left: -14 }]}>
-          <Ionicons name="heart" size={14} color="#FF7AB6" />
+        <View style={[s4.badge, { bottom: 20, left: -14, borderColor: 'rgba(244,114,182,0.45)' }]}>
+          <Ionicons name="heart" size={14} color={C.magenta} />
         </View>
       </View>
-      {/* Stats row */}
       <View style={s4.statsRow}>
         <View style={s4.stat}>
-          <Text style={s4.statV}>4.9</Text>
+          <Text style={[s4.statV, { color: C.goldSoft }]}>4.9</Text>
           <View style={{ flexDirection: 'row', gap: 1 }}>
-            {[1,2,3,4,5].map(i => <Ionicons key={i} name="star" size={9} color="#FFD46B" />)}
+            {[1,2,3,4,5].map(i => <Ionicons key={i} name="star" size={9} color={C.goldSoft} />)}
           </View>
         </View>
         <View style={s4.divider} />
@@ -323,7 +344,7 @@ function HeroTrust() {
         </View>
         <View style={s4.divider} />
         <View style={s4.stat}>
-          <Text style={s4.statV}>MD</Text>
+          <Text style={[s4.statV, { color: C.magentaSoft }]}>MD</Text>
           <Text style={s4.statL}>reviewed</Text>
         </View>
       </View>
@@ -335,7 +356,7 @@ const s4 = StyleSheet.create({
   badge: {
     position: 'absolute',
     width: 32, height: 32, borderRadius: 16,
-    backgroundColor: C.bg1, borderWidth: 1, borderColor: C.glassBd,
+    backgroundColor: C.bg1, borderWidth: 1,
     alignItems: 'center', justifyContent: 'center',
   },
   statsRow: {
@@ -350,7 +371,7 @@ const s4 = StyleSheet.create({
 });
 
 /* ═════════════════════════════════════════════════════════════
-   HERO 5 — SUMMIT: Final conversion
+   HERO 5 — SUMMIT: Mountain (golden sunrise over blue ranges)
    ═════════════════════════════════════════════════════════════ */
 function HeroSummit() {
   const beam = useRef(new Animated.Value(0)).current;
@@ -365,12 +386,10 @@ function HeroSummit() {
 
   return (
     <View style={{ width: 280, height: 260, alignItems: 'center', justifyContent: 'center' }}>
-      {/* Beam */}
       <Animated.View style={{
         position: 'absolute', width: 4, height: 80, borderRadius: 2,
-        backgroundColor: C.glow, opacity: beamO, transform: [{ translateY: beamY }],
+        backgroundColor: C.goldSoft, opacity: beamO, transform: [{ translateY: beamY }],
       }} />
-      {/* Mountain */}
       <Svg width={260} height={220} viewBox="0 0 260 220">
         <Defs>
           <SvgGrad id="mtn" x1="0" y1="0" x2="0" y2="1">
@@ -378,29 +397,31 @@ function HeroSummit() {
             <Stop offset="100%" stopColor={C.deep} stopOpacity={0.4} />
           </SvgGrad>
           <SvgGrad id="mtn2" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor={C.primary} />
+            <Stop offset="0%" stopColor={C.violet} stopOpacity={0.85} />
             <Stop offset="100%" stopColor={C.bg2} stopOpacity={0.2} />
           </SvgGrad>
+          <SvgRad id="sunG" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor={C.goldSoft} stopOpacity={0.9} />
+            <Stop offset="100%" stopColor={C.gold} stopOpacity={0} />
+          </SvgRad>
         </Defs>
-        {/* Sun disk */}
-        <Circle cx="130" cy="80" r="34" fill={C.glow} opacity={0.25} />
-        <Circle cx="130" cy="80" r="20" fill={C.glow} opacity={0.55} />
-        {/* Back mountains */}
+        {/* Sun — warm gold for emotional arrival */}
+        <Circle cx="130" cy="80" r="44" fill="url(#sunG)" />
+        <Circle cx="130" cy="80" r="20" fill={C.goldSoft} opacity={0.85} />
+        {/* Back range — violet for atmospheric depth */}
         <Polygon points="0,200 70,90 130,160 190,70 260,200" fill="url(#mtn2)" opacity={0.55} />
-        {/* Front mountain */}
+        {/* Front mountain — blue, dominant */}
         <Polygon points="20,210 130,40 240,210" fill="url(#mtn)" />
-        {/* Snow cap */}
         <Path d="M130 40 L150 70 L140 75 L125 65 L115 75 L110 70 Z" fill="#fff" opacity={0.95} />
-        {/* Flag */}
         <Line x1="130" y1="40" x2="130" y2="20" stroke={C.text} strokeWidth="2" />
-        <Polygon points="130,20 148,26 130,32" fill={C.accent} />
+        <Polygon points="130,20 148,26 130,32" fill={C.gold} />
       </Svg>
     </View>
   );
 }
 
 /* ═════════════════════════════════════════════════════════════
-   AMBIENT BACKGROUND — aurora + stars
+   AMBIENT BACKGROUND — multi-accent aurora
    ═════════════════════════════════════════════════════════════ */
 function AuroraBackground() {
   const drift = useRef(new Animated.Value(0)).current;
@@ -412,9 +433,14 @@ function AuroraBackground() {
   const tx = drift.interpolate({ inputRange: [0, 0.5, 1], outputRange: [-30, 30, -30] });
 
   const stars = useMemo(
-    () => Array.from({ length: 28 }).map(() => ({
+    () => Array.from({ length: 32 }).map((_, i) => ({
       x: Math.random() * W, y: Math.random() * H * 0.7,
       r: Math.random() * 1.4 + 0.4, o: Math.random() * 0.6 + 0.2,
+      color:
+        i % 9 === 0 ? C.violetSoft :
+        i % 11 === 0 ? C.goldSoft :
+        i % 13 === 0 ? C.magentaSoft :
+        '#fff',
     })),
     [],
   );
@@ -426,23 +452,44 @@ function AuroraBackground() {
         style={StyleSheet.absoluteFill}
         start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}
       />
-      {/* Aurora blobs */}
+      {/* Primary cyan blob — dominant */}
       <Animated.View style={{
         position: 'absolute', top: -120, left: -80,
         width: W * 0.9, height: W * 0.9, borderRadius: W,
-        backgroundColor: C.primary, opacity: 0.18,
+        backgroundColor: C.primary, opacity: 0.16,
         transform: [{ translateX: tx }],
       }} />
+      {/* Violet aurora — emotional depth */}
       <Animated.View style={{
-        position: 'absolute', top: H * 0.18, right: -100,
-        width: W * 0.8, height: W * 0.8, borderRadius: W,
-        backgroundColor: C.accent, opacity: 0.12,
+        position: 'absolute', top: H * 0.12, right: -100,
+        width: W * 0.85, height: W * 0.85, borderRadius: W,
+        backgroundColor: C.violet, opacity: 0.13,
         transform: [{ translateX: Animated.multiply(tx, -1) }],
       }} />
-      {/* Stars */}
+      {/* Gold warm glow — bottom-left, low opacity */}
+      <Animated.View style={{
+        position: 'absolute', bottom: -60, left: -40,
+        width: W * 0.7, height: W * 0.7, borderRadius: W,
+        backgroundColor: C.gold, opacity: 0.07,
+        transform: [{ translateX: tx }],
+      }} />
+      {/* Soft magenta whisper — bottom-right */}
+      <Animated.View style={{
+        position: 'absolute', bottom: -100, right: -60,
+        width: W * 0.65, height: W * 0.65, borderRadius: W,
+        backgroundColor: C.magenta, opacity: 0.06,
+        transform: [{ translateX: Animated.multiply(tx, -0.6) }],
+      }} />
+      {/* Accent cyan — keeps blue dominant */}
+      <Animated.View style={{
+        position: 'absolute', top: H * 0.35, left: W * 0.2,
+        width: W * 0.5, height: W * 0.5, borderRadius: W,
+        backgroundColor: C.accent, opacity: 0.08,
+        transform: [{ translateX: Animated.multiply(tx, 0.4) }],
+      }} />
       <Svg style={StyleSheet.absoluteFill} width={W} height={H} pointerEvents="none">
         {stars.map((s, i) => (
-          <Circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#fff" opacity={s.o} />
+          <Circle key={i} cx={s.x} cy={s.y} r={s.r} fill={s.color} opacity={s.o} />
         ))}
       </Svg>
     </>
@@ -450,7 +497,7 @@ function AuroraBackground() {
 }
 
 /* ═════════════════════════════════════════════════════════════
-   SLIDE DATA
+   SLIDE DATA  (per-slide accent color drives small UI cues)
    ═════════════════════════════════════════════════════════════ */
 type Slide = {
   key: string;
@@ -459,6 +506,7 @@ type Slide = {
   highlight?: string;
   body: string;
   Hero: React.FC;
+  accent: string;       // per-slide accent (small touches only)
   bullets?: { icon: keyof typeof Ionicons.glyphMap; text: string }[];
 };
 
@@ -470,6 +518,7 @@ const SLIDES: Slide[] = [
     highlight: 'WaterFastBuddy.',
     body: 'Your all-in-one solution for safe, guided water fasting.',
     Hero: HeroIdentity,
+    accent: C.glow,
   },
   {
     key: 'track',
@@ -478,6 +527,7 @@ const SLIDES: Slide[] = [
     highlight: 'of your fast.',
     body: 'Notifications show you exactly how far along you are. Track your progress, and learn what happens inside your body during each hour of water fasting.',
     Hero: HeroScience,
+    accent: C.violetSoft,
   },
   {
     key: 'coach',
@@ -486,6 +536,7 @@ const SLIDES: Slide[] = [
     highlight: 'your fasting coach.',
     body: 'Book a video call with Krish directly in the app — the person who created WaterFastBuddy and lost 35KG in 6 months purely from water fasting.',
     Hero: HeroTrust,
+    accent: C.magentaSoft,
     bullets: [
       { icon: 'person-circle-outline', text: 'A real person, not a call centre' },
       { icon: 'trophy-outline',        text: '35KG lost in 6 months' },
@@ -499,6 +550,7 @@ const SLIDES: Slide[] = [
     highlight: 'your health?',
     body: 'Lose weight. Reduce your chances of diabetes, cancer, and Alzheimer\'s. Lower blood pressure, reverse fatty liver, and see your skin glow.',
     Hero: HeroTransform,
+    accent: C.goldSoft,
   },
   {
     key: 'reset',
@@ -507,6 +559,7 @@ const SLIDES: Slide[] = [
     highlight: 'your first 72 hours.',
     body: 'Less bloating, improved sleep, increased libido — think of water fasting as a complete reset for your body. This app will help you achieve ALL of that and more.',
     Hero: HeroSummit,
+    accent: C.gold,
   },
   {
     key: 'everyone',
@@ -515,6 +568,7 @@ const SLIDES: Slide[] = [
     highlight: 'everywhere.',
     body: 'No matter your age, sex, or location — water fasting can be safely practised by all. This app will keep you safe and educated throughout your journey.',
     Hero: HeroIdentity,
+    accent: C.glow,
     bullets: [
       { icon: 'globe-outline',         text: 'Available no matter where you are' },
       { icon: 'shield-checkmark',      text: 'Safe & guided at every stage' },
@@ -564,7 +618,6 @@ export default function WelcomeSlides() {
     const Hero = item.Hero;
     return (
       <View style={{ width: W, paddingHorizontal: 28 }}>
-        {/* Hero */}
         <Animated.View style={{
           marginTop: insets.top + 70,
           height: 300,
@@ -575,25 +628,31 @@ export default function WelcomeSlides() {
           <Hero />
         </Animated.View>
 
-        {/* Copy block */}
         <Animated.View style={{ marginTop: 36, transform: [{ translateY }], opacity }}>
-          <Text style={st.eyebrow}>{item.eyebrow}</Text>
+          <Text style={[st.eyebrow, { color: item.accent }]}>{item.eyebrow}</Text>
           <Text style={st.title}>
             {item.title}{'\n'}
-            <Text style={st.titleHi}>{item.highlight}</Text>
+            <Text style={[st.titleHi, { color: item.accent }]}>{item.highlight}</Text>
           </Text>
           <Text style={st.body}>{item.body}</Text>
 
           {item.bullets && (
             <View style={{ marginTop: 18, gap: 10 }}>
-              {item.bullets.map(b => (
-                <View key={b.text} style={st.bulletRow}>
-                  <View style={st.bulletIcon}>
-                    <Ionicons name={b.icon} size={14} color={C.glow} />
+              {item.bullets.map((b, i) => {
+                // gentle accent rotation across bullets, anchored to slide accent
+                const tint = i === 0 ? item.accent : i === 1 ? C.glow : C.violetSoft;
+                return (
+                  <View key={b.text} style={st.bulletRow}>
+                    <View style={[st.bulletIcon, {
+                      backgroundColor: `${tint}1F`,
+                      borderColor: `${tint}55`,
+                    }]}>
+                      <Ionicons name={b.icon} size={14} color={tint} />
+                    </View>
+                    <Text style={st.bulletTxt}>{b.text}</Text>
                   </View>
-                  <Text style={st.bulletTxt}>{b.text}</Text>
-                </View>
-              ))}
+                );
+              })}
             </View>
           )}
         </Animated.View>
@@ -602,12 +661,12 @@ export default function WelcomeSlides() {
   };
 
   const isLast = active === SLIDES.length - 1;
+  const activeAccent = SLIDES[active].accent;
 
   return (
     <View style={st.root}>
       <AuroraBackground />
 
-      {/* Top bar: brand + skip + progress rail */}
       <View style={[st.topBar, { paddingTop: insets.top + 14 }]}>
         <View style={st.brand}>
           <View style={st.brandDot}>
@@ -622,17 +681,19 @@ export default function WelcomeSlides() {
         )}
       </View>
 
-      {/* Progress segments */}
+      {/* Progress — each completed segment carries its slide's accent */}
       <View style={[st.progress, { top: insets.top + 56 }]}>
-        {SLIDES.map((_, i) => {
+        {SLIDES.map((slide, i) => {
           const isActive = i === active;
           const isDone = i < active;
+          const segColor = isActive ? activeAccent : isDone ? slide.accent : C.glow;
           return (
             <View key={i} style={st.segWrap}>
               <View style={st.seg}>
                 <Animated.View style={[st.segFill, {
                   width: isDone ? '100%' : isActive ? '100%' : '0%',
                   opacity: isActive || isDone ? 1 : 0.2,
+                  backgroundColor: segColor,
                 }]} />
               </View>
             </View>
@@ -640,7 +701,6 @@ export default function WelcomeSlides() {
         })}
       </View>
 
-      {/* Swipeable slides */}
       <Animated.FlatList
         ref={flatRef as any}
         data={SLIDES}
@@ -657,27 +717,32 @@ export default function WelcomeSlides() {
         style={{ flex: 1 }}
       />
 
-      {/* Bottom CTA dock */}
       <View style={[st.dock, { paddingBottom: insets.bottom + 18 }]}>
         <LinearGradient
           colors={['rgba(3,16,31,0)', 'rgba(3,16,31,0.85)', C.bg0]}
           style={StyleSheet.absoluteFill}
         />
-        {/* Dots */}
         <View style={st.dots}>
           {SLIDES.map((_, i) => (
             <Pressable key={i} onPress={() => goTo(i)} hitSlop={10}>
-              <View style={[st.dot, i === active && st.dotActive]} />
+              <View style={[
+                st.dot,
+                i === active && [st.dotActive, { backgroundColor: activeAccent, shadowColor: activeAccent }],
+              ]} />
             </Pressable>
           ))}
         </View>
 
-        {/* Primary CTA */}
+        {/* CTA — blue stays dominant; final slide gets a warm gold finish */}
         <Pressable onPress={onPrimary} style={({ pressed }) => [
           st.cta, pressed && { transform: [{ scale: 0.98 }] },
         ]}>
           <LinearGradient
-            colors={[C.glow, C.primary, C.deep]}
+            colors={
+              isLast
+                ? [C.glow, C.primary, C.gold]
+                : [C.glow, C.primary, C.violet]
+            }
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={st.ctaGrad}
           >
@@ -694,7 +759,6 @@ export default function WelcomeSlides() {
           </LinearGradient>
         </Pressable>
 
-        {/* Secondary */}
         {isLast && (
           <Pressable onPress={() => Linking.openURL('https://waterfastbuddy.com/benefits')}>
             <Text style={st.secondary}>For full benefits and cautions, visit waterfastbuddy.com/benefits  ›</Text>
@@ -732,20 +796,17 @@ const st = StyleSheet.create({
     height: 3, borderRadius: 2,
     backgroundColor: 'rgba(255,255,255,0.10)', overflow: 'hidden',
   },
-  segFill: { height: '100%', backgroundColor: C.glow, borderRadius: 2 },
+  segFill: { height: '100%', borderRadius: 2 },
 
   eyebrow: {
-    color: C.glow, fontSize: 11, fontWeight: '900',
+    fontSize: 11, fontWeight: '900',
     letterSpacing: 2.2, marginBottom: 12,
   },
   title: {
     color: C.text, fontSize: 28, fontWeight: '900',
     lineHeight: 34, letterSpacing: -0.6,
   },
-  titleHi: {
-    color: C.glow,
-    // Note: text-gradient not supported in RN, glow color provides emphasis
-  },
+  titleHi: {},
   body: {
     color: C.textDim, fontSize: 14.5, lineHeight: 22,
     marginTop: 14, fontWeight: '500',
@@ -754,8 +815,7 @@ const st = StyleSheet.create({
   bulletRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   bulletIcon: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: 'rgba(0,184,255,0.12)',
-    borderWidth: 1, borderColor: C.glassBd,
+    borderWidth: 1,
     alignItems: 'center', justifyContent: 'center',
   },
   bulletTxt: { color: C.text, fontSize: 13, fontWeight: '600' },
@@ -770,8 +830,8 @@ const st = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.25)',
   },
   dotActive: {
-    width: 22, backgroundColor: C.glow,
-    shadowColor: C.glow, shadowOpacity: 0.9, shadowRadius: 6,
+    width: 22,
+    shadowOpacity: 0.9, shadowRadius: 6,
   },
 
   cta: {
