@@ -56,17 +56,23 @@ export default function ProfileSetupName() {
 
   useEffect(() => { animateIn(); }, []);
 
+  const transition = (action: () => void) => {
+    Animated.timing(fade, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => {
+      action();
+      animateIn();
+    });
+  };
+
   const goNext = () => {
     if (step === 1 && name.trim().length > 0) {
-      setStep(2);
-      animateIn();
+      transition(() => setStep(2));
     } else if (step === 2 && gender) {
       navigation.navigate('ProfileSetupBody', { name: name.trim(), gender });
     }
   };
 
   const goBack = () => {
-    if (step === 2) { setStep(1); animateIn(); }
+    if (step === 2) transition(() => setStep(1));
     else navigation.goBack();
   };
 

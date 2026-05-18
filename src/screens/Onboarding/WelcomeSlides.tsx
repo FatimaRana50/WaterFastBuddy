@@ -464,49 +464,62 @@ type Slide = {
 
 const SLIDES: Slide[] = [
   {
-    key: 'identity',
+    key: 'welcome',
     eyebrow: 'WELCOME',
-    title: 'Become the person who',
-    highlight: 'masters their body.',
-    body: 'WaterFastBuddy turns fasting into a guided ritual — not a guessing game.',
+    title: 'Welcome to',
+    highlight: 'WaterFastBuddy.',
+    body: 'Your all-in-one solution for safe, guided water fasting.',
     Hero: HeroIdentity,
   },
   {
-    key: 'science',
-    eyebrow: 'BACKED BY SCIENCE',
-    title: 'See exactly what your',
-    highlight: 'body is doing — hour by hour.',
-    body: 'From glycogen depletion to autophagy, track every metabolic milestone in real time.',
+    key: 'track',
+    eyebrow: 'STAY INFORMED',
+    title: 'Track every hour',
+    highlight: 'of your fast.',
+    body: 'Notifications show you exactly how far along you are. Track your progress, and learn what happens inside your body during each hour of water fasting.',
     Hero: HeroScience,
   },
   {
-    key: 'transform',
-    eyebrow: 'REAL RESULTS',
-    title: 'Fat loss, clarity, energy —',
-    highlight: 'measured, not promised.',
-    body: 'Members report meaningful changes within 30 days. Your dashboard proves it.',
-    Hero: HeroTransform,
-  },
-  {
-    key: 'trust',
-    eyebrow: 'SAFE & GUIDED',
-    title: 'Reviewed by physicians.',
-    highlight: 'Loved by 120k+ fasters.',
-    body: 'Protocols vetted by medical professionals. 1-on-1 expert calls available when you need them.',
+    key: 'coach',
+    eyebrow: "YOU'RE NEVER ALONE",
+    title: '1-on-1 with Krish,',
+    highlight: 'your fasting coach.',
+    body: 'Book a video call with Krish directly in the app — the person who created WaterFastBuddy and lost 35KG in 6 months purely from water fasting.',
     Hero: HeroTrust,
     bullets: [
-      { icon: 'shield-checkmark', text: 'MD-reviewed safety rails' },
-      { icon: 'people',           text: 'Live coach support' },
-      { icon: 'pulse',            text: 'Smart fast-break alerts' },
+      { icon: 'person-circle-outline', text: 'A real person, not a call centre' },
+      { icon: 'trophy-outline',        text: '35KG lost in 6 months' },
+      { icon: 'calendar-outline',      text: 'Book directly in the app' },
     ],
   },
   {
-    key: 'summit',
-    eyebrow: 'YOU\'RE READY',
-    title: 'Your first fast starts',
-    highlight: 'in the next 60 seconds.',
-    body: 'Set your goal, pick a protocol, and let WaterFastBuddy do the heavy lifting.',
+    key: 'benefits',
+    eyebrow: 'YOUR HEALTH',
+    title: 'Ready to transform',
+    highlight: 'your health?',
+    body: 'Lose weight. Reduce your chances of diabetes, cancer, and Alzheimer\'s. Lower blood pressure, reverse fatty liver, and see your skin glow.',
+    Hero: HeroTransform,
+  },
+  {
+    key: 'reset',
+    eyebrow: 'THE RESET',
+    title: 'Feel the benefits from',
+    highlight: 'your first 72 hours.',
+    body: 'Less bloating, improved sleep, increased libido — think of water fasting as a complete reset for your body. This app will help you achieve ALL of that and more.',
     Hero: HeroSummit,
+  },
+  {
+    key: 'everyone',
+    eyebrow: 'FOR EVERYONE',
+    title: 'Safe for everyone,',
+    highlight: 'everywhere.',
+    body: 'No matter your age, sex, or location — water fasting can be safely practised by all. This app will keep you safe and educated throughout your journey.',
+    Hero: HeroIdentity,
+    bullets: [
+      { icon: 'globe-outline',         text: 'Available no matter where you are' },
+      { icon: 'shield-checkmark',      text: 'Safe & guided at every stage' },
+      { icon: 'book-outline',          text: 'Fully educated throughout' },
+    ],
   },
 ];
 
@@ -669,7 +682,7 @@ export default function WelcomeSlides() {
             style={st.ctaGrad}
           >
             <Text style={st.ctaTxt}>
-              {isLast ? 'Start my first fast' : 'Continue'}
+              {isLast ? "Let's get started" : 'Continue'}
             </Text>
             <View style={st.ctaArrow}>
               <Ionicons
@@ -683,8 +696,8 @@ export default function WelcomeSlides() {
 
         {/* Secondary */}
         {isLast && (
-          <Pressable onPress={() => Linking.openURL('https://waterfastbuddy.com/science')}>
-            <Text style={st.secondary}>Read the science  ›</Text>
+          <Pressable onPress={() => Linking.openURL('https://waterfastbuddy.com/benefits')}>
+            <Text style={st.secondary}>For full benefits and cautions, visit waterfastbuddy.com/benefits  ›</Text>
           </Pressable>
         )}
       </View>

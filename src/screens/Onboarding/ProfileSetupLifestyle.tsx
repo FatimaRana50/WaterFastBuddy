@@ -86,17 +86,23 @@ export default function ProfileSetupLifestyle() {
 
   const ORDER: LifeStep[] = ['age', 'activity', 'climate'];
 
+  const transition = (action: () => void) => {
+    Animated.timing(fade, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => {
+      action();
+      animateIn();
+    });
+  };
+
   const goBack = () => {
     const idx = ORDER.indexOf(lifeStep);
-    if (idx > 0) { setLifeStep(ORDER[idx - 1]); animateIn(); }
+    if (idx > 0) transition(() => setLifeStep(ORDER[idx - 1]));
     else navigation.goBack();
   };
 
   const goNext = async () => {
     const idx = ORDER.indexOf(lifeStep);
     if (idx < ORDER.length - 1) {
-      setLifeStep(ORDER[idx + 1]);
-      animateIn();
+      transition(() => setLifeStep(ORDER[idx + 1]));
     } else {
       await saveProfile({
         ...route.params,

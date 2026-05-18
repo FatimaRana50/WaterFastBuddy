@@ -105,16 +105,24 @@ export default function ProfileSetupBody() {
 
   const ORDER: BodyStep[] = ['height', 'weight', 'goal'];
 
+  const transition = (action: () => void) => {
+    Animated.timing(fade, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => {
+      action();
+      animateIn();
+    });
+  };
+
   const goBack = () => {
     const idx = ORDER.indexOf(bodyStep);
-    if (idx > 0) { setBodyStep(ORDER[idx - 1]); animateIn(); }
+    if (idx > 0) transition(() => setBodyStep(ORDER[idx - 1]));
     else navigation.goBack();
   };
 
   const goNext = () => {
     const idx = ORDER.indexOf(bodyStep);
-    if (idx < ORDER.length - 1) { setBodyStep(ORDER[idx + 1]); animateIn(); }
-    else {
+    if (idx < ORDER.length - 1) {
+      transition(() => setBodyStep(ORDER[idx + 1]));
+    } else {
       navigation.navigate('ProfileSetupLifestyle', {
         ...route.params,
         heightCm,
